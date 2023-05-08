@@ -1,0 +1,1716 @@
+{
+	"sips": [
+		{
+			"sip": 60,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"FeePool",
+				"Issuer",
+				"RewardEscrowV2",
+				"Tribeone",
+				"SystemSettings"
+			]
+		},
+		{
+			"sip": 63,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "Tribeone", "SystemSettings", "TradingRewards"]
+		},
+		{
+			"sip": 64,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"Exchanger",
+				"ExchangeRates",
+				"FeePool",
+				"FlexibleStorage",
+				"Issuer",
+				"FeePool",
+				"Liquidations",
+				"SystemSettings"
+			]
+		},
+		{
+			"sip": 75,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
+		},
+		{
+			"sip": 76,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"Exchanger",
+				"ExchangeRates",
+				"FeePool",
+				"Issuer",
+				"Liquidations",
+				"Tribeone",
+				"SystemSettings"
+			]
+		},
+		{
+			"sip": 78,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "ExchangeRates"]
+		},
+		{
+			"sip": 80,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SystemStatus",
+					"FuturesMarketManager"
+				],
+				"ovm": [
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeCircuitBreaker",
+					"FeePool",
+					"Issuer",
+					"DebtCache",
+					"Synth(s|i).+",
+					"SignedSafeDecimalMath",
+					"SystemStatus",
+					"FuturesMarket.+",
+					"FuturesMarketManager",
+					"FuturesMarketSettings",
+					"FuturesMarketData"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 83,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "ExchangeRates", "Issuer", "SystemSettings"]
+		},
+		{
+			"sip": 85,
+			"layer": "base",
+			"released": "base",
+			"sources": ["EtherCollateralsUSD", "FeePool", "Issuer", "SynthsUSD"]
+		},
+		{
+			"sip": 86,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
+		},
+		{
+			"sip": 88,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
+		},
+		{
+			"sip": 89,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "Tribeone"]
+		},
+		{
+			"sip": 91,
+			"layer": "base",
+			"released": "base",
+			"sources": ["DebtCache", "Exchanger", "Issuer"]
+		},
+		{
+			"sip": 92,
+			"layer": "base",
+			"released": "base",
+			"sources": ["ExchangeRates"]
+		},
+		{
+			"sip": 94,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "Tribeone"]
+		},
+		{
+			"sip": 97,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"CollateralErc20",
+				"CollateralEth",
+				"CollateralManager",
+				"CollateralManagerState",
+				"CollateralStateErc20",
+				"CollateralStateEth",
+				"DebtCache",
+				"FeePool",
+				"Issuer",
+				"SynthsBTC",
+				"SynthsETH",
+				"SynthsUSD"
+			]
+		},
+		{
+			"sip": 98,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 100,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"AddressResolver",
+				"BinaryOptionMarketFactory",
+				"BinaryOptionMarketManager",
+				"DebtCache",
+				"ExchangeRates",
+				"Exchanger",
+				"FeePool",
+				"Issuer",
+				"Liquidations",
+				"RewardEscrowV2",
+				"SystemSettings",
+				"Tribeone",
+				"TradingRewards",
+				"Synth(s|i).+"
+			]
+		},
+		{
+			"sip": 102,
+			"layer": "both",
+			"released": "both",
+			"sources": {
+				"base": ["TribeoneBridgeToOptimism"],
+				"ovm": [
+					"AddressResolver",
+					"CollateralManager",
+					"DappMaintenance",
+					"DebtCache",
+					"EscrowChecker",
+					"EtherCollateral",
+					"EtherCollateralsUSD",
+					"Exchanger",
+					"ExchangeRates",
+					"ExchangeState",
+					"FeePool",
+					"FeePoolState",
+					"FlexibleStorage",
+					"Issuer",
+					"Math",
+					"ProxyERC20",
+					"ProxyERC20sUSD",
+					"ProxyFeePool",
+					"ProxysUSD",
+					"ProxyTribeone",
+					"ReadProxyAddressResolver",
+					"RewardEscrow",
+					"RewardEscrowV2",
+					"RewardsDistribution",
+					"SafeDecimalMath",
+					"Tribeone",
+					"TribeoneBridgeToBase",
+					"TribeoneEscrow",
+					"TribeoneState",
+					"SynthsUSD",
+					"SynthUtil",
+					"SystemSettings",
+					"SystemStatus",
+					"TokenStatesUSD",
+					"TokenStateTribeone",
+					"TradingRewards"
+				]
+			}
+		},
+		{
+			"sip": 103,
+			"layer": "base",
+			"released": "base",
+			"sources": ["CollateralStateShort", "CollateralShort", "SynthsUSD"]
+		},
+		{
+			"sip": 105,
+			"layer": "base",
+			"released": "base",
+			"sources": [
+				"CollateralErc20",
+				"CollateralEth",
+				"CollateralStateErc20",
+				"CollateralStateEth",
+				"CollateralStateShort",
+				"CollateralShort"
+			]
+		},
+		{
+			"sip": 106,
+			"layer": "ovm",
+			"released": "ovm",
+			"sources": ["FeePool", "FeePoolState", "TribeoneState"]
+		},
+		{
+			"sip": 109,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Tribeone", "SystemStatus"]
+		},
+		{
+			"sip": 112,
+			"released": "base",
+			"layer": "base",
+			"sources": [
+				"DebtCache",
+				"EtherWrapper",
+				"FeePool",
+				"NativeEtherWrapper",
+				"SynthsETH",
+				"SynthsUSD",
+				"SystemSettings"
+			]
+		},
+		{
+			"sip": 115,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 116,
+			"layer": "both",
+			"released": "both",
+			"sources": {
+				"base": ["TribeoneBridgeToOptimism", "TribeoneBridgeEscrow"],
+				"ovm": [
+					"DebtCache",
+					"Exchanger",
+					"Tribeone",
+					"TribeoneBridgeToBase",
+					"SystemStatus"
+				]
+			}
+		},
+		{
+			"sip": 117,
+			"layer": "ovm",
+			"released": "ovm",
+			"sources": ["DebtCache", "Exchanger", "Tribeone"]
+		},
+		{
+			"sip": 118,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 120,
+			"layer": "base",
+			"sources": ["Exchanger", "ExchangeRates", "Tribeone", "SystemSettings"],
+			"released": "base"
+		},
+		{
+			"sip": 121,
+			"layer": "ovm",
+			"released": "ovm",
+			"sources": ["EtherWrapper", "Exchanger", "Tribeone", "SystemSettings"]
+		},
+		{
+			"sip": 127,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger", "VirtualSynthMastercopy"]
+		},
+		{
+			"sip": 128,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 135,
+			"layer": "ovm",
+			"sources": [
+				"CollateralManager",
+				"CollateralManagerState",
+				"CollateralShort",
+				"CollateralUtil",
+				"SynthsBTC",
+				"SynthsETH",
+				"SynthsLINK",
+				"SynthsUSD",
+				"SystemSettings"
+			],
+			"released": "ovm"
+		},
+		{
+			"sip": 136,
+			"layer": "base",
+			"released": "base",
+			"sources": ["DebtCache", "Issuer"]
+		},
+		{
+			"sip": 138,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Exchanger", "Tribeone"]
+		},
+		{
+			"sip": 139,
+			"layer": "base",
+			"released": "base",
+			"sources": ["Exchanger"]
+		},
+		{
+			"sip": 140,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Tribeone"]
+		},
+		{
+			"sip": 142,
+			"layer": "both",
+			"released": "both",
+			"sources": [
+				"DebtCache",
+				"FeePool",
+				"Issuer",
+				"Tribeone",
+				"SynthsETH",
+				"SynthsUSD",
+				"SynthsBTC"
+			]
+		},
+		{
+			"sip": 145,
+			"layer": "base",
+			"released": "base",
+			"sources": ["DebtCache"]
+		},
+		{
+			"sip": 148,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"Liquidator",
+				"LiquidatorRewards",
+				"Tribeone",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
+			"sip": 167,
+			"layer": "both",
+			"sources": {
+				"base": ["OwnerRelayOnEthereum", "SystemSettings"],
+				"ovm": ["Issuer", "OwnerRelayOnOptimism", "SystemSettings"]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 158,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 165,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"FeePool",
+					"Issuer",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
+					"TribeoneBridgeToOptimism",
+					"SystemSettings"
+				],
+				"ovm": [
+					"FeePool",
+					"Issuer",
+					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorDebtRatio",
+					"TribeoneBridgeToBase",
+					"SystemSettings"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 169,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 170,
+			"layer": "base",
+			"released": "base"
+		},
+		{
+			"sip": 174,
+			"layer": "both",
+			"released": "both",
+			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
+		},
+		{
+			"sip": 182,
+			"layer": "both",
+			"sources": [
+				"DebtCache",
+				"FeePool",
+				"Issuer",
+				"Synths.*",
+				"SystemSettings",
+				"WrapperFactory"
+			],
+			"released": "both"
+		},
+		{
+			"sip": 184,
+			"layer": "both",
+			"sources": ["Exchanger", "ExchangeRates", "SystemSettings"],
+			"released": "both"
+		},
+		{
+			"sip": 185,
+			"layer": "both",
+			"sources": ["Tribeone", "FeePool", "Issuer", "TribeoneDebtShare"],
+			"released": "both"
+		},
+		{
+			"sip": 187,
+			"layer": "both",
+			"sources": ["DebtCache", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 188,
+			"layer": "base",
+			"sources": [],
+			"released": "base"
+		},
+		{
+			"sip": 192,
+			"layer": "both",
+			"sources": ["WrapperFactory"],
+			"released": "both"
+		},
+		{
+			"sip": 193,
+			"layer": "both",
+			"sources": ["SystemSettings", "SystemSettingsLib"],
+			"released": "both"
+		},
+		{
+			"sip": 194,
+			"layer": "ovm",
+			"sources": ["Tribeone"],
+			"released": "ovm"
+		},
+		{
+			"sip": 195,
+			"layer": "ovm",
+			"sources": ["CollateralEth"],
+			"released": "ovm"
+		},
+		{
+			"sip": 196,
+			"layer": "both",
+			"sources": ["ExchangeRates"],
+			"released": "both"
+		},
+		{
+			"sip": 198,
+			"layer": "both",
+			"sources": [
+				"Tribeone",
+				"Exchanger",
+				"ExchangeRates",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
+			"sip": 199,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 200,
+			"layer": "both",
+			"sources": ["FeePool"],
+			"released": "both"
+		},
+		{
+			"sip": 202,
+			"layer": "base",
+			"sources": ["SupplySchedule", "Tribeone"],
+			"released": "base"
+		},
+		{
+			"sip": 205,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 209,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 212,
+			"layer": "ovm",
+			"sources": []
+		},
+		{
+			"sip": 213,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 216,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 217,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 219,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 220,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 222,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 223,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 229,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"TribeoneBridgeToOptimism",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				],
+				"ovm": [
+					"TribeoneBridgeToBase",
+					"Issuer",
+					"SystemSettings",
+					"SystemSettingsLib"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 230,
+			"layer": "both",
+			"sources": ["CircuitBreaker", "ExchangeRates", "Exchanger", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 235,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 236,
+			"layer": "both",
+			"sources": ["Exchanger"],
+			"released": "both"
+		},
+		{
+			"sip": 237,
+			"layer": "both",
+			"sources": {
+				"base": ["Issuer", "Tribeone", "DebtMigratorOnEthereum"],
+				"ovm": ["Issuer", "Tribeone", "DebtMigratorOnOptimism"]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 238,
+			"layer": "both",
+			"sources": ["Tribeone", "Synths.*", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 239,
+			"layer": "both",
+			"sources": ["Tribeone"],
+			"released": "both"
+		},
+		{
+			"sip": 240,
+			"layer": "both",
+			"sources": ["Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 243,
+			"layer": "base",
+			"sources": ["OneNetAggregatorsDEFI"],
+			"released": "base"
+		},
+		{
+			"sip": 246,
+			"layer": "ovm",
+			"sources": ["CollateralShort", "Issuer"],
+			"released": "ovm"
+		},
+		{
+			"sip": 249,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 251,
+			"layer": "both",
+			"sources": ["Issuer", "SystemSettings", "SystemSettingsLib"],
+			"released": "both"
+		},
+		{
+			"sip": 252,
+			"layer": "both",
+			"sources": [
+				"Issuer",
+				"RewardEscrowV2",
+				"Tribeone",
+				"Liquidator",
+				"RewardEscrowV2Storage"
+			],
+			"released": "both"
+		},
+		{
+			"sip": 255,
+			"layer": "both",
+			"sources": ["FeePool", "Issuer"],
+			"released": "both"
+		},
+		{
+			"sip": 257,
+			"layer": "both",
+			"sources": ["ExchangeRates"],
+			"released": "both"
+		},
+		{
+			"sip": 258,
+			"layer": "base",
+			"sources": ["ExchangeRates"],
+			"released": "base"
+		},
+		{
+			"sip": 262,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 267,
+			"layer": "both",
+			"sources": [
+				"DirectIntegrationManager",
+				"Exchanger",
+				"ExchangeSettlementLib",
+				"ExchangeRates",
+				"Issuer",
+				"SystemSettings",
+				"SystemSettingsLib"
+			],
+			"released": "both"
+		},
+		{
+			"sip": 269,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 279,
+			"layer": "both",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 280,
+			"layer": "both",
+			"sources": {
+				"base": ["FuturesMarketManager"],
+				"ovm": [
+					"FuturesMarketManager",
+					"PerpsV2MarketSettings",
+					"PerpsV2MarketData",
+					"PerpsV2ExchangeRate",
+					"PerpsV2Proxy.+",
+					"PerpsV2Market.+",
+					"PerpsV2DelayedOrder.+",
+					"PerpsV2OffchainDelayedOrder.+"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 281,
+			"layer": "both",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 285,
+			"layer": "both",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 293,
+			"layer": "both",
+			"sources": {
+				"base": [
+					"OneNetAggregatorsAAVE",
+					"OneNetAggregatorsLINK",
+					"OneNetAggregatorsDOT",
+					"OneNetAggregatorsADA"
+				],
+				"ovm": [
+					"OneNetAggregatorsAAVE",
+					"OneNetAggregatorsLINK",
+					"OneNetAggregatorsMATIC",
+					"OneNetAggregatorsUNI",
+					"OneNetAggregatorsAVAX",
+					"OneNetAggregatorsSOL"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 295,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 297,
+			"layer": "ovm",
+			"sources": {
+				"ovm": [
+					"PerpsV2MarketSettings",
+					"PerpsV2Market[A-Z]+",
+					"PerpsV2MarketViews.+",
+					"PerpsV2DelayedOrder.+",
+					"PerpsV2OffchainDelayedOrder.+"
+				]
+			},
+			"released": "ovm"
+		},
+		{
+			"sip": 298,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 299,
+			"layer": "both",
+			"sources": ["Tribeone", "Liquidator"],
+			"released": "both"
+		},
+		{
+			"sip": 2000,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2004,
+			"layer": "ovm",
+			"sources": [],
+			"released": "both"
+		},
+		{
+			"sip": 2005,
+			"layer": "both",
+			"sources": {
+				"base": ["FuturesMarketManager"],
+				"ovm": [
+					"FuturesMarketManager",
+					"PerpsV2MarketSettings",
+					"PerpsV2MarketData",
+					"PerpsV2ExchangeRate",
+					"PerpsV2Market[A-Z]+",
+					"PerpsV2MarketState.+",
+					"PerpsV2MarketViews.+",
+					"PerpsV2DelayedIntent.+",
+					"PerpsV2DelayedExecution.+",
+					"PerpsV2MarketLiquidate.+"
+				]
+			},
+			"released": "both"
+		},
+		{
+			"sip": 2010,
+			"layer": "ovm",
+			"sources": [],
+			"released": "ovm"
+		},
+		{
+			"sip": 2011,
+			"layer": "ovm",
+			"sources": [
+				"PerpsV2MarketData",
+				"PerpsV2Market[A-Z]+",
+				"PerpsV2MarketLiquidate[A-Z]+"
+			],
+			"released": "ovm"
+		}
+	],
+	"releases": [
+		{
+			"name": "Pollux",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 27
+			},
+			"sips": [63, 64, 75, 76, 78]
+		},
+		{
+			"name": "Formalhaut",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 28
+			},
+			"sips": [85, 86]
+		},
+		{
+			"name": "Deneb",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 30
+			},
+			"sips": [83, 84, 88]
+		},
+		{
+			"name": "Mimosa",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 31
+			},
+			"sips": [89, 91, 92]
+		},
+		{
+			"name": "Regulus",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 32
+			},
+			"sips": [94]
+		},
+		{
+			"name": "Adhara",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 34
+			},
+			"sips": [98, 99]
+		},
+		{
+			"name": "Shaula",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 35
+			},
+			"sips": [97, 100, 103]
+		},
+		{
+			"name": "Castor",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 36
+			},
+			"sips": [60, 102, 105]
+		},
+		{
+			"name": "Castor (Optimism)",
+			"released": true,
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 36
+			},
+			"sips": [102]
+		},
+		{
+			"name": "Gacrux (Optimism)",
+			"released": true,
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 37
+			},
+			"sips": [106]
+		},
+		{
+			"name": "Bellatrix",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 38
+			},
+			"sips": [109]
+		},
+		{
+			"name": "Elnath",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 39
+			},
+			"sips": [110]
+		},
+		{
+			"name": "L2 Phase 1 (Optimism Kovan)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 40
+			},
+			"sips": []
+		},
+		{
+			"name": "Miaplacidus",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 41
+			},
+			"sips": [113]
+		},
+		{
+			"name": "Alnilam",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 42
+			},
+			"sips": [107, 114, 126, 127]
+		},
+		{
+			"name": "Regora",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 43
+			},
+			"sips": [115, 128]
+		},
+		{
+			"name": "Alnair",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 44
+			},
+			"sips": [116]
+		},
+		{
+			"name": "Alnair (Optimism)",
+			"released": true,
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 44
+			},
+			"sips": [109, 116, 117, 118]
+		},
+		{
+			"name": "Alioth",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 45
+			},
+			"sips": [112, 136]
+		},
+		{
+			"name": "Alnitak",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 46
+			},
+			"sips": [138, 139, 140, 151]
+		},
+		{
+			"name": "Alnitak (Optimism)",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 46
+			},
+			"ovm": true,
+			"sips": [138, 139, 140]
+		},
+		{
+			"name": "Dubhe (Optimism)",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 47
+			},
+			"ovm": true,
+			"sips": [121]
+		},
+		{
+			"name": "Mirfak",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 48
+			},
+			"sips": [142, 145, 170, 174]
+		},
+		{
+			"name": "Wezen",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 49
+			},
+			"sips": [158, 169]
+		},
+		{
+			"name": "Sargas (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 50
+			},
+			"sips": [135, 142, 174]
+		},
+		{
+			"name": "Kaus",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 51
+			},
+			"sips": [187]
+		},
+		{
+			"name": "Kaus (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 51
+			},
+			"sips": [187]
+		},
+		{
+			"name": "Avior (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 52
+			},
+			"sips": [182]
+		},
+		{
+			"name": "Alkaid",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 53
+			},
+			"sips": [120, 182]
+		},
+		{
+			"name": "Menkalinan",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 54
+			},
+			"sips": [167]
+		},
+		{
+			"name": "Menkalinan (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 54
+			},
+			"sips": [167]
+		},
+		{
+			"name": "Atria",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 55
+			},
+			"sips": [192]
+		},
+		{
+			"name": "Atria (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 55
+			},
+			"sips": [192]
+		},
+		{
+			"name": "Alhena",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 56
+			},
+			"sips": [188]
+		},
+		{
+			"name": "Alhena (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 56
+			},
+			"sips": [194, 195]
+		},
+		{
+			"name": "Peacock",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 57
+			},
+			"sips": [200]
+		},
+		{
+			"name": "Peacock (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 57
+			},
+			"sips": [200]
+		},
+		{
+			"name": "Alsephina",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 58
+			},
+			"sips": [184, 193, 196]
+		},
+		{
+			"name": "Alsephina (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 58
+			},
+			"sips": [184, 193, 196]
+		},
+		{
+			"name": "Mirzam",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 59
+			},
+			"sips": [209]
+		},
+		{
+			"name": "Mirzam (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 59
+			},
+			"sips": [209]
+		},
+		{
+			"name": "Alphard",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 60
+			},
+			"sips": [185]
+		},
+		{
+			"name": "Alphard (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 60
+			},
+			"sips": [185]
+		},
+		{
+			"name": "Polaris (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 61
+			},
+			"sips": [199]
+		},
+		{
+			"name": "Hamal",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 62
+			},
+			"sips": [202]
+		},
+		{
+			"name": "Algieba (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 63
+			},
+			"sips": [205]
+		},
+		{
+			"name": "Diphda",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": [80, 165]
+		},
+		{
+			"name": "Diphda (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 64
+			},
+			"sips": [80, 165, 213]
+		},
+		{
+			"name": "Mizar",
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": [220]
+		},
+		{
+			"name": "Mizar (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 65
+			},
+			"sips": [220]
+		},
+		{
+			"name": "Nunki (Optimism)",
+			"ovm": true,
+			"released": true,
+			"version": {
+				"major": 2,
+				"minor": 66
+			},
+			"sips": [217]
+		},
+		{
+			"name": "Mirach",
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": [198, 222, 229],
+			"released": true
+		},
+		{
+			"name": "Mirach (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 68
+			},
+			"sips": [198, 216, 219, 222, 223, 229],
+			"released": true
+		},
+		{
+			"name": "Alpheratz",
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": [148, 236],
+			"released": true
+		},
+		{
+			"name": "Alpheratz (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 69
+			},
+			"sips": [148, 236],
+			"released": true
+		},
+		{
+			"name": "Rasalhague",
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": [239],
+			"released": true
+		},
+		{
+			"name": "Rasalhague (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 70
+			},
+			"sips": [239],
+			"released": true
+		},
+		{
+			"name": "Kochab (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 71
+			},
+			"sips": [246],
+			"released": true
+		},
+		{
+			"name": "Saiph",
+			"version": {
+				"major": 2,
+				"minor": 72
+			},
+			"sips": [235, 238, 240],
+			"released": true
+		},
+		{
+			"name": "Saiph (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 72
+			},
+			"sips": [235, 238, 240],
+			"released": true
+		},
+		{
+			"name": "Denebola",
+			"version": {
+				"major": 2,
+				"minor": 73
+			},
+			"sips": [243],
+			"released": true
+		},
+		{
+			"name": "Algol",
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251],
+			"released": true
+		},
+		{
+			"name": "Algol (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 74
+			},
+			"sips": [251],
+			"released": true
+		},
+		{
+			"name": "Tiaki",
+			"version": {
+				"major": 2,
+				"minor": 75
+			},
+			"sips": [258],
+			"released": true
+		},
+		{
+			"name": "Muhlifain",
+			"version": {
+				"major": 2,
+				"minor": 76
+			},
+			"sips": [230, 257],
+			"released": true
+		},
+		{
+			"name": "Muhlifain (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 76
+			},
+			"sips": [230, 249, 257, 262, 269],
+			"released": true
+		},
+		{
+			"name": "Aspidiske",
+			"version": {
+				"major": 2,
+				"minor": 77
+			},
+			"sips": [252],
+			"released": true
+		},
+		{
+			"name": "Aspidiske (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 77
+			},
+			"sips": [252],
+			"released": true
+		},
+		{
+			"name": "Suhail",
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
+		},
+		{
+			"name": "Suhail (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 78
+			},
+			"sips": [267],
+			"released": true
+		},
+		{
+			"name": "Alphecca",
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299],
+			"released": true
+		},
+		{
+			"name": "Alphecca (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 79
+			},
+			"sips": [299],
+			"released": true
+		},
+		{
+			"name": "Mintaka",
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285],
+			"released": true
+		},
+		{
+			"name": "Mintaka (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 80
+			},
+			"sips": [279, 280, 281, 285, 297],
+			"released": true
+		},
+		{
+			"name": "Sadr",
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [293],
+			"released": true
+		},
+		{
+			"name": "Sadr (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 81
+			},
+			"sips": [293],
+			"released": true
+		},
+		{
+			"name": "Eltanin (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 82
+			},
+			"sips": [295, 2000],
+			"released": true
+		},
+		{
+			"name": "Schedar",
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": [255],
+			"released": true
+		},
+		{
+			"name": "Schedar (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 83
+			},
+			"sips": [255],
+			"released": true
+		},
+		{
+			"name": "Naos",
+			"version": {
+				"major": 2,
+				"minor": 84
+			},
+			"sips": [237],
+			"released": true
+		},
+		{
+			"name": "Naos (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 84
+			},
+			"sips": [237],
+			"released": true
+		},
+		{
+			"name": "Almach (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 85
+			},
+			"sips": [2010],
+			"released": true
+		},
+		{
+			"name": "Caph",
+			"version": {
+				"major": 2,
+				"minor": 86
+			},
+			"sips": [2004, 2005],
+			"released": true
+		},
+		{
+			"name": "Caph (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 86
+			},
+			"sips": [2004, 2005],
+			"released": true
+		},
+		{
+			"name": "Izar (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 87
+			},
+			"sips": [2011],
+			"released": true
+		},
+		{
+			"name": "Dschubba (Optimism)",
+			"ovm": true,
+			"version": {
+				"major": 2,
+				"minor": 88
+			},
+			"sips": [298],
+			"released": true
+		}
+	]
+}
