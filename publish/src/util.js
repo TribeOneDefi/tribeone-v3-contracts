@@ -192,7 +192,7 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl = `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+	const etherscanUrl = network == 'goerli-arbitrum' ? 'https://api-goerli.arbiscan.io/' : `https://api${network !== 'mainnet' ? `-${network}` : ''}${
 		useOvm ? '-optimistic' : ''
 	}.etherscan.io/api`;
 

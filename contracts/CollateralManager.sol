@@ -1,10 +1,12 @@
 pragma solidity ^0.5.16;
 
+
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./MixinResolver.sol";
 import "./interfaces/ICollateralManager.sol";
+
 
 // Libraries
 import "./AddressSetLib.sol";

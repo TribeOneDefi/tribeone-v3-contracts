@@ -27,6 +27,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 			}
 
 			if (!abi) {
+				continue;
 				if (useOvm) {
 					abi = require('@chainlink/contracts-0.0.10/abi/v0.5/AggregatorV2V3Interface.json')
 						.compilerOutput.abi;
@@ -43,6 +44,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 							apikey: process.env.ETHERSCAN_KEY,
 						},
 					});
+
 					abi = JSON.parse(result);
 				}
 			}
@@ -81,5 +83,6 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 		}
 	}
 
+	console.log(output);
 	return output;
 };

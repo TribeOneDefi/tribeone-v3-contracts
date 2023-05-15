@@ -59,7 +59,7 @@ program
 			const etherscanUrl =
 				network === 'mainnet'
 					? 'https://api.etherscan.io/api'
-					: `https://api-${network}.etherscan.io/api`;
+					: network === 'goerli-arbitrum' ? 'https://api-goerli.arbiscan.io/api' : `https://api-${network}.etherscan.io/api`;
 
 			let abi;
 			if (blockNumber) {

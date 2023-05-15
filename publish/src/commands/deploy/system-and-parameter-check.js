@@ -51,13 +51,14 @@ module.exports = async ({
 
 	try {
 		const oldTribeone = deployer.getExistingContract({ contract: 'Tribeone' });
+
 		currentTribeoneSupply = await oldTribeone.totalSupply();
 
-		if (config['SupplySchedule']) {
-			const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
-			currentWeekOfInflation = await oldSupplySchedule.weekCounter();
-			currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
-		}
+		// if (config['SupplySchedule']) {
+		// 	const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
+		// 	currentWeekOfInflation = await oldSupplySchedule.weekCounter();
+		// 	currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
+		// }
 
 		// inflationSupplyToDate = total supply - 100m
 		inflationSupplyToDate = parseUnits(currentTribeoneSupply.toString(), 'wei').sub(
@@ -77,7 +78,9 @@ module.exports = async ({
 	}
 
 	try {
-		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
+		// oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
+		oldExrates = 1.0;
+
 	} catch (err) {
 		if (freshDeploy) {
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
@@ -92,12 +95,15 @@ module.exports = async ({
 	}
 
 	try {
-		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
+		// const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
-		const systemSuspensionStatus = await oldSystemStatus.systemSuspension();
+		// const systemSuspensionStatus = await oldSystemStatus.systemSuspension();
 
-		systemSuspended = systemSuspensionStatus.suspended;
-		systemSuspendedReason = systemSuspensionStatus.reason;
+		// systemSuspended = systemSuspensionStatus.suspended;
+		// systemSuspendedReason = systemSuspensionStatus.reason;
+
+		systemSuspended = false;
+		systemSuspendedReason = "";
 	} catch (err) {
 		if (!freshDeploy) {
 			console.error(

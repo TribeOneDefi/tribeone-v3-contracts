@@ -188,6 +188,11 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
+	if (!providerUrl) {
+		// providerUrl = 'https://goerli.infura.io/v3/e7631065f3c044f69188f39628368bd7';
+		providerUrl = 'https://goerli-rollup.arbitrum.io/rpc';
+	}
+
 	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
@@ -247,6 +252,12 @@ const deploy = async ({
 		useOvm,
 		yes,
 	});
+
+	
+	console.log(currentTribeoneSupply);
+	console.log(currentLastMintEvent);
+	console.log(currentWeekOfInflation);
+	console.log(systemSuspended);
 
 	console.log(
 		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''}...`)
@@ -456,12 +467,13 @@ const deploy = async ({
 	// or directly (e.g. futures). Adding just one or the other may cause issues if e.g. initially futures
 	// market exists, but later a synth is added. Or if initially both exist, but later the spot synth
 	// is removed. The standalone feed should always be added and available.
-	await configureStandalonePriceFeeds({
-		deployer,
-		runStep,
-		feeds,
-		useOvm,
-	});
+	// disabled by jin
+	// await configureStandalonePriceFeeds({
+	// 	deployer,
+	// 	runStep,
+	// 	feeds,
+	// 	useOvm,
+	// });
 
 	if (includePerpsV2) {
 		await configureOffchainPriceFeeds({
@@ -472,58 +484,58 @@ const deploy = async ({
 		});
 	}
 
-	await configureSynths({
-		addressOf,
-		explorerLinkPrefix,
-		generateSolidity,
-		feeds,
-		deployer,
-		network,
-		runStep,
-		synths,
-	});
+	// await configureSynths({
+	// 	addressOf,
+	// 	explorerLinkPrefix,
+	// 	generateSolidity,
+	// 	feeds,
+	// 	deployer,
+	// 	network,
+	// 	runStep,
+	// 	synths,
+	// });
 
-	await addSynthsToProtocol({
-		addressOf,
-		deployer,
-		runStep,
-		synthsToAdd,
-	});
+	// await addSynthsToProtocol({
+	// 	addressOf,
+	// 	deployer,
+	// 	runStep,
+	// 	synthsToAdd,
+	// });
 
-	await configureSystemSettings({
-		addressOf,
-		deployer,
-		useOvm,
-		generateSolidity,
-		getDeployParameter,
-		network,
-		runStep,
-		synths,
-	});
+	// await configureSystemSettings({
+	// 	addressOf,
+	// 	deployer,
+	// 	useOvm,
+	// 	generateSolidity,
+	// 	getDeployParameter,
+	// 	network,
+	// 	runStep,
+	// 	synths,
+	// });
 
-	await configureLoans({
-		addressOf,
-		collateralManagerDefaults,
-		deployer,
-		getDeployParameter,
-		runStep,
-	});
+	// await configureLoans({
+	// 	addressOf,
+	// 	collateralManagerDefaults,
+	// 	deployer,
+	// 	getDeployParameter,
+	// 	runStep,
+	// });
 
-	if (includeFutures) {
-		await configureFutures({
-			addressOf,
-			deployer,
-			loadAndCheckRequiredSources,
-			runStep,
-			getDeployParameter,
-			useOvm,
-			freshDeploy,
-			deploymentPath,
-			network,
-			generateSolidity,
-			yes,
-		});
-	}
+	// if (includeFutures) {
+	// 	await configureFutures({
+	// 		addressOf,
+	// 		deployer,
+	// 		loadAndCheckRequiredSources,
+	// 		runStep,
+	// 		getDeployParameter,
+	// 		useOvm,
+	// 		freshDeploy,
+	// 		deploymentPath,
+	// 		network,
+	// 		generateSolidity,
+	// 		yes,
+	// 	});
+	// }
 
 	// Generic Perps V2 configuration
 	if (includePerpsV2) {

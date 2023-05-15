@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Collateral.sol";
 
+
 contract CollateralShort is Collateral {
     constructor(
         address _owner,

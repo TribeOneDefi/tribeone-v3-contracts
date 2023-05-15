@@ -7,6 +7,7 @@ const abiDecoder = require('abi-decoder');
 const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
+	'goerli-arbitrum': require('./publish/deployed/goerli-arbitrum'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
@@ -16,7 +17,7 @@ const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'mainnet', 'goerli'];
+const networks = ['local', 'mainnet', 'goerli', 'bsc_testnet', 'goerli-arbitrum'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -24,6 +25,9 @@ const chainIdMapping = Object.entries({
 	},
 	5: {
 		network: 'goerli',
+	},
+	97: {
+		network: 'bsc_testnet',
 	},
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
@@ -39,6 +43,9 @@ const chainIdMapping = Object.entries({
 	420: {
 		network: 'goerli',
 		useOvm: true,
+	},
+	421613: {
+		network: 'goerli-arbitrum',
 	},
 	'-1': {
 		// no chain ID for this currently
@@ -156,11 +163,13 @@ const defaults = {
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		goerli: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		'goerli-arbitrum': '0xdbf31df14b66535af65aac99c32e9ea844e14501',
 		// TODO: get actual goerli address
 	},
 	WETH_ERC20_ADDRESSES: {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
+		'goerli-arbitrum': '0xee01c0cd76354c383b8c7b4e65ea88d00b06f36f',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'goerli-ovm': '0x4200000000000000000000000000000000000006',
 		// TODO: get actual goerli-ovm address
@@ -724,6 +733,10 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 		goerli: Object.assign({}, base, {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
+		}),
+		'goerli-arbitrum': Object.assign({}, base, {
+			owner: '0xf1745380C35120cE202350eE6DC0cdaacf495D97',
+			deployer: '0xf1745380C35120cE202350eE6DC0cdaacf495D97',
 		}),
 		'goerli-ovm': Object.assign({}, base, {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',

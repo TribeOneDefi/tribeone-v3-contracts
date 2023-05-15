@@ -143,6 +143,7 @@ const replaceSynths = async ({
 		const { address: synthAddress, source: synthSource } = deployment.targets[
 			`Synth${currencyKey}`
 		];
+
 		const { address: proxyAddress, source: proxySource } = deployment.targets[
 			`Proxy${currencyKey}`
 		];

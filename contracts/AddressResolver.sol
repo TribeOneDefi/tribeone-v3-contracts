@@ -4,6 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
 
+
 // Internal references
 import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";

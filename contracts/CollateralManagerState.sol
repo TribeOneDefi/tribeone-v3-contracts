@@ -6,6 +6,7 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./State.sol";
 
+
 // Libraries
 import "./SafeDecimalMath.sol";
 

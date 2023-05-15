@@ -208,5 +208,14 @@
 	},
 	"DebtMigratorOnEthereum": {
 		"deploy": false
+	},
+	"TokenStatehUSD": {
+		"deploy": false
+	},
+	"ProxyhUSD": {
+		"deploy": false
+	},
+	"SynthhUSD": {
+		"deploy": false
 	}
 }

@@ -136,6 +136,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         view
         returns (uint[] memory values)
     {
+
         uint numValues = currencyKeys.length;
         values = new uint[](numValues);
         ISynth[] memory synths = issuer().getSynths(currencyKeys);

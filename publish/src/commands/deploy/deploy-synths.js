@@ -58,8 +58,8 @@ module.exports = async ({
 		let originalTotalSupply = 0;
 		if (synthConfig.deploy) {
 			try {
-				const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
-				originalTotalSupply = await oldSynth.totalSupply();
+				// const oldSynth = deployer.getExistingContract({ contract: `Synth${currencyKey}` });
+				// originalTotalSupply = await oldSynth.totalSupply();
 			} catch (err) {
 				if (!freshDeploy) {
 					// only throw if not local - allows local environments to handle both new

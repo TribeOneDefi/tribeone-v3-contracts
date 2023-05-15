@@ -1,6 +1,7 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
+
 // Inheritance
 import "./interfaces/IERC20.sol";
 import "./ExternStateToken.sol";
@@ -314,19 +315,19 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     }
 
     // SIP-252: migration of HAKA token balance from old to new escrow rewards contract
-    function migrateEscrowContractBalance() external onlyOwner {
-        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
-        // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
-        // using the cached value and read the most updated one directly from the resolver
-        address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
-        require(to != from, "cannot migrate to same address");
+    // function migrateEscrowContractBalance() external onlyOwner {
+    //     address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
+    //     // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
+    //     // using the cached value and read the most updated one directly from the resolver
+    //     address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
+    //     require(to != from, "cannot migrate to same address");
 
-        uint currentBalance = tokenState.balanceOf(from);
-        // allow no-op for idempotent migration steps in case action was performed already
-        if (currentBalance > 0) {
-            _internalTransfer(from, to, currentBalance);
-        }
-    }
+    //     uint currentBalance = tokenState.balanceOf(from);
+    //     // allow no-op for idempotent migration steps in case action was performed already
+    //     if (currentBalance > 0) {
+    //         _internalTransfer(from, to, currentBalance);
+    //     }
+    // }
 
     function issueSynths(uint amount) external issuanceActive optionalProxy {
         return issuer().issueSynths(messageSender, amount);
@@ -452,11 +453,11 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     /**
      * @notice allows for migration from v2x to v3 when an account has pending escrow entries
      */
-    function revokeAllEscrow(address account) external systemActive {
-        address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
-        require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
-        rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
-    }
+    // function revokeAllEscrow(address account) external systemActive {
+    //     address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
+    //     require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
+    //     rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
+    // }
 
     function migrateAccountBalances(address account)
         external

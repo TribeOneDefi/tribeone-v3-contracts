@@ -1,5 +1,6 @@
 pragma solidity ^0.5.16;
 
+
 interface ITribeoneEscrow {
     function numVestingEntries(address account) external view returns (uint);
 
