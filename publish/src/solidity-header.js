@@ -31,16 +31,10 @@ module.exports = {
 			)
 		);
 
-		return `/*
-   ____            __   __        __   _
-  / __/__ __ ___  / /_ / /  ___  / /_ (_)__ __
- _\\ \\ / // // _ \\/ __// _ \\/ -_)/ __// / \\ \\ /
-/___/ \\_, //_//_/\\__//_//_/\\__/ \\__//_/ /_\\_\\
-     /___/
-
+		return `/
 * Tribeone: ${contract}
 *
-* Latest source (may be newer): https://github.com/Tribeoneio/tribeone/blob/master/contracts/${contract}
+* Latest source (may be newer): https://github.com/TribeOneDefi/tribeone-v3-contracts/blob/master/contracts/${contract}
 * Docs: https://docs.tribeone.io/contracts/${contract.split(/\./)[0]}
 *
 * Contract Dependencies: ${deps.length ? '\n*\t- ' + deps.join('\n*\t- ') : '(none)'}
