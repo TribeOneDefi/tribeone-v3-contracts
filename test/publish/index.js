@@ -19,19 +19,19 @@ const commands = {
 	deploy: deployCmd.deploy,
 	deployStakingRewards: deployStakingRewardsCmd.deployStakingRewards,
 	deployShortingRewards: deployShortingRewardsCmd.deployShortingRewards,
-	replaceSynths: require('../../publish/src/commands/replace-synths').replaceSynths,
-	purgeSynths: require('../../publish/src/commands/purge-synths').purgeSynths,
-	removeSynths: require('../../publish/src/commands/remove-synths').removeSynths,
+	replaceTribes: require('../../publish/src/commands/replace-tribes').replaceTribes,
+	purgeTribes: require('../../publish/src/commands/purge-tribes').purgeTribes,
+	removeTribes: require('../../publish/src/commands/remove-tribes').removeTribes,
 };
 
-const haka = require('../..');
+const snx = require('../..');
 const {
 	toBytes32,
 	constants: {
 		STAKING_REWARDS_FILENAME,
 		CONFIG_FILENAME,
 		DEPLOYMENT_FILENAME,
-		SYNTHS_FILENAME,
+		TRIBEONES_FILENAME,
 		FEEDS_FILENAME,
 	},
 	defaults: {
@@ -51,7 +51,7 @@ const {
 		ATOMIC_TWAP_WINDOW,
 	},
 	wrap,
-} = haka;
+} = snx;
 
 const concurrency = isCI ? 1 : 10;
 const limitPromise = pLimit(concurrency);
@@ -62,7 +62,7 @@ describe('publish scripts', () => {
 	const {
 		getSource,
 		getTarget,
-		getSynths,
+		getTribes,
 		getPathToNetwork,
 		getStakingRewards,
 		getShortingRewards,
@@ -77,8 +77,8 @@ describe('publish scripts', () => {
 	// track these files to revert them later on
 	const rewardsJSONPath = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
 	const rewardsJSON = fs.readFileSync(rewardsJSONPath);
-	const synthsJSONPath = path.join(deploymentPath, SYNTHS_FILENAME);
-	const synthsJSON = fs.readFileSync(synthsJSONPath);
+	const tribesJSONPath = path.join(deploymentPath, TRIBEONES_FILENAME);
+	const tribesJSON = fs.readFileSync(tribesJSONPath);
 	const configJSONPath = path.join(deploymentPath, CONFIG_FILENAME);
 	const configJSON = fs.readFileSync(configJSONPath);
 	const deploymentJSONPath = path.join(deploymentPath, DEPLOYMENT_FILENAME);
@@ -90,15 +90,15 @@ describe('publish scripts', () => {
 	let gasPrice;
 	let accounts;
 	let hUSD;
-	let sBTC;
-	let sETH;
+	let hBTC;
+	let hETH;
 	let provider;
 	let overrides;
 	let MockAggregatorFactory;
 
-	const resetConfigAndSynthFiles = () => {
-		// restore the synths and config files for this env (cause removal updated it)
-		fs.writeFileSync(synthsJSONPath, synthsJSON);
+	const resetConfigAndTribeFiles = () => {
+		// restore the tribes and config files for this env (cause removal updated it)
+		fs.writeFileSync(tribesJSONPath, tribesJSON);
 		fs.writeFileSync(rewardsJSONPath, rewardsJSON);
 		fs.writeFileSync(configJSONPath, configJSON);
 		fs.writeFileSync(feedsJSONPath, feedsJSON);
@@ -154,7 +154,7 @@ describe('publish scripts', () => {
 
 		MockAggregatorFactory = await createMockAggregatorFactory(accounts.deployer);
 
-		[hUSD, sBTC, sETH] = ['hUSD', 'sBTC', 'sETH'].map(toBytes32);
+		[hUSD, hBTC, hETH] = ['hUSD', 'hBTC', 'hETH'].map(toBytes32);
 
 		gasLimit = 8000000;
 		gasPrice = ethers.utils.parseUnits('5', 'gwei');
@@ -165,19 +165,19 @@ describe('publish scripts', () => {
 		};
 	});
 
-	afterEach(resetConfigAndSynthFiles);
+	afterEach(resetConfigAndTribeFiles);
 
 	describe('integrated actions test', () => {
 		describe('when deployed', () => {
 			let rewards;
 			let sources;
 			let targets;
-			let synths;
+			let tribes;
 			let Tribeone;
 			let timestamp;
-			let sUSDContract;
-			let sBTCContract;
-			let sETHContract;
+			let hUSDContract;
+			let hBTCContract;
+			let hETHContract;
 			let FeePool;
 			let DebtCache;
 			let Exchanger;
@@ -245,7 +245,7 @@ describe('publish scripts', () => {
 
 				sources = getSource();
 				targets = getTarget();
-				synths = getSynths().filter(({ name }) => name !== 'hUSD');
+				tribes = getTribes().filter(({ name }) => name !== 'hUSD');
 
 				Tribeone = getContract({ target: 'ProxyTribeone', source: 'Tribeone' });
 				FeePool = getContract({ target: 'ProxyFeePool', source: 'FeePool' });
@@ -254,10 +254,10 @@ describe('publish scripts', () => {
 
 				Issuer = getContract({ target: 'Issuer' });
 
-				sUSDContract = getContract({ target: 'ProxysUSD', source: 'Synth' });
+				hUSDContract = getContract({ target: 'ProxyhUSD', source: 'Tribe' });
 
-				sBTCContract = getContract({ target: 'ProxysBTC', source: 'Synth' });
-				sETHContract = getContract({ target: 'ProxysETH', source: 'Synth' });
+				hBTCContract = getContract({ target: 'ProxyhBTC', source: 'Tribe' });
+				hETHContract = getContract({ target: 'ProxyhETH', source: 'Tribe' });
 				SystemSettings = getContract({ target: 'SystemSettings' });
 
 				Liquidator = getContract({ target: 'Liquidator' });
@@ -287,7 +287,7 @@ describe('publish scripts', () => {
 					assert.strictEqual((await Liquidator.liquidationDelay()).toString(), LIQUIDATION_DELAY);
 					assert.strictEqual((await Liquidator.liquidationRatio()).toString(), LIQUIDATION_RATIO);
 					assert.strictEqual(
-						(await SystemSettings.hakaLiquidationPenalty()).toString(),
+						(await SystemSettings.snxLiquidationPenalty()).toString(),
 						HAKA_LIQUIDATION_PENALTY
 					);
 					assert.strictEqual((await ExchangeRates.rateStalePeriod()).toString(), RATE_STALE_PERIOD);
@@ -312,10 +312,10 @@ describe('publish scripts', () => {
 					let newLiquidationsDelay;
 					let newLiquidationsRatio;
 					let newLiquidationsPenalty;
-					let newHakaLiquidationsPenalty;
+					let newSnxLiquidationsPenalty;
 					let newRateStalePeriod;
 					let newAtomicTwapWindow;
-					let newRateForsUSD;
+					let newRateForhUSD;
 					let newMinimumStakeTime;
 					let newDebtSnapshotStaleTime;
 
@@ -329,10 +329,10 @@ describe('publish scripts', () => {
 						newLiquidationsDelay = newFeePeriodDuration;
 						newLiquidationsRatio = ethers.utils.parseEther('0.6').toString(); // must be above newIssuanceRatio * 2
 						newLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
-						newHakaLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
+						newSnxLiquidationsPenalty = ethers.utils.parseEther('0.25').toString();
 						newRateStalePeriod = '3400';
 						newAtomicTwapWindow = '1800';
-						newRateForsUSD = ethers.utils.parseEther('0.1').toString();
+						newRateForhUSD = ethers.utils.parseEther('0.1').toString();
 						newMinimumStakeTime = '3999';
 						newDebtSnapshotStaleTime = '43200'; // Half a day
 
@@ -368,8 +368,8 @@ describe('publish scripts', () => {
 						tx = await SystemSettings.setLiquidationRatio(newLiquidationsRatio, overrides);
 						await tx.wait();
 
-						tx = await SystemSettings.setHakaLiquidationPenalty(
-							newHakaLiquidationsPenalty,
+						tx = await SystemSettings.setSnxLiquidationPenalty(
+							newSnxLiquidationsPenalty,
 							overrides
 						);
 						await tx.wait();
@@ -389,9 +389,9 @@ describe('publish scripts', () => {
 						tx = await SystemSettings.setMinimumStakeTime(newMinimumStakeTime, overrides);
 						await tx.wait();
 
-						tx = await SystemSettings.setExchangeFeeRateForSynths(
+						tx = await SystemSettings.setExchangeFeeRateForTribes(
 							[toBytes32('hUSD')],
-							[newRateForsUSD],
+							[newRateForhUSD],
 							overrides
 						);
 						await tx.wait();
@@ -448,8 +448,8 @@ describe('publish scripts', () => {
 								newLiquidationsRatio
 							);
 							assert.strictEqual(
-								(await SystemSettings.hakaLiquidationPenalty()).toString(),
-								newHakaLiquidationsPenalty
+								(await SystemSettings.snxLiquidationPenalty()).toString(),
+								newSnxLiquidationsPenalty
 							);
 							assert.strictEqual(
 								(await ExchangeRates.rateStalePeriod()).toString(),
@@ -464,30 +464,30 @@ describe('publish scripts', () => {
 								(
 									await Exchanger.feeRateForExchange(toBytes32('(ignored)'), toBytes32('hUSD'))
 								).toString(),
-								newRateForsUSD
+								newRateForhUSD
 							);
 						});
 					});
 				});
 			});
 
-			describe('synths added to Issuer', () => {
+			describe('tribes added to Issuer', () => {
 				const hexToString = hex => ethers.utils.toUtf8String(hex).replace(/\0/g, '');
 
-				it('then all synths are added to the issuer', async () => {
+				it('then all tribes are added to the issuer', async () => {
 					const keys = await Issuer.availableCurrencyKeys();
 					assert.deepStrictEqual(
 						keys.map(hexToString),
-						JSON.parse(synthsJSON).map(({ name }) => name)
+						JSON.parse(tribesJSON).map(({ name }) => name)
 					);
 				});
-				describe('when only hUSD and sETH is chosen as a synth', () => {
+				describe('when only hUSD and hETH is chosen as a tribe', () => {
 					beforeEach(async () => {
 						fs.writeFileSync(
-							synthsJSONPath,
+							tribesJSONPath,
 							JSON.stringify([
 								{ name: 'hUSD', asset: 'USD' },
-								{ name: 'sETH', asset: 'ETH' },
+								{ name: 'hETH', asset: 'ETH' },
 							])
 						);
 					});
@@ -503,7 +503,7 @@ describe('publish scripts', () => {
 
 							await commands.deploy({
 								concurrency,
-								addNewSynths: true,
+								addNewTribes: true,
 								network,
 								yes: true,
 								includeFutures: false,
@@ -515,7 +515,7 @@ describe('publish scripts', () => {
 						});
 						it('then only hUSD is added to the issuer', async () => {
 							const keys = await Issuer.availableCurrencyKeys();
-							assert.deepStrictEqual(keys.map(hexToString), ['hUSD', 'sETH']);
+							assert.deepStrictEqual(keys.map(hexToString), ['hUSD', 'hETH']);
 						});
 					});
 				});
@@ -523,9 +523,9 @@ describe('publish scripts', () => {
 			describe('deploy-staking-rewards', () => {
 				beforeEach(async () => {
 					const rewardsToDeploy = [
-						'sETHUniswapV1',
+						'hETHUniswapV1',
 						'sXAUUniswapV2',
-						'sUSDCurve',
+						'hUSDCurve',
 						'iETH',
 						'iETH2',
 						'iETH3',
@@ -581,7 +581,7 @@ describe('publish scripts', () => {
 
 			describe('deploy-shorting-rewards', () => {
 				beforeEach(async () => {
-					const rewardsToDeploy = ['sBTC', 'sETH'];
+					const rewardsToDeploy = ['hBTC', 'hETH'];
 
 					await commands.deployShortingRewards({
 						network,
@@ -714,7 +714,7 @@ describe('publish scripts', () => {
 				});
 			});
 
-			describe('when ExchangeRates has prices HAKA $0.30 and all synths $1', () => {
+			describe('when ExchangeRates has prices HAKA $0.30 and all tribes $1', () => {
 				beforeEach(async () => {
 					// set default issuance of 0.2
 					const tx = await SystemSettings.setIssuanceRatio(
@@ -726,7 +726,7 @@ describe('publish scripts', () => {
 					// make sure exchange rates has prices for specific assets
 
 					const answersToSet = [{ asset: 'HAKA', rate: 0.3 }].concat(
-						synths.map(({ asset }) => {
+						tribes.map(({ asset }) => {
 							// as the same assets are used for long and shorts, search by asset rather than
 							// name (currencyKey) here so that we don't accidentially override an inverse with
 							// another rate
@@ -784,12 +784,12 @@ describe('publish scripts', () => {
 						beforeEach(async () => {
 							Tribeone = Tribeone.connect(accounts.first);
 
-							const tx = await Tribeone.issueMaxSynths(overrides);
+							const tx = await Tribeone.issueMaxTribes(overrides);
 							await tx.wait();
 						});
 						it('then the hUSD balanced must be 100k * 0.3 * 0.2 (default SystemSettings.issuanceRatio) = 6000', async () => {
 							const balance = await callMethodWithRetry(
-								sUSDContract.balanceOf(accounts.first.address)
+								hUSDContract.balanceOf(accounts.first.address)
 							);
 							assert.strictEqual(
 								ethers.utils.formatEther(balance.toString()),
@@ -797,17 +797,17 @@ describe('publish scripts', () => {
 								'Balance should match'
 							);
 						});
-						describe('when user1 exchange 1000 hUSD for sETH (the MultiCollateralSynth)', () => {
-							let sETHBalanceAfterExchange;
+						describe('when user1 exchange 1000 hUSD for hETH (the MultiCollateralTribe)', () => {
+							let hETHBalanceAfterExchange;
 							beforeEach(async () => {
-								await Tribeone.exchange(hUSD, ethers.utils.parseEther('1000'), sETH, overrides);
-								sETHBalanceAfterExchange = await callMethodWithRetry(
-									sETHContract.balanceOf(accounts.first.address)
+								await Tribeone.exchange(hUSD, ethers.utils.parseEther('1000'), hETH, overrides);
+								hETHBalanceAfterExchange = await callMethodWithRetry(
+									hETHContract.balanceOf(accounts.first.address)
 								);
 							});
 							it('then their hUSD balance is 5000', async () => {
 								const balance = await callMethodWithRetry(
-									sUSDContract.balanceOf(accounts.first.address)
+									hUSDContract.balanceOf(accounts.first.address)
 								);
 								assert.strictEqual(
 									ethers.utils.formatEther(balance.toString()),
@@ -815,29 +815,29 @@ describe('publish scripts', () => {
 									'Balance should match'
 								);
 							});
-							it('and their sETH balance is 1000 - the fee', async () => {
+							it('and their hETH balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
-									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), hUSD, sETH)
+									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), hUSD, hETH)
 								);
 								assert.strictEqual(
-									ethers.utils.formatEther(sETHBalanceAfterExchange.toString()),
+									ethers.utils.formatEther(hETHBalanceAfterExchange.toString()),
 									ethers.utils.formatEther(amountReceived.toString()),
 									'Balance should match'
 								);
 							});
 
-							describe('synth suspension', () => {
+							describe('tribe suspension', () => {
 								let CircuitBreaker;
-								describe('when one synth has a price well outside of range, triggering price deviation', () => {
+								describe('when one tribe has a price well outside of range, triggering price deviation', () => {
 									beforeEach(async () => {
 										CircuitBreaker = getContract({ target: 'CircuitBreaker' });
 										await setAggregatorAnswer({ asset: 'ETH', rate: 20 });
 									});
-									it('when exchange occurs into that synth, the synth is suspended', async () => {
+									it('when exchange occurs into that tribe, the tribe is suspended', async () => {
 										const tx = await Tribeone.exchange(
 											hUSD,
 											ethers.utils.parseEther('1'),
-											sETH,
+											hETH,
 											overrides
 										);
 										await tx.wait();
@@ -850,23 +850,23 @@ describe('publish scripts', () => {
 								});
 							});
 						});
-						describe('when user1 exchange 1000 hUSD for sBTC', () => {
-							let sBTCBalanceAfterExchange;
+						describe('when user1 exchange 1000 hUSD for hBTC', () => {
+							let hBTCBalanceAfterExchange;
 							beforeEach(async () => {
 								const tx = await Tribeone.exchange(
 									hUSD,
 									ethers.utils.parseEther('1000'),
-									sBTC,
+									hBTC,
 									overrides
 								);
 								await tx.wait();
-								sBTCBalanceAfterExchange = await callMethodWithRetry(
-									sBTCContract.balanceOf(accounts.first.address)
+								hBTCBalanceAfterExchange = await callMethodWithRetry(
+									hBTCContract.balanceOf(accounts.first.address)
 								);
 							});
 							it('then their hUSD balance is 5000', async () => {
 								const balance = await callMethodWithRetry(
-									sUSDContract.balanceOf(accounts.first.address)
+									hUSDContract.balanceOf(accounts.first.address)
 								);
 								assert.strictEqual(
 									ethers.utils.formatEther(balance.toString()),
@@ -874,12 +874,12 @@ describe('publish scripts', () => {
 									'Balance should match'
 								);
 							});
-							it('and their sBTC balance is 1000 - the fee', async () => {
+							it('and their hBTC balance is 1000 - the fee', async () => {
 								const { amountReceived } = await callMethodWithRetry(
-									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), hUSD, sBTC)
+									Exchanger.getAmountsForExchange(ethers.utils.parseEther('1000'), hUSD, hBTC)
 								);
 								assert.strictEqual(
-									ethers.utils.formatEther(sBTCBalanceAfterExchange.toString()),
+									ethers.utils.formatEther(hBTCBalanceAfterExchange.toString()),
 									ethers.utils.formatEther(amountReceived.toString()),
 									'Balance should match'
 								);
@@ -893,12 +893,12 @@ describe('publish scripts', () => {
 									await tx.wait();
 
 									// burn
-									tx = await Tribeone.burnSynths(ethers.utils.parseEther('10'), overrides);
+									tx = await Tribeone.burnTribes(ethers.utils.parseEther('10'), overrides);
 									await tx.wait();
 								});
 								it('then their hUSD balance is 4990', async () => {
 									const balance = await callMethodWithRetry(
-										sUSDContract.balanceOf(accounts.first.address)
+										hUSDContract.balanceOf(accounts.first.address)
 									);
 									assert.strictEqual(
 										ethers.utils.formatEther(balance.toString()),
@@ -907,14 +907,14 @@ describe('publish scripts', () => {
 									);
 								});
 
-								describe('when deployer replaces sBTC with PurgeableSynth', () => {
+								describe('when deployer replaces hBTC with PurgeableTribe', () => {
 									beforeEach(async () => {
-										await commands.replaceSynths({
+										await commands.replaceTribes({
 											network,
 											yes: true,
 											privateKey: accounts.deployer.privateKey,
-											subclass: 'PurgeableSynth',
-											synthsToReplace: ['sBTC'],
+											subclass: 'PurgeableTribe',
+											tribesToReplace: ['hBTC'],
 											methodCallGasLimit: gasLimit,
 										});
 									});
@@ -922,21 +922,21 @@ describe('publish scripts', () => {
 										beforeEach(async () => {
 											await fastForward({ seconds: 500, provider }); // fast forward through waiting period
 
-											await commands.purgeSynths({
+											await commands.purgeTribes({
 												network,
 												yes: true,
 												privateKey: accounts.deployer.privateKey,
 												addresses: [accounts.first.address],
-												synthsToPurge: ['sBTC'],
+												tribesToPurge: ['hBTC'],
 												gasLimit,
 											});
 										});
-										it('then their hUSD balance is 4990 + sBTCBalanceAfterExchange', async () => {
+										it('then their hUSD balance is 4990 + hBTCBalanceAfterExchange', async () => {
 											const balance = await callMethodWithRetry(
-												sUSDContract.balanceOf(accounts.first.address)
+												hUSDContract.balanceOf(accounts.first.address)
 											);
 											const [amountReceived] = await callMethodWithRetry(
-												Exchanger.getAmountsForExchange(sBTCBalanceAfterExchange, sBTC, hUSD)
+												Exchanger.getAmountsForExchange(hBTCBalanceAfterExchange, hBTC, hUSD)
 											);
 											assert.strictEqual(
 												ethers.utils.formatEther(balance.toString()),
@@ -944,9 +944,9 @@ describe('publish scripts', () => {
 												'Balance should match'
 											);
 										});
-										it('and their sBTC balance is 0', async () => {
+										it('and their hBTC balance is 0', async () => {
 											const balance = await callMethodWithRetry(
-												sBTCContract.balanceOf(accounts.first.address)
+												hBTCContract.balanceOf(accounts.first.address)
 											);
 											assert.strictEqual(
 												ethers.utils.formatEther(balance.toString()),
@@ -967,13 +967,13 @@ describe('publish scripts', () => {
 				beforeEach(async () => {
 					mockAggregator = await createMockAggregator();
 				});
-				describe('when Tribeone.anySynthOrHAKARateIsInvalid() is invoked', () => {
+				describe('when Tribeone.anyTribeOrHAKARateIsInvalid() is invoked', () => {
 					it('then it returns true as expected', async () => {
-						const response = await Tribeone.anySynthOrHAKARateIsInvalid();
-						assert.strictEqual(response, true, 'anySynthOrHAKARateIsInvalid must be true');
+						const response = await Tribeone.anyTribeOrHAKARateIsInvalid();
+						assert.strictEqual(response, true, 'anyTribeOrHAKARateIsInvalid must be true');
 					});
 				});
-				describe('when one synth is configured to have a pricing aggregator', () => {
+				describe('when one tribe is configured to have a pricing aggregator', () => {
 					beforeEach(async () => {
 						const currentFeeds = JSON.parse(fs.readFileSync(feedsJSONPath));
 
@@ -1005,28 +1005,28 @@ describe('publish scripts', () => {
 
 							ExchangeRates = getContract({ target: 'ExchangeRates' });
 						});
-						it('then the aggregator must be set for the sBTC price', async () => {
+						it('then the aggregator must be set for the hBTC price', async () => {
 							const aggregator = await callMethodWithRetry(
-								ExchangeRates.aggregators(toBytes32('sBTC'))
+								ExchangeRates.aggregators(toBytes32('hBTC'))
 							);
 							assert.strictEqual(aggregator, mockAggregator.address);
 						});
 
-						describe('when ExchangeRates has rates for all synths except the aggregated synth sBTC', () => {
+						describe('when ExchangeRates has rates for all tribes except the aggregated tribe hBTC', () => {
 							beforeEach(async () => {
 								// update rates
-								const synthsToUpdate = synths
-									.filter(({ name }) => name !== 'sBTC')
+								const tribesToUpdate = tribes
+									.filter(({ name }) => name !== 'hBTC')
 									.concat({ asset: 'HAKA', rate: 1 });
 
-								for (const { asset } of synthsToUpdate) {
+								for (const { asset } of tribesToUpdate) {
 									await setAggregatorAnswer({ asset, rate: 1 });
 								}
 							});
-							describe('when Tribeone.anySynthOrHAKARateIsInvalid() is invoked', () => {
-								it('then it returns true as sBTC still is', async () => {
-									const response = await Tribeone.anySynthOrHAKARateIsInvalid();
-									assert.strictEqual(response, true, 'anySynthOrHAKARateIsInvalid must be true');
+							describe('when Tribeone.anyTribeOrHAKARateIsInvalid() is invoked', () => {
+								it('then it returns true as hBTC still is', async () => {
+									const response = await Tribeone.anyTribeOrHAKARateIsInvalid();
+									assert.strictEqual(response, true, 'anyTribeOrHAKARateIsInvalid must be true');
 								});
 							});
 
@@ -1045,16 +1045,16 @@ describe('publish scripts', () => {
 								describe('then the price from exchange rates for that currency key uses the aggregator', () => {
 									it('correctly returns the rate', async () => {
 										const response = await callMethodWithRetry(
-											ExchangeRates.rateForCurrency(toBytes32('sBTC'))
+											ExchangeRates.rateForCurrency(toBytes32('hBTC'))
 										);
 										assert.strictEqual(ethers.utils.formatEther(response.toString()), rate);
 									});
 								});
 
-								describe('when Tribeone.anySynthOrHAKARateIsInvalid() is invoked', () => {
+								describe('when Tribeone.anyTribeOrHAKARateIsInvalid() is invoked', () => {
 									it('then it returns false as expected', async () => {
-										const response = await Tribeone.anySynthOrHAKARateIsInvalid();
-										assert.strictEqual(response, false, 'anySynthOrHAKARateIsInvalid must be false');
+										const response = await Tribeone.anyTribeOrHAKARateIsInvalid();
+										assert.strictEqual(response, false, 'anyTribeOrHAKARateIsInvalid must be false');
 									});
 								});
 							});
@@ -1117,12 +1117,12 @@ describe('publish scripts', () => {
 									'Tribeone',
 									'TribeoneDebtShare',
 									'TribeoneEscrow',
-									'SynthsETH',
-									'SynthsUSD',
+									'TribehETH',
+									'TribehUSD',
 									'SystemStatus',
 								].map(contractName =>
 									callMethodWithRetry(
-										AddressResolver.getAddress(haka.toBytes32(contractName))
+										AddressResolver.getAddress(snx.toBytes32(contractName))
 									).then(found => ({ contractName, ok: found === targets[contractName].address }))
 								)
 							);
@@ -1149,7 +1149,7 @@ describe('publish scripts', () => {
 							AddressResolver = getContract({ target: 'AddressResolver' });
 
 							const existingExchanger = await callMethodWithRetry(
-								AddressResolver.getAddress(haka.toBytes32('Exchanger'))
+								AddressResolver.getAddress(snx.toBytes32('Exchanger'))
 							);
 
 							assert.strictEqual(existingExchanger, targets['Exchanger'].address);
@@ -1167,7 +1167,7 @@ describe('publish scripts', () => {
 							const targets = getTarget();
 
 							const actualExchanger = await callMethodWithRetry(
-								AddressResolver.getAddress(haka.toBytes32('Exchanger'))
+								AddressResolver.getAddress(snx.toBytes32('Exchanger'))
 							);
 
 							assert.strictEqual(actualExchanger, targets['Exchanger'].address);
@@ -1189,8 +1189,8 @@ describe('publish scripts', () => {
 									.filter(([contract]) => !/^ext:/.test(contract))
 									// remove debt oracles
 									.filter(([contract]) => !/^OneNet/.test(contract))
-									// Note: the VirtualSynth mastercopy is null-initialized and shouldn't be checked
-									.filter(([contract]) => !/^VirtualSynthMastercopy/.test(contract))
+									// Note: the VirtualTribe mastercopy is null-initialized and shouldn't be checked
+									.filter(([contract]) => !/^VirtualTribeMastercopy/.test(contract))
 									.filter(([, { source }]) =>
 										sources[source].abi.find(({ name }) => name === 'resolver')
 									)

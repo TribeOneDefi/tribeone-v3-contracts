@@ -42,8 +42,8 @@ contract('RewardEscrow', async accounts => {
 
 	describe('Constructor & Settings ', async () => {
 		it('should set tribeone on contructor', async () => {
-			const tribeoneAddress = await rewardEscrow.tribeone();
-			assert.equal(tribeoneAddress, tribeone.address);
+			const tribeetixAddress = await rewardEscrow.tribeone();
+			assert.equal(tribeetixAddress, tribeone.address);
 		});
 
 		it('should set feePool on contructor', async () => {
@@ -58,8 +58,8 @@ contract('RewardEscrow', async accounts => {
 
 		it('should allow owner to set tribeone', async () => {
 			await rewardEscrow.setTribeone(ZERO_ADDRESS, { from: owner });
-			const tribeoneAddress = await rewardEscrow.tribeone();
-			assert.equal(tribeoneAddress, ZERO_ADDRESS);
+			const tribeetixAddress = await rewardEscrow.tribeone();
+			assert.equal(tribeetixAddress, ZERO_ADDRESS);
 		});
 
 		it('should allow owner to set feePool', async () => {
@@ -230,7 +230,7 @@ contract('RewardEscrow', async accounts => {
 				await fastForward(YEAR + WEEK * 3);
 			});
 
-			it('should vest and transfer haka from contract to the user', async () => {
+			it('should vest and transfer snx from contract to the user', async () => {
 				await rewardEscrow.vest({ from: account1 });
 
 				// Check user has all their vested HAKA

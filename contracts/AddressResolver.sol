@@ -4,7 +4,6 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
 
-
 // Internal references
 import "./interfaces/IIssuer.sol";
 import "./MixinResolver.sol";
@@ -57,10 +56,10 @@ contract AddressResolver is Owned, IAddressResolver {
         return _foundAddress;
     }
 
-    function getSynth(bytes32 key) external view returns (address) {
+    function getTribe(bytes32 key) external view returns (address) {
         IIssuer issuer = IIssuer(repository["Issuer"]);
         require(address(issuer) != address(0), "Cannot find Issuer address");
-        return address(issuer.synths(key));
+        return address(issuer.tribes(key));
     }
 
     /* ========== EVENTS ========== */

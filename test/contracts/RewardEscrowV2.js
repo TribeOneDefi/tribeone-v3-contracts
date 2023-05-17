@@ -37,7 +37,7 @@ contract('RewardEscrowV2', async accounts => {
 		);
 		await rewardEscrowV2.rebuildCache();
 		await tribeone.rebuildCache();
-		// mint some haka into the contract (the holder of the HAKA)
+		// mint some snx into the contract (the holder of the HAKA)
 		await tribeone.mintSecondary(rewardEscrowV2.address, toUnit(100), {
 			from: owner,
 		});

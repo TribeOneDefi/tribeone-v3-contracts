@@ -70,7 +70,7 @@
 					"FeePool",
 					"Issuer",
 					"DebtCache",
-					"Synth(s|i).+",
+					"Tribe(s|i).+",
 					"SignedSafeDecimalMath",
 					"SystemStatus",
 					"FuturesMarketManager"
@@ -82,7 +82,7 @@
 					"FeePool",
 					"Issuer",
 					"DebtCache",
-					"Synth(s|i).+",
+					"Tribe(s|i).+",
 					"SignedSafeDecimalMath",
 					"SystemStatus",
 					"FuturesMarket.+",
@@ -103,7 +103,7 @@
 			"sip": 85,
 			"layer": "base",
 			"released": "base",
-			"sources": ["EtherCollateralsUSD", "FeePool", "Issuer", "SynthsUSD"]
+			"sources": ["EtherCollateralhUSD", "FeePool", "Issuer", "TribehUSD"]
 		},
 		{
 			"sip": 86,
@@ -155,9 +155,9 @@
 				"DebtCache",
 				"FeePool",
 				"Issuer",
-				"SynthsBTC",
-				"SynthsETH",
-				"SynthsUSD"
+				"TribehBTC",
+				"TribehETH",
+				"TribehUSD"
 			]
 		},
 		{
@@ -184,7 +184,7 @@
 				"SystemSettings",
 				"Tribeone",
 				"TradingRewards",
-				"Synth(s|i).+"
+				"Tribe(s|i).+"
 			]
 		},
 		{
@@ -200,7 +200,7 @@
 					"DebtCache",
 					"EscrowChecker",
 					"EtherCollateral",
-					"EtherCollateralsUSD",
+					"EtherCollateralhUSD",
 					"Exchanger",
 					"ExchangeRates",
 					"ExchangeState",
@@ -210,9 +210,9 @@
 					"Issuer",
 					"Math",
 					"ProxyERC20",
-					"ProxyERC20sUSD",
+					"ProxyERC20hUSD",
 					"ProxyFeePool",
-					"ProxysUSD",
+					"ProxyhUSD",
 					"ProxyTribeone",
 					"ReadProxyAddressResolver",
 					"RewardEscrow",
@@ -223,11 +223,11 @@
 					"TribeoneBridgeToBase",
 					"TribeoneEscrow",
 					"TribeoneState",
-					"SynthsUSD",
-					"SynthUtil",
+					"TribehUSD",
+					"TribeUtil",
 					"SystemSettings",
 					"SystemStatus",
-					"TokenStatesUSD",
+					"TokenStatehUSD",
 					"TokenStateTribeone",
 					"TradingRewards"
 				]
@@ -237,7 +237,7 @@
 			"sip": 103,
 			"layer": "base",
 			"released": "base",
-			"sources": ["CollateralStateShort", "CollateralShort", "SynthsUSD"]
+			"sources": ["CollateralStateShort", "CollateralShort", "TribehUSD"]
 		},
 		{
 			"sip": 105,
@@ -273,8 +273,8 @@
 				"EtherWrapper",
 				"FeePool",
 				"NativeEtherWrapper",
-				"SynthsETH",
-				"SynthsUSD",
+				"TribehETH",
+				"TribehUSD",
 				"SystemSettings"
 			]
 		},
@@ -326,7 +326,7 @@
 			"sip": 127,
 			"layer": "base",
 			"released": "base",
-			"sources": ["Exchanger", "VirtualSynthMastercopy"]
+			"sources": ["Exchanger", "VirtualTribeMastercopy"]
 		},
 		{
 			"sip": 128,
@@ -341,10 +341,10 @@
 				"CollateralManagerState",
 				"CollateralShort",
 				"CollateralUtil",
-				"SynthsBTC",
-				"SynthsETH",
-				"SynthsLINK",
-				"SynthsUSD",
+				"TribehBTC",
+				"TribehETH",
+				"TribesLINK",
+				"TribehUSD",
 				"SystemSettings"
 			],
 			"released": "ovm"
@@ -382,9 +382,9 @@
 				"FeePool",
 				"Issuer",
 				"Tribeone",
-				"SynthsETH",
-				"SynthsUSD",
-				"SynthsBTC"
+				"TribehETH",
+				"TribehUSD",
+				"TribehBTC"
 			]
 		},
 		{
@@ -427,7 +427,7 @@
 				"base": [
 					"FeePool",
 					"Issuer",
-					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorIssuedTribes",
 					"OneNetAggregatorDebtRatio",
 					"TribeoneBridgeToOptimism",
 					"SystemSettings"
@@ -435,7 +435,7 @@
 				"ovm": [
 					"FeePool",
 					"Issuer",
-					"OneNetAggregatorIssuedSynths",
+					"OneNetAggregatorIssuedTribes",
 					"OneNetAggregatorDebtRatio",
 					"TribeoneBridgeToBase",
 					"SystemSettings"
@@ -457,7 +457,7 @@
 			"sip": 174,
 			"layer": "both",
 			"released": "both",
-			"sources": ["Exchanger", "Issuer", "SynthRedeemer"]
+			"sources": ["Exchanger", "Issuer", "TribeRedeemer"]
 		},
 		{
 			"sip": 182,
@@ -466,7 +466,7 @@
 				"DebtCache",
 				"FeePool",
 				"Issuer",
-				"Synths.*",
+				"Tribes.*",
 				"SystemSettings",
 				"WrapperFactory"
 			],
@@ -664,7 +664,7 @@
 		{
 			"sip": 238,
 			"layer": "both",
-			"sources": ["Tribeone", "Synths.*", "Issuer"],
+			"sources": ["Tribeone", "Tribes.*", "Issuer"],
 			"released": "both"
 		},
 		{

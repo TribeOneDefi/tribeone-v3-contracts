@@ -18,7 +18,7 @@ import "./../interfaces/ISystemStatus.sol";
 import "./../interfaces/IERC20.sol";
 
 /*
- * Synthetic Futures
+ * Tribeetic Futures
  * =================
  *
  * Futures markets allow users leveraged exposure to an asset, long or short.
@@ -70,9 +70,9 @@ import "./../interfaces/IERC20.sol";
  *     - the account being managed was not liquidated in the same transaction;
  */
 interface IFuturesMarketManagerInternal {
-    function issueSUSD(address account, uint amount) external;
+    function issueHUSD(address account, uint amount) external;
 
-    function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
+    function burnHUSD(address account, uint amount) external returns (uint postReclamationAmount);
 
     function payFee(uint amount) external;
 }
@@ -623,8 +623,8 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
      */
     function assetPrice() public view returns (uint price, bool invalid) {
         (price, invalid) = _exchangeCircuitBreaker().rateWithInvalid(baseAsset);
-        // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(baseAsset);
+        // Ensure we catch uninitialised rates or suspended state / tribe
+        invalid = invalid || price == 0 || _systemStatus().tribeSuspended(baseAsset);
         return (price, invalid);
     }
 
@@ -633,15 +633,15 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
     /* ---------- Market Operations ---------- */
 
     /*
-     * The current base price, reverting if it is invalid, or if system or synth is suspended.
+     * The current base price, reverting if it is invalid, or if system or tribe is suspended.
      * This is mutative because the circuit breaker stores the last price on every invocation.
      */
     function _assetPriceRequireSystemChecks() internal returns (uint) {
         // check that futures market isn't suspended, revert with appropriate message
         _systemStatus().requireFuturesMarketActive(marketKey); // asset and market may be different
-        // check that synth is active, and wasn't suspended, revert with appropriate message
-        _systemStatus().requireSynthActive(baseAsset);
-        // check if circuit breaker if price is within deviation tolerance and system & synth is active
+        // check that tribe is active, and wasn't suspended, revert with appropriate message
+        _systemStatus().requireTribeActive(baseAsset);
+        // check if circuit breaker if price is within deviation tolerance and system & tribe is active
         // note: rateWithBreakCircuit (mutative) is used here instead of rateWithInvalid (view). This is
         //  despite reverting immediately after if circuit is broken, which may seem silly.
         //  This is in order to persist last-rate in exchangeCircuitBreaker in the happy case
@@ -756,7 +756,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
             // hUSD balance and credited to their margin account.
 
             // Ensure we handle reclamation when burning tokens.
-            uint postReclamationAmount = _manager().burnSUSD(sender, absDelta);
+            uint postReclamationAmount = _manager().burnHUSD(sender, absDelta);
             if (postReclamationAmount != absDelta) {
                 // If balance was insufficient, the actual delta will be smaller
                 marginDelta = int(postReclamationAmount);
@@ -764,7 +764,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
         } else if (marginDelta < 0) {
             // A negative margin delta corresponds to a withdrawal, which will be minted into
             // their hUSD balance, and debited from their margin account.
-            _manager().issueSUSD(sender, absDelta);
+            _manager().issueHUSD(sender, absDelta);
         } else {
             // Zero delta is a no-op
             return;
@@ -988,7 +988,7 @@ contract FuturesMarketBase is MixinFuturesMarketSettings, IFuturesMarketBaseType
 
         // Issue the reward to the liquidator.
         uint liqFee = _liquidationFee(positionSize, price);
-        _manager().issueSUSD(liquidator, liqFee);
+        _manager().issueHUSD(liquidator, liqFee);
 
         emit PositionModified(positionId, account, 0, 0, 0, price, fundingIndex, 0);
         emit PositionLiquidated(positionId, account, liquidator, positionSize, price, liqFee);

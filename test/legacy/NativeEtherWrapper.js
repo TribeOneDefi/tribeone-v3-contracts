@@ -21,15 +21,15 @@ const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('NativeEtherWrapper', async accounts => {
-	const synths = ['hUSD', 'sETH', 'ETH', 'HAKA'];
-	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
+	const tribes = ['hUSD', 'hETH', 'ETH', 'HAKA'];
+	const [hETH, ETH] = ['hETH', 'ETH'].map(toBytes32);
 
 	const [, owner, , , account1] = accounts;
 
 	let systemSettings,
 		exchangeRates,
 		addressResolver,
-		sETHSynth,
+		hETHTribe,
 		etherWrapper,
 		nativeEtherWrapper,
 		weth;
@@ -41,11 +41,11 @@ contract('NativeEtherWrapper', async accounts => {
 			ExchangeRates: exchangeRates,
 			EtherWrapper: etherWrapper,
 			NativeEtherWrapper: nativeEtherWrapper,
-			SynthsETH: sETHSynth,
+			TribehETH: hETHTribe,
 			WETH: weth,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'Tribeone',
 				'AddressResolver',
@@ -64,10 +64,10 @@ contract('NativeEtherWrapper', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [hETH, ETH]);
 
 		// Depot requires ETH rates
-		await updateAggregatorRates(exchangeRates, null, [sETH, ETH], ['1500', '1500'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [hETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -92,7 +92,7 @@ contract('NativeEtherWrapper', async accounts => {
 		});
 
 		it('should access its dependencies via the address resolver', async () => {
-			assert.equal(await addressResolver.getAddress(toBytes32('SynthsETH')), sETHSynth.address);
+			assert.equal(await addressResolver.getAddress(toBytes32('TribehETH')), hETHTribe.address);
 			assert.equal(
 				await addressResolver.getAddress(toBytes32('EtherWrapper')),
 				etherWrapper.address
@@ -152,8 +152,8 @@ contract('NativeEtherWrapper', async accounts => {
 						.find(({ name }) => name === 'Minted'),
 				});
 			});
-			it('transfers sETH to msg.sender', async () => {
-				assert.bnEqual(await sETHSynth.balanceOf(account1), amount);
+			it('transfers hETH to msg.sender', async () => {
+				assert.bnEqual(await hETHTribe.balanceOf(account1), amount);
 			});
 		});
 	});
@@ -171,7 +171,7 @@ contract('NativeEtherWrapper', async accounts => {
 				);
 			});
 		});
-		describe('when called with 0 sETH balance', async () => {
+		describe('when called with 0 hETH balance', async () => {
 			it('reverts', async () => {
 				await assert.revert(
 					nativeEtherWrapper.burn('1', { from: account1 }),
@@ -179,20 +179,20 @@ contract('NativeEtherWrapper', async accounts => {
 				);
 			});
 		});
-		describe('when called with sETH balance', async () => {
-			let sethBalanceBefore;
+		describe('when called with hETH balance', async () => {
+			let hethBalanceBefore;
 			let ethBalanceBefore, ethBalanceAfter;
 			let tx;
 			let amount;
 
 			beforeEach(async () => {
-				// Mint some sETH.
+				// Mint some hETH.
 				await nativeEtherWrapper.mint({ value: toUnit('1'), from: account1 });
-				sethBalanceBefore = await sETHSynth.balanceOf(account1);
-				amount = sethBalanceBefore;
+				hethBalanceBefore = await hETHTribe.balanceOf(account1);
+				amount = hethBalanceBefore;
 
-				// Approve sETH.
-				await sETHSynth.approve(nativeEtherWrapper.address, amount, { from: account1 });
+				// Approve hETH.
+				await hETHTribe.approve(nativeEtherWrapper.address, amount, { from: account1 });
 
 				// Burn.
 				ethBalanceBefore = await web3.eth.getBalance(account1);
@@ -200,8 +200,8 @@ contract('NativeEtherWrapper', async accounts => {
 				ethBalanceAfter = await web3.eth.getBalance(account1);
 			});
 
-			it('transfers sETH from msg.sender to contract', async () => {
-				assert.bnEqual(await sETHSynth.balanceOf(account1), sethBalanceBefore.sub(amount));
+			it('transfers hETH from msg.sender to contract', async () => {
+				assert.bnEqual(await hETHTribe.balanceOf(account1), hethBalanceBefore.sub(amount));
 			});
 			it('calls EtherWrapper.burn(amount)', async () => {
 				const logs = await getDecodedLogs({

@@ -12,7 +12,7 @@ const {
 	decode,
 	getAST,
 	getSource,
-	getSynths,
+	getTribes,
 	getFeeds,
 	getOffchainFeeds,
 	getPerpsV2ProxiedMarkets,
@@ -69,10 +69,10 @@ program
 	.action(async (key, { skipCheck }) => {
 		if (
 			!skipCheck &&
-			getSynths({ network: 'mainnet' }).filter(({ name }) => name === key).length < 1
+			getTribes({ network: 'mainnet' }).filter(({ name }) => name === key).length < 1
 		) {
 			throw Error(
-				`Given key of "${key}" does not exist as a synth in mainnet (case-sensitive). Use --skip-check to skip this check.`
+				`Given key of "${key}" does not exist as a tribe in mainnet (case-sensitive). Use --skip-check to skip this check.`
 			);
 		}
 		console.log(toBytes32(key));
@@ -344,16 +344,16 @@ program
 	});
 
 program
-	.command('synths')
-	.description('Get the list of synths')
+	.command('tribes')
+	.description('Get the list of tribes')
 	.option('-n, --network <value>', 'The network to run off.', x => x.toLowerCase(), 'mainnet')
 	.option('-k, --key [value]', 'A specific key wanted')
 	.option('-z, --use-ovm', 'Target deployment for the OVM (Optimism).')
 	.action(async ({ network, useOvm, key }) => {
-		const synthList = getSynths({ network, useOvm });
+		const tribeList = getTribes({ network, useOvm });
 		console.log(
 			JSON.stringify(
-				synthList.map(entry => {
+				tribeList.map(entry => {
 					return key in entry ? entry[key] : entry;
 				}),
 				null,

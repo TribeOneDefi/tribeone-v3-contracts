@@ -23,7 +23,7 @@ const {
 	getDecodedLogs,
 	decodedEventEqual,
 	proxyThruTo,
-	setExchangeFeeRateForSynths,
+	setExchangeFeeRateForTribes,
 	setupPriceAggregators,
 	updateAggregatorRates,
 	onlyGivenAddressCanInvoke,
@@ -61,7 +61,7 @@ contract('FeePool', async accounts => {
 		return result[0];
 	}
 
-	const exchangeFeeRate = toUnit('0.006'); // 30 bips, applied on each synth
+	const exchangeFeeRate = toUnit('0.006'); // 30 bips, applied on each tribe
 	const amountReceivedFromExchange = amountToExchange => {
 		return multiplyDecimal(amountToExchange, toUnit('1').sub(exchangeFeeRate));
 	};
@@ -74,21 +74,21 @@ contract('FeePool', async accounts => {
 		feePoolProxy,
 		FEE_ADDRESS,
 		tribeone,
-		tribeoneProxy,
+		tribeetixProxy,
 		systemStatus,
 		systemSettings,
 		exchangeRates,
 		rewardsDistribution,
 		delegateApprovals,
-		sUSDContract,
+		hUSDContract,
 		addressResolver,
 		wrapperFactory,
 		aggregatorDebtRatio,
-		tribeoneBridgeToOptimism,
-		synths;
+		tribeetixBridgeToOptimism,
+		tribes;
 
 	before(async () => {
-		synths = ['hUSD', 'sAUD'];
+		tribes = ['hUSD', 'sAUD'];
 		({
 			AddressResolver: addressResolver,
 			DelegateApprovals: delegateApprovals,
@@ -98,15 +98,15 @@ contract('FeePool', async accounts => {
 			ProxyFeePool: feePoolProxy,
 			RewardsDistribution: rewardsDistribution,
 			Tribeone: tribeone,
-			ProxyERC20Tribeone: tribeoneProxy,
+			ProxyERC20Tribeone: tribeetixProxy,
 			SystemSettings: systemSettings,
-			SynthsUSD: sUSDContract,
+			TribehUSD: hUSDContract,
 			SystemStatus: systemStatus,
 			WrapperFactory: wrapperFactory,
 			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'ExchangeRates',
 				'Exchanger',
@@ -122,25 +122,25 @@ contract('FeePool', async accounts => {
 				'RewardsDistribution',
 				'DelegateApprovals',
 				'CollateralManager',
-				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorIssuedTribes',
 				'OneNetAggregatorDebtRatio',
 				'WrapperFactory',
 			],
 		}));
 
 		// use implementation ABI on the proxy address to simplify calling
-		tribeone = await artifacts.require('Tribeone').at(tribeoneProxy.address);
+		tribeone = await artifacts.require('Tribeone').at(tribeetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [sAUD]);
 
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
-		tribeoneBridgeToOptimism = await smock.fake('TribeoneBridgeToOptimism');
+		tribeetixBridgeToOptimism = await smock.fake('TribeoneBridgeToOptimism');
 
 		// import special address for relayer so we can call as it
 		await addressResolver.importAddresses(
 			['TribeoneBridgeToOptimism', 'TribeoneBridgeToBase'].map(toBytes32),
-			[tribeoneBridgeToOptimism.address, relayer],
+			[tribeetixBridgeToOptimism.address, relayer],
 			{
 				from: owner,
 			}
@@ -157,12 +157,12 @@ contract('FeePool', async accounts => {
 
 		// set a 0.3% default exchange fee rate                                                                                 │        { contract: 'ExchangeState' },
 		const exchangeFeeRate = toUnit('0.003');
-		const synthKeys = [sAUD, hUSD];
-		await setExchangeFeeRateForSynths({
+		const tribeKeys = [sAUD, hUSD];
+		await setExchangeFeeRateForTribes({
 			owner,
 			systemSettings,
-			synthKeys,
-			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+			tribeKeys,
+			exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 		});
 	});
 
@@ -259,8 +259,8 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await tribeone.issueSynths(amount, { from: owner });
-			await tribeone.issueSynths(amount, { from: account1 });
+			await tribeone.issueTribes(amount, { from: owner });
+			await tribeone.issueTribes(amount, { from: account1 });
 
 			await closeFeePeriod();
 
@@ -325,8 +325,8 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await tribeone.issueSynths(amount, { from: owner });
-			await tribeone.issueSynths(amount.mul(web3.utils.toBN('2')), { from: account1 });
+			await tribeone.issueTribes(amount, { from: owner });
+			await tribeone.issueTribes(amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 			// Generate a fee.
 			await tribeone.exchange(hUSD, amount, sAUD, { from: owner });
@@ -385,8 +385,8 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await tribeone.issueSynths(amount1, { from: owner });
-			await tribeone.issueSynths(amount2, { from: account1 });
+			await tribeone.issueTribes(amount1, { from: owner });
+			await tribeone.issueTribes(amount2, { from: account1 });
 
 			// Generate a fee.
 			await tribeone.exchange(hUSD, amount1, sAUD, { from: owner });
@@ -410,7 +410,7 @@ contract('FeePool', async accounts => {
 			// Should still be no fees available because they are automatically burned once the fee period closes.
 			assert.bnEqual(await feePool.totalFeesAvailable(), 0);
 
-			// Ok, and do it again but with account1's synths this time.
+			// Ok, and do it again but with account1's tribes this time.
 			const fee2 = amount2.sub(amountReceivedFromExchange(amount2));
 
 			// Generate a fee.
@@ -441,8 +441,8 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await tribeone.issueSynths(amount, { from: owner });
-			await tribeone.issueSynths(amount.mul(web3.utils.toBN('2')), { from: account1 });
+			await tribeone.issueTribes(amount, { from: owner });
+			await tribeone.issueTribes(amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 			// Close out the period to allow both users to be part of the whole fee period.
 			await closeFeePeriod();
@@ -493,8 +493,8 @@ contract('FeePool', async accounts => {
 				from: owner,
 			});
 
-			await tribeone.issueSynths(amount, { from: owner });
-			await tribeone.issueSynths(amount.mul(web3.utils.toBN('2')), { from: account1 });
+			await tribeone.issueTribes(amount, { from: owner });
+			await tribeone.issueTribes(amount.mul(web3.utils.toBN('2')), { from: account1 });
 
 			// Close out the period to allow both users to be part of the whole fee period.
 			await closeFeePeriod();
@@ -563,9 +563,9 @@ contract('FeePool', async accounts => {
 				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: secondFeePeriodId });
 			});
 			it('should import feePeriods and close the current fee period correctly', async () => {
-				// Make sure the FeeAddress has enough synths to burn for the imported periods.
-				await tribeone.issueSynths(toUnit('1000'), { from: owner });
-				await sUSDContract.transfer(FEE_ADDRESS, toUnit('1000'), {
+				// Make sure the FeeAddress has enough tribes to burn for the imported periods.
+				await tribeone.issueTribes(toUnit('1000'), { from: owner });
+				await hUSDContract.transfer(FEE_ADDRESS, toUnit('1000'), {
 					from: owner,
 				});
 
@@ -666,19 +666,19 @@ contract('FeePool', async accounts => {
 			});
 			it('should correctly roll over unclaimed fees when closing fee periods', async () => {
 				// Issue 10,000 hUSD.
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
 
 				// Users are only entitled to fees when they've participated in a fee period in its
 				// entirety. Roll over the fee period so fees generated below count for owner.
 				await closeFeePeriod();
 
-				// Do a single transfer of all our synths to generate a fee.
-				await sUSDContract.transfer(account1, toUnit('10000'), {
+				// Do a single transfer of all our tribes to generate a fee.
+				await hUSDContract.transfer(account1, toUnit('10000'), {
 					from: owner,
 				});
 
 				// Assert that the correct fee is in the fee pool.
-				const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
+				const fee = await hUSDContract.balanceOf(FEE_ADDRESS);
 				const pendingFees = await feePool.feesByPeriod(owner);
 				assert.bnEqual(web3.utils.toBN(pendingFees[0][0]), fee);
 			});
@@ -687,19 +687,19 @@ contract('FeePool', async accounts => {
 				const length = await feePool.FEE_PERIOD_LENGTH();
 
 				// Issue 10,000 hUSD.
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
 
 				// Users have to have minted before the close of period. Close that fee period
 				// so that there won't be any fees in period. future fees are available.
 				await closeFeePeriod();
 
-				// Do a single transfer of all our synths to generate a fee.
-				await sUSDContract.transfer(account1, toUnit('10000'), {
+				// Do a single transfer of all our tribes to generate a fee.
+				await hUSDContract.transfer(account1, toUnit('10000'), {
 					from: owner,
 				});
 
 				// Assert that the correct fee is in the fee pool.
-				const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
+				const fee = await hUSDContract.balanceOf(FEE_ADDRESS);
 				const pendingFees = await feePool.feesByPeriod(owner);
 
 				assert.bnEqual(pendingFees[0][0], fee);
@@ -733,11 +733,11 @@ contract('FeePool', async accounts => {
 				}
 
 				// Now create the first fee
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
-				await sUSDContract.transfer(account1, toUnit('10000'), {
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
+				await hUSDContract.transfer(account1, toUnit('10000'), {
 					from: owner,
 				});
-				const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
+				const fee = await hUSDContract.balanceOf(FEE_ADDRESS);
 
 				const oldFeePeriodId = (await feePool.recentFeePeriods(0)).feePeriodId;
 
@@ -771,15 +771,15 @@ contract('FeePool', async accounts => {
 			});
 
 			it('should receive fees from WrapperFactory', async () => {
-				// Make sure some debt exists otherwise updateCachedsUSDDebt will revert when closing/burning fees.
-				await tribeone.issueSynths(toUnit('1000'), { from: owner });
+				// Make sure some debt exists otherwise updateCachedhUSDDebt will revert when closing/burning fees.
+				await tribeone.issueTribes(toUnit('1000'), { from: owner });
 
 				// Close the current one so we know exactly what we're dealing with
 				await closeFeePeriod();
 
 				// Wrapper Factory collects 100 hUSD in fees
 				const collectedFees = toUnit(100);
-				await sUSDContract.issue(wrapperFactory.address, collectedFees);
+				await hUSDContract.issue(wrapperFactory.address, collectedFees);
 
 				await closeFeePeriod();
 
@@ -854,16 +854,16 @@ contract('FeePool', async accounts => {
 			});
 
 			it('should trigger bridge to close period on other networks', async () => {
-				await tribeone.issueSynths(toUnit(500), { from: owner });
+				await tribeone.issueTribes(toUnit(500), { from: owner });
 
 				await fastForward(await feePool.feePeriodDuration());
 
 				await feePool.closeCurrentFeePeriod({ from: account1 });
 
-				expect(tribeoneBridgeToOptimism.closeFeePeriod).to.have.length(0);
+				expect(tribeetixBridgeToOptimism.closeFeePeriod).to.have.length(0);
 
-				tribeoneBridgeToOptimism.closeFeePeriod.returnsAtCall(0, '500000000000000000000');
-				tribeoneBridgeToOptimism.closeFeePeriod.returnsAtCall(1, '500000000000000000000');
+				tribeetixBridgeToOptimism.closeFeePeriod.returnsAtCall(0, '500000000000000000000');
+				tribeetixBridgeToOptimism.closeFeePeriod.returnsAtCall(1, '500000000000000000000');
 			});
 		});
 
@@ -937,9 +937,9 @@ contract('FeePool', async accounts => {
 				assert.eventEqual(secondPeriodClose, 'FeePeriodClosed', { feePeriodId: secondFeePeriodId });
 			});
 			it('should import feePeriods and close the current fee period correctly', async () => {
-				// Make sure the FeeAddress has enough synths to burn for the imported periods.
-				await tribeone.issueSynths(toUnit('1000'), { from: owner });
-				await sUSDContract.transfer(FEE_ADDRESS, toUnit('1000'), {
+				// Make sure the FeeAddress has enough tribes to burn for the imported periods.
+				await tribeone.issueTribes(toUnit('1000'), { from: owner });
+				await hUSDContract.transfer(FEE_ADDRESS, toUnit('1000'), {
 					from: owner,
 				});
 
@@ -1028,7 +1028,7 @@ contract('FeePool', async accounts => {
 			describe('potential blocking conditions', () => {
 				beforeEach(async () => {
 					// ensure claimFees() can succeed by default (generate fees and close period)
-					await tribeone.issueSynths(toUnit('10000'), { from: owner });
+					await tribeone.issueTribes(toUnit('10000'), { from: owner });
 					await tribeone.exchange(hUSD, toUnit('10'), sAUD, { from: owner });
 					await closeFeePeriod();
 				});
@@ -1059,7 +1059,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimFees', async () => {
 						await assert.revert(
 							feePool.claimFees({ from: owner }),
-							'A synth or HAKA rate is invalid'
+							'A tribe or HAKA rate is invalid'
 						);
 					});
 				});
@@ -1072,7 +1072,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimFees', async () => {
 						await assert.revert(
 							feePool.claimFees({ from: owner }),
-							'A synth or HAKA rate is invalid'
+							'A tribe or HAKA rate is invalid'
 						);
 					});
 				});
@@ -1086,8 +1086,8 @@ contract('FeePool', async accounts => {
 					from: owner,
 				});
 
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
-				await tribeone.issueSynths(toUnit('10000'), { from: account1 });
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
+				await tribeone.issueTribes(toUnit('10000'), { from: account1 });
 
 				// For each fee period (with one extra to test rollover), do two exchange transfers, then close it off.
 				for (let i = 0; i <= length; i++) {
@@ -1103,17 +1103,17 @@ contract('FeePool', async accounts => {
 				// Assert that we have correct values in the fee pool
 				const feesAvailableUSD = await feePool.feesAvailable(owner);
 				const feesBurnedUSD = await feePool.feesBurned(owner);
-				const beforeUSDBalance = await sUSDContract.balanceOf(owner);
+				const beforeUSDBalance = await hUSDContract.balanceOf(owner);
 
 				// Now we should be able to claim them.
 				const claimFeesTx = await feePool.claimFees({ from: owner });
 
 				assert.eventEqual(claimFeesTx, 'FeesClaimed', {
-					sUSDAmount: feesBurnedUSD,
-					hakaRewards: feesAvailableUSD[1],
+					hUSDAmount: feesBurnedUSD,
+					snxRewards: feesAvailableUSD[1],
 				});
 
-				const afterUSDBalance = await sUSDContract.balanceOf(owner);
+				const afterUSDBalance = await hUSDContract.balanceOf(owner);
 				// hUSD balance should remain unchanged
 				assert.bnEqual(afterUSDBalance, beforeUSDBalance);
 			});
@@ -1124,15 +1124,15 @@ contract('FeePool', async accounts => {
 					from: owner,
 				});
 
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
-				await tribeone.issueSynths(toUnit('10000'), { from: account1 });
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
+				await tribeone.issueTribes(toUnit('10000'), { from: account1 });
 
 				await tribeone.exchange(hUSD, toUnit(100), sAUD, { from: account1 });
 
 				await closeFeePeriod();
 
 				// Settle our debt
-				await tribeone.burnSynths(toUnit('999999'), { from: owner });
+				await tribeone.burnTribes(toUnit('999999'), { from: owner });
 
 				assert.bnEqual(
 					await tribeone.debtBalanceOf(owner, toBytes32('hUSD')),
@@ -1143,17 +1143,17 @@ contract('FeePool', async accounts => {
 				// Assert that we have correct values in the fee pool
 				const feesAvailableUSD = await feePool.feesAvailable(owner);
 				const feesBurnedUSD = await feePool.feesBurned(owner);
-				const beforeUSDBalance = await sUSDContract.balanceOf(owner);
+				const beforeUSDBalance = await hUSDContract.balanceOf(owner);
 
 				// Now we should be able to claim them.
 				const claimFeesTx = await feePool.claimFees({ from: owner });
 
 				assert.eventEqual(claimFeesTx, 'FeesClaimed', {
-					sUSDAmount: feesBurnedUSD,
-					hakaRewards: feesAvailableUSD[1],
+					hUSDAmount: feesBurnedUSD,
+					snxRewards: feesAvailableUSD[1],
 				});
 
-				const afterUSDBalance = await sUSDContract.balanceOf(owner);
+				const afterUSDBalance = await hUSDContract.balanceOf(owner);
 				// hUSD balance should remain unchanged
 				assert.bnEqual(afterUSDBalance, beforeUSDBalance);
 			});
@@ -1164,7 +1164,7 @@ contract('FeePool', async accounts => {
 					from: owner,
 				});
 
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
 
 				// For first fee period, do two transfers, then close it off.
 				let totalFees = web3.utils.toBN('0');
@@ -1182,17 +1182,17 @@ contract('FeePool', async accounts => {
 				const feesAvailable = await feePool.feesAvailable(owner);
 				assert.bnClose(feesAvailable[0], totalFees, '8');
 
-				const oldSynthBalance = await sUSDContract.balanceOf(owner);
+				const oldTribeBalance = await hUSDContract.balanceOf(owner);
 
 				// Now we should be able to claim them.
 				await feePool.claimFees({ from: owner });
 
 				// Balance remains the same since fees are burned
-				assert.bnEqual(await sUSDContract.balanceOf(owner), oldSynthBalance);
+				assert.bnEqual(await hUSDContract.balanceOf(owner), oldTribeBalance);
 
 				// FeePeriod 2 - account 1 joins and mints 50% of the debt
 				totalFees = web3.utils.toBN('0');
-				await tribeone.issueSynths(toUnit('10000'), { from: account1 });
+				await tribeone.issueTribes(toUnit('10000'), { from: account1 });
 
 				// Generate fees
 				await tribeone.exchange(hUSD, exchange1, sAUD, { from: owner });
@@ -1225,8 +1225,8 @@ contract('FeePool', async accounts => {
 					from: owner,
 				});
 
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
-				await tribeone.issueSynths(toUnit('10000'), { from: account1 });
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
+				await tribeone.issueTribes(toUnit('10000'), { from: account1 });
 
 				// For each fee period (with one extra to test rollover), do two transfers, then close it off.
 				let totalFees = web3.utils.toBN('0');
@@ -1260,33 +1260,33 @@ contract('FeePool', async accounts => {
 				// owner has half the debt so entitled to half the fees
 				assert.bnClose(feesAvailable[0].add(feesBurned), half(totalFees), '19');
 
-				const oldSynthBalance = await sUSDContract.balanceOf(owner);
+				const oldTribeBalance = await hUSDContract.balanceOf(owner);
 
 				// Now we should be able to claim them.
 				await feePool.claimFees({ from: owner });
 
 				// We should have our fees
 				assert.bnClose(
-					await sUSDContract.balanceOf(owner),
-					oldSynthBalance.add(feesAvailable[0]),
+					await hUSDContract.balanceOf(owner),
+					oldTribeBalance.add(feesAvailable[0]),
 					'250000000000000000'
 				);
 			});
 
 			it('should revert when a user tries to double claim their fees', async () => {
 				// Issue 10,000 hUSD.
-				await tribeone.issueSynths(toUnit('10000'), { from: owner });
+				await tribeone.issueTribes(toUnit('10000'), { from: owner });
 
 				// Users are only allowed to claim fees in periods they had an issued balance
 				// for the entire period.
 				await closeFeePeriod();
 
-				// Do a single exchange of all our synths to generate a fee.
+				// Do a single exchange of all our tribes to generate a fee.
 				const exchange1 = toUnit(100);
 				await tribeone.exchange(hUSD, exchange1, sAUD, { from: owner });
 
 				// Assert that the correct fee is in the fee pool.
-				const fee = await sUSDContract.balanceOf(FEE_ADDRESS);
+				const fee = await hUSDContract.balanceOf(FEE_ADDRESS);
 				const pendingFees = await feePool.feesByPeriod(owner);
 
 				assert.bnEqual(pendingFees[0][0], fee);
@@ -1360,7 +1360,7 @@ contract('FeePool', async accounts => {
 			});
 
 			it('should be no penalty if issuance ratio is less than target ratio', async () => {
-				await tribeone.issueMaxSynths({ from: owner });
+				await tribeone.issueMaxTribes({ from: owner });
 
 				// Increase the price so we start well and truly within our 20% ratio.
 				const newRate = (await exchangeRates.rateForCurrency(HAKA)).add(web3.utils.toBN('1'));
@@ -1372,7 +1372,7 @@ contract('FeePool', async accounts => {
 
 			it('should correctly calculate the 10% buffer for penalties at specific issuance ratios', async () => {
 				const step = toUnit('0.01');
-				await tribeone.issueMaxSynths({ from: owner });
+				await tribeone.issueMaxTribes({ from: owner });
 
 				// Increase the price so we start well and truly within our 20% ratio.
 				const newRate = (await exchangeRates.rateForCurrency(HAKA)).add(
@@ -1411,9 +1411,9 @@ contract('FeePool', async accounts => {
 					from: owner,
 				});
 
-				await tribeone.issueMaxSynths({ from: account1 });
-				const amount = await sUSDContract.balanceOf(account1);
-				await tribeone.issueSynths(amount, { from: owner });
+				await tribeone.issueMaxTribes({ from: account1 });
+				const amount = await hUSDContract.balanceOf(account1);
+				await tribeone.issueTribes(amount, { from: owner });
 				await closeFeePeriod();
 
 				// Do a transfer to generate fees
@@ -1451,9 +1451,9 @@ contract('FeePool', async accounts => {
 					from: owner,
 				});
 
-				await tribeone.issueMaxSynths({ from: account1 });
-				const amount = await sUSDContract.balanceOf(account1);
-				await tribeone.issueSynths(amount, { from: owner });
+				await tribeone.issueMaxTribes({ from: account1 });
+				const amount = await hUSDContract.balanceOf(account1);
+				await tribeone.issueTribes(amount, { from: owner });
 				await closeFeePeriod();
 
 				// Do a transfer to generate fees
@@ -1514,7 +1514,7 @@ contract('FeePool', async accounts => {
 					from: owner,
 				});
 
-				await tribeone.issueSynths(toUnit('10000'), { from: account1 });
+				await tribeone.issueTribes(toUnit('10000'), { from: account1 });
 
 				// For first fee period, do one exchange.
 				const exchange1 = toUnit((10).toString());
@@ -1564,7 +1564,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimOnBehalf', async () => {
 						await assert.revert(
 							feePool.claimOnBehalf(authoriser, { from: delegate }),
-							'A synth or HAKA rate is invalid'
+							'A tribe or HAKA rate is invalid'
 						);
 					});
 				});
@@ -1577,7 +1577,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimOnBehalf', async () => {
 						await assert.revert(
 							feePool.claimOnBehalf(authoriser, { from: delegate }),
-							'A synth or HAKA rate is invalid'
+							'A tribe or HAKA rate is invalid'
 						);
 					});
 				});
@@ -1600,15 +1600,15 @@ contract('FeePool', async accounts => {
 				const feesAvailable = await feePool.feesAvailable(account1);
 
 				// old balance of account1 (authoriser)
-				const oldSynthBalance = await sUSDContract.balanceOf(account1);
+				const oldTribeBalance = await hUSDContract.balanceOf(account1);
 
 				// Now we should be able to claim them on behalf of account1.
 				await feePool.claimOnBehalf(account1, { from: account2 });
 
 				// We should have our fees for account1
 				assert.bnClose(
-					await sUSDContract.balanceOf(account1),
-					oldSynthBalance.add(feesAvailable[0]),
+					await hUSDContract.balanceOf(account1),
+					oldTribeBalance.add(feesAvailable[0]),
 					'250000000000000000'
 				);
 			});
@@ -1650,8 +1650,8 @@ contract('FeePool', async accounts => {
 					const exchange1 = toUnit(((i + 1) * 10).toString());
 
 					// Mint debt each period to fill up feelPoolState issuanceData to [6]
-					await tribeone.issueSynths(toUnit('1000'), { from: owner });
-					await tribeone.issueSynths(toUnit('1000'), { from: account1 });
+					await tribeone.issueTribes(toUnit('1000'), { from: owner });
+					await tribeone.issueTribes(toUnit('1000'), { from: account1 });
 
 					await tribeone.exchange(hUSD, exchange1, sAUD, { from: owner });
 
@@ -1665,15 +1665,15 @@ contract('FeePool', async accounts => {
 				const feesAvailable = await feePool.feesAvailable(account1);
 				assert.bnClose(feesAvailable[0], totalFees.div(web3.utils.toBN('6')), '250000000000000000');
 
-				const oldSynthBalance = await sUSDContract.balanceOf(account1);
+				const oldTribeBalance = await hUSDContract.balanceOf(account1);
 
 				// Now we should be able to claim them.
 				await feePool.claimFees({ from: account1 });
 
 				// We should have our fees
 				assert.bnClose(
-					await sUSDContract.balanceOf(account1),
-					oldSynthBalance.add(feesAvailable[0]),
+					await hUSDContract.balanceOf(account1),
+					oldTribeBalance.add(feesAvailable[0]),
 					'250000000000000000'
 				);
 			});

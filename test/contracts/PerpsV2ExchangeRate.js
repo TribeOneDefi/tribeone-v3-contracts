@@ -139,8 +139,8 @@ contract('PerpsV2ExchangeRate', accounts => {
 
 		describe('when setting up new feed ids', () => {
 			const feeds = [
-				{ assetId: toBytes32('sETH'), feedId: toBytes32('feed-sETH') },
-				{ assetId: toBytes32('sBTC'), feedId: toBytes32('feed-sBTC') },
+				{ assetId: toBytes32('hETH'), feedId: toBytes32('feed-hETH') },
+				{ assetId: toBytes32('hBTC'), feedId: toBytes32('feed-hBTC') },
 			];
 
 			beforeEach('setup a couple of feeds', async () => {
@@ -272,8 +272,8 @@ contract('PerpsV2ExchangeRate', accounts => {
 
 	describe('Contract operations', () => {
 		const feeds = [
-			{ assetId: toBytes32('sETH'), feedId: toBytes32('feed-sETH') },
-			{ assetId: toBytes32('sBTC'), feedId: toBytes32('feed-sBTC') },
+			{ assetId: toBytes32('hETH'), feedId: toBytes32('feed-hETH') },
+			{ assetId: toBytes32('hBTC'), feedId: toBytes32('feed-hBTC') },
 		];
 
 		const defaultFeedId = toBytes32('eth-price-feed');

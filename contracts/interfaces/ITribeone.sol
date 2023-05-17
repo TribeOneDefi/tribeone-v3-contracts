@@ -1,18 +1,18 @@
 pragma solidity >=0.4.24;
 
-import "./ISynth.sol";
-import "./IVirtualSynth.sol";
+import "./ITribe.sol";
+import "./IVirtualTribe.sol";
 
-// https://docs.tribeone.io/contracts/source/interfaces/itribeone
+// https://docs.tribeone.io/contracts/source/interfaces/itribeetix
 interface ITribeone {
     // Views
-    function anySynthOrHAKARateIsInvalid() external view returns (bool anyRateInvalid);
+    function anyTribeOrHAKARateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
 
-    function availableSynthCount() external view returns (uint);
+    function availableTribeCount() external view returns (uint);
 
-    function availableSynths(uint index) external view returns (ISynth);
+    function availableTribes(uint index) external view returns (ITribe);
 
     function collateral(address account) external view returns (uint);
 
@@ -22,9 +22,9 @@ interface ITribeone {
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool);
 
-    function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);
+    function maxIssuableTribes(address issuer) external view returns (uint maxIssuable);
 
-    function remainingIssuableSynths(address issuer)
+    function remainingIssuableTribes(address issuer)
         external
         view
         returns (
@@ -33,26 +33,26 @@ interface ITribeone {
             uint totalSystemDebt
         );
 
-    function synths(bytes32 currencyKey) external view returns (ISynth);
+    function tribes(bytes32 currencyKey) external view returns (ITribe);
 
-    function synthsByAddress(address synthAddress) external view returns (bytes32);
+    function tribesByAddress(address tribeAddress) external view returns (bytes32);
 
-    function totalIssuedSynths(bytes32 currencyKey) external view returns (uint);
+    function totalIssuedTribes(bytes32 currencyKey) external view returns (uint);
 
-    function totalIssuedSynthsExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint);
+    function totalIssuedTribesExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint);
 
     function transferableTribeone(address account) external view returns (uint transferable);
 
     function getFirstNonZeroEscrowIndex(address account) external view returns (uint);
 
     // Mutative Functions
-    function burnSynths(uint amount) external;
+    function burnTribes(uint amount) external;
 
-    function burnSynthsOnBehalf(address burnForAddress, uint amount) external;
+    function burnTribesOnBehalf(address burnForAddress, uint amount) external;
 
-    function burnSynthsToTarget() external;
+    function burnTribesToTarget() external;
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress) external;
+    function burnTribesToTargetOnBehalf(address burnForAddress) external;
 
     function exchange(
         bytes32 sourceCurrencyKey,
@@ -97,7 +97,7 @@ interface ITribeone {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         bytes32 trackingCode
-    ) external returns (uint amountReceived, IVirtualSynth vSynth);
+    ) external returns (uint amountReceived, IVirtualTribe vTribe);
 
     function exchangeAtomically(
         bytes32 sourceCurrencyKey,
@@ -107,13 +107,13 @@ interface ITribeone {
         uint minAmount
     ) external returns (uint amountReceived);
 
-    function issueMaxSynths() external;
+    function issueMaxTribes() external;
 
-    function issueMaxSynthsOnBehalf(address issueForAddress) external;
+    function issueMaxTribesOnBehalf(address issueForAddress) external;
 
-    function issueSynths(uint amount) external;
+    function issueTribes(uint amount) external;
 
-    function issueSynthsOnBehalf(address issueForAddress, uint amount) external;
+    function issueTribesOnBehalf(address issueForAddress, uint amount) external;
 
     function mint() external returns (bool);
 
@@ -140,7 +140,7 @@ interface ITribeone {
 
     function burnSecondary(address account, uint amount) external;
 
-    // function revokeAllEscrow(address account) external;
+    function revokeAllEscrow(address account) external;
 
     function migrateAccountBalances(address account) external returns (uint totalEscrowRevoked, uint totalLiquidBalance);
 }

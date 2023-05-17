@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
@@ -25,21 +24,21 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
     /* ========== STATE VARIABLES ========== */
 
-    // Address where the ether and Synths raised for selling HAKA is transfered to
-    // Any ether raised for selling Synths gets sent back to whoever deposited the Synths,
+    // Address where the ether and Tribes raised for selling HAKA is transfered to
+    // Any ether raised for selling Tribes gets sent back to whoever deposited the Tribes,
     // and doesn't have anything to do with this address.
     address payable public fundsWallet;
 
     /* Stores deposits from users. */
-    struct SynthDepositEntry {
+    struct TribeDepositEntry {
         // The user that made the deposit
         address payable user;
-        // The amount (in Synths) that they deposited
+        // The amount (in Tribes) that they deposited
         uint amount;
     }
 
     /* User deposits are sold on a FIFO (First in First out) basis. When users deposit
-       synths with us, they get added this queue, which then gets fulfilled in order.
+       tribes with us, they get added this queue, which then gets fulfilled in order.
        Conceptually this fits well in an array, but then when users fill an order we
        end up copying the whole array around, so better to use an index mapping instead
        for gas performance reasons.
@@ -49,7 +48,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
        the length of the "array" by querying depositEndIndex - depositStartIndex. All index
        operations use safeAdd, so there is no way to overflow, so that means there is a
        very large but finite amount of deposits this contract can handle before it fills up. */
-    mapping(uint => SynthDepositEntry) public deposits;
+    mapping(uint => TribeDepositEntry) public deposits;
     // The starting index of our queue inclusive
     uint public depositStartIndex;
     // The ending index of our queue exclusive
@@ -66,16 +65,16 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     // A cap on the amount of hUSD you can buy with ETH in 1 transaction
     uint public maxEthPurchase = 500 * SafeDecimalMath.unit();
 
-    // If a user deposits a synth amount < the minimumDepositAmount the contract will keep
+    // If a user deposits a tribe amount < the minimumDepositAmount the contract will keep
     // the total of small deposits which will not be sold on market and the sender
-    // must call withdrawMyDepositedSynths() to get them back.
+    // must call withdrawMyDepositedTribes() to get them back.
     mapping(address => uint) public smallDeposits;
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_TRIBEONEHUSD = "TribehUSD";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 private constant CONTRACT_TRIBEONEETIX = "Tribeone";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -96,7 +95,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
     /**
      * @notice Set the funds wallet where ETH raised is held
-     * @param _fundsWallet The new address to forward ETH and Synths to
+     * @param _fundsWallet The new address to forward ETH and Tribes to
      */
     function setFundsWallet(address payable _fundsWallet) external onlyOwner {
         fundsWallet = _fundsWallet;
@@ -120,27 +119,27 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
      * @notice Fallback function (exchanges ETH to hUSD)
      */
     function() external payable nonReentrant rateNotInvalid(ETH) notPaused {
-        _exchangeEtherForSynths();
+        _exchangeEtherForTribes();
     }
 
     /**
      * @notice Exchange ETH to hUSD.
      */
     /* solhint-disable multiple-sends, reentrancy */
-    function exchangeEtherForSynths()
+    function exchangeEtherForTribes()
         external
         payable
         nonReentrant
         rateNotInvalid(ETH)
         notPaused
         returns (
-            uint // Returns the number of Synths (hUSD) received
+            uint // Returns the number of Tribes (hUSD) received
         )
     {
-        return _exchangeEtherForSynths();
+        return _exchangeEtherForTribes();
     }
 
-    function _exchangeEtherForSynths() internal returns (uint) {
+    function _exchangeEtherForTribes() internal returns (uint) {
         require(msg.value <= maxEthPurchase, "ETH amount above maxEthPurchase limit");
         uint ethToSend;
 
@@ -151,7 +150,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
         // Iterate through our outstanding deposits and sell them one at a time.
         for (uint i = depositStartIndex; remainingToFulfill > 0 && i < depositEndIndex; i++) {
-            SynthDepositEntry memory deposit = deposits[i];
+            TribeDepositEntry memory deposit = deposits[i];
 
             // If it's an empty spot in the queue from a previous withdrawal, just skip over it and
             // update the queue. It's already been deleted.
@@ -165,13 +164,13 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
                     // to change anything about our queue we can just fulfill it.
                     // Subtract the amount from our deposit and total.
                     uint newAmount = deposit.amount.sub(remainingToFulfill);
-                    deposits[i] = SynthDepositEntry({user: deposit.user, amount: newAmount});
+                    deposits[i] = TribeDepositEntry({user: deposit.user, amount: newAmount});
 
                     totalSellableDeposits = totalSellableDeposits.sub(remainingToFulfill);
 
                     // Transfer the ETH to the depositor. Send is used instead of transfer
                     // so a non payable contract won't block the FIFO queue on a failed
-                    // ETH payable for synths transaction. The proceeds to be sent to the
+                    // ETH payable for tribes transaction. The proceeds to be sent to the
                     // tribeone foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
                     ethToSend = remainingToFulfill.divideDecimal(exchangeRates().rateForCurrency(ETH));
@@ -186,11 +185,11 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
                         emit ClearedDeposit(msg.sender, deposit.user, ethToSend, remainingToFulfill, i);
                     }
 
-                    // And the Synths to the recipient.
-                    // Note: Fees are calculated by the Synth contract, so when
+                    // And the Tribes to the recipient.
+                    // Note: Fees are calculated by the Tribe contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
-                    synthsUSD().transfer(msg.sender, remainingToFulfill);
+                    tribehUSD().transfer(msg.sender, remainingToFulfill);
 
                     // And we have nothing left to fulfill on this order.
                     remainingToFulfill = 0;
@@ -206,7 +205,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
                     // Now fulfill by transfering the ETH to the depositor. Send is used instead of transfer
                     // so a non payable contract won't block the FIFO queue on a failed
-                    // ETH payable for synths transaction. The proceeds to be sent to the
+                    // ETH payable for tribes transaction. The proceeds to be sent to the
                     // tribeone foundation funds wallet. This is to protect all depositors
                     // in the queue in this rare case that may occur.
                     ethToSend = deposit.amount.divideDecimal(exchangeRates().rateForCurrency(ETH));
@@ -221,11 +220,11 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
                         emit ClearedDeposit(msg.sender, deposit.user, ethToSend, deposit.amount, i);
                     }
 
-                    // And the Synths to the recipient.
-                    // Note: Fees are calculated by the Synth contract, so when
+                    // And the Tribes to the recipient.
+                    // Note: Fees are calculated by the Tribe contract, so when
                     //       we request a specific transfer here, the fee is
                     //       automatically deducted and sent to the fee pool.
-                    synthsUSD().transfer(msg.sender, deposit.amount);
+                    tribehUSD().transfer(msg.sender, deposit.amount);
 
                     // And subtract the order from our outstanding amount remaining
                     // for the next iteration of the loop.
@@ -258,33 +257,33 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
      * @param guaranteedRate The exchange rate (ether price) which must be honored or the call will revert.
      */
-    function exchangeEtherForSynthsAtRate(uint guaranteedRate)
+    function exchangeEtherForTribesAtRate(uint guaranteedRate)
         external
         payable
         rateNotInvalid(ETH)
         notPaused
         returns (
-            uint // Returns the number of Synths (hUSD) received
+            uint // Returns the number of Tribes (hUSD) received
         )
     {
         require(guaranteedRate == exchangeRates().rateForCurrency(ETH), "Guaranteed rate would not be received");
 
-        return _exchangeEtherForSynths();
+        return _exchangeEtherForTribes();
     }
 
     function _exchangeEtherForHAKA() internal returns (uint) {
         // How many HAKA are they going to be receiving?
-        uint tribeoneToSend = tribeoneReceivedForEther(msg.value);
+        uint tribeetixToSend = tribeetixReceivedForEther(msg.value);
 
         // Store the ETH in our funds wallet
         fundsWallet.transfer(msg.value);
 
         // And send them the HAKA.
-        tribeone().transfer(msg.sender, tribeoneToSend);
+        tribeone().transfer(msg.sender, tribeetixToSend);
 
-        emit Exchange("ETH", msg.value, "HAKA", tribeoneToSend);
+        emit Exchange("ETH", msg.value, "HAKA", tribeetixToSend);
 
-        return tribeoneToSend;
+        return tribeetixToSend;
     }
 
     /**
@@ -328,28 +327,28 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         return _exchangeEtherForHAKA();
     }
 
-    function _exchangeSynthsForHAKA(uint synthAmount) internal returns (uint) {
+    function _exchangeTribesForHAKA(uint tribeAmount) internal returns (uint) {
         // How many HAKA are they going to be receiving?
-        uint tribeoneToSend = tribeoneReceivedForSynths(synthAmount);
+        uint tribeetixToSend = tribeetixReceivedForTribes(tribeAmount);
 
-        // Ok, transfer the Synths to our funds wallet.
+        // Ok, transfer the Tribes to our funds wallet.
         // These do not go in the deposit queue as they aren't for sale as such unless
         // they're sent back in from the funds wallet.
-        synthsUSD().transferFrom(msg.sender, fundsWallet, synthAmount);
+        tribehUSD().transferFrom(msg.sender, fundsWallet, tribeAmount);
 
         // And send them the HAKA.
-        tribeone().transfer(msg.sender, tribeoneToSend);
+        tribeone().transfer(msg.sender, tribeetixToSend);
 
-        emit Exchange("hUSD", synthAmount, "HAKA", tribeoneToSend);
+        emit Exchange("hUSD", tribeAmount, "HAKA", tribeetixToSend);
 
-        return tribeoneToSend;
+        return tribeetixToSend;
     }
 
     /**
      * @notice Exchange hUSD for HAKA
-     * @param synthAmount The amount of synths the user wishes to exchange.
+     * @param tribeAmount The amount of tribes the user wishes to exchange.
      */
-    function exchangeSynthsForHAKA(uint synthAmount)
+    function exchangeTribesForHAKA(uint tribeAmount)
         external
         rateNotInvalid(HAKA)
         notPaused
@@ -357,16 +356,16 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
             uint // Returns the number of HAKA received
         )
     {
-        return _exchangeSynthsForHAKA(synthAmount);
+        return _exchangeTribesForHAKA(tribeAmount);
     }
 
     /**
      * @notice Exchange hUSD for HAKA while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
-     * @param synthAmount The amount of synths the user wishes to exchange.
+     * @param tribeAmount The amount of tribes the user wishes to exchange.
      * @param guaranteedRate A rate (tribeone price) the caller wishes to insist upon.
      */
-    function exchangeSynthsForHAKAAtRate(uint synthAmount, uint guaranteedRate)
+    function exchangeTribesForHAKAAtRate(uint tribeAmount, uint guaranteedRate)
         external
         rateNotInvalid(HAKA)
         notPaused
@@ -376,7 +375,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     {
         require(guaranteedRate == exchangeRates().rateForCurrency(HAKA), "Guaranteed rate would not be received");
 
-        return _exchangeSynthsForHAKA(synthAmount);
+        return _exchangeTribesForHAKA(tribeAmount);
     }
 
     /**
@@ -388,70 +387,70 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
         // We don't emit our own events here because we assume that anyone
         // who wants to watch what the Depot is doing can
-        // just watch ERC20 events from the Synth and/or Tribeone contracts
+        // just watch ERC20 events from the Tribe and/or Tribeone contracts
         // filtered to our address.
     }
 
     /**
-     * @notice Allows a user to withdraw all of their previously deposited synths from this contract if needed.
+     * @notice Allows a user to withdraw all of their previously deposited tribes from this contract if needed.
      *         Developer note: We could keep an index of address to deposits to make this operation more efficient
      *         but then all the other operations on the queue become less efficient. It's expected that this
      *         function will be very rarely used, so placing the inefficiency here is intentional. The usual
      *         use case does not involve a withdrawal.
      */
-    function withdrawMyDepositedSynths() external {
-        uint synthsToSend = 0;
+    function withdrawMyDepositedTribes() external {
+        uint tribesToSend = 0;
 
         for (uint i = depositStartIndex; i < depositEndIndex; i++) {
-            SynthDepositEntry memory deposit = deposits[i];
+            TribeDepositEntry memory deposit = deposits[i];
 
             if (deposit.user == msg.sender) {
                 // The user is withdrawing this deposit. Remove it from our queue.
                 // We'll just leave a gap, which the purchasing logic can walk past.
-                synthsToSend = synthsToSend.add(deposit.amount);
+                tribesToSend = tribesToSend.add(deposit.amount);
                 delete deposits[i];
                 //Let the DApps know we've removed this deposit
-                emit SynthDepositRemoved(deposit.user, deposit.amount, i);
+                emit TribeDepositRemoved(deposit.user, deposit.amount, i);
             }
         }
 
         // Update our total
-        totalSellableDeposits = totalSellableDeposits.sub(synthsToSend);
+        totalSellableDeposits = totalSellableDeposits.sub(tribesToSend);
 
         // Check if the user has tried to send deposit amounts < the minimumDepositAmount to the FIFO
         // queue which would have been added to this mapping for withdrawal only
-        synthsToSend = synthsToSend.add(smallDeposits[msg.sender]);
+        tribesToSend = tribesToSend.add(smallDeposits[msg.sender]);
         smallDeposits[msg.sender] = 0;
 
         // If there's nothing to do then go ahead and revert the transaction
-        require(synthsToSend > 0, "You have no deposits to withdraw.");
+        require(tribesToSend > 0, "You have no deposits to withdraw.");
 
         // Send their deposits back to them (minus fees)
-        synthsUSD().transfer(msg.sender, synthsToSend);
+        tribehUSD().transfer(msg.sender, tribesToSend);
 
-        emit SynthWithdrawal(msg.sender, synthsToSend);
+        emit TribeWithdrawal(msg.sender, tribesToSend);
     }
 
     /**
-     * @notice depositSynths: Allows users to deposit synths via the approve / transferFrom workflow
+     * @notice depositTribes: Allows users to deposit tribes via the approve / transferFrom workflow
      * @param amount The amount of hUSD you wish to deposit (must have been approved first)
      */
-    function depositSynths(uint amount) external {
-        // Grab the amount of synths. Will fail if not approved first
-        synthsUSD().transferFrom(msg.sender, address(this), amount);
+    function depositTribes(uint amount) external {
+        // Grab the amount of tribes. Will fail if not approved first
+        tribehUSD().transferFrom(msg.sender, address(this), amount);
 
         // A minimum deposit amount is designed to protect purchasers from over paying
-        // gas for fullfilling multiple small synth deposits
+        // gas for fullfilling multiple small tribe deposits
         if (amount < minimumDepositAmount) {
-            // We cant fail/revert the transaction or send the synths back in a reentrant call.
-            // So we will keep your synths balance seperate from the FIFO queue so you can withdraw them
+            // We cant fail/revert the transaction or send the tribes back in a reentrant call.
+            // So we will keep your tribes balance seperate from the FIFO queue so you can withdraw them
             smallDeposits[msg.sender] = smallDeposits[msg.sender].add(amount);
 
-            emit SynthDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
+            emit TribeDepositNotAccepted(msg.sender, amount, minimumDepositAmount);
         } else {
             // Ok, thanks for the deposit, let's queue it up.
-            deposits[depositEndIndex] = SynthDepositEntry({user: msg.sender, amount: amount});
-            emit SynthDeposit(msg.sender, amount, depositEndIndex);
+            deposits[depositEndIndex] = TribeDepositEntry({user: msg.sender, amount: amount});
+            emit TribeDeposit(msg.sender, amount, depositEndIndex);
 
             // Walk our index forward as well.
             depositEndIndex = depositEndIndex.add(1);
@@ -465,17 +464,17 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
-        addresses[0] = CONTRACT_SYNTHSUSD;
+        addresses[0] = CONTRACT_TRIBEONEHUSD;
         addresses[1] = CONTRACT_EXRATES;
-        addresses[2] = CONTRACT_TRIBEONE;
+        addresses[2] = CONTRACT_TRIBEONEETIX;
     }
 
     /**
      * @notice Calculate how many HAKA you will receive if you transfer
-     *         an amount of synths.
-     * @param amount The amount of synths (in 18 decimal places) you want to ask about
+     *         an amount of tribes.
+     * @param amount The amount of tribes (in 18 decimal places) you want to ask about
      */
-    function tribeoneReceivedForSynths(uint amount) public view returns (uint) {
+    function tribeetixReceivedForTribes(uint amount) public view returns (uint) {
         // And what would that be worth in HAKA based on the current price?
         return amount.divideDecimal(exchangeRates().rateForCurrency(HAKA));
     }
@@ -485,32 +484,32 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
      *         an amount of ether.
      * @param amount The amount of ether (in wei) you want to ask about
      */
-    function tribeoneReceivedForEther(uint amount) public view returns (uint) {
+    function tribeetixReceivedForEther(uint amount) public view returns (uint) {
         // How much is the ETH they sent us worth in hUSD (ignoring the transfer fee)?
-        uint valueSentInSynths = amount.multiplyDecimal(exchangeRates().rateForCurrency(ETH));
+        uint valueSentInTribes = amount.multiplyDecimal(exchangeRates().rateForCurrency(ETH));
 
         // Now, how many HAKA will that USD amount buy?
-        return tribeoneReceivedForSynths(valueSentInSynths);
+        return tribeetixReceivedForTribes(valueSentInTribes);
     }
 
     /**
-     * @notice Calculate how many synths you will receive if you transfer
+     * @notice Calculate how many tribes you will receive if you transfer
      *         an amount of ether.
      * @param amount The amount of ether (in wei) you want to ask about
      */
-    function synthsReceivedForEther(uint amount) public view returns (uint) {
-        // How many synths would that amount of ether be worth?
+    function tribesReceivedForEther(uint amount) public view returns (uint) {
+        // How many tribes would that amount of ether be worth?
         return amount.multiplyDecimal(exchangeRates().rateForCurrency(ETH));
     }
 
     /* ========== INTERNAL VIEWS ========== */
 
-    function synthsUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSUSD));
+    function tribehUSD() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEHUSD));
     }
 
     function tribeone() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONE));
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
@@ -520,7 +519,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     // ========== MODIFIERS ==========
 
     modifier rateNotInvalid(bytes32 currencyKey) {
-        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate invalid or not a synth");
+        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate invalid or not a tribe");
         _;
     }
 
@@ -529,10 +528,10 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     event MaxEthPurchaseUpdated(uint amount);
     event FundsWalletUpdated(address newFundsWallet);
     event Exchange(string fromCurrency, uint fromAmount, string toCurrency, uint toAmount);
-    event SynthWithdrawal(address user, uint amount);
-    event SynthDeposit(address indexed user, uint amount, uint indexed depositIndex);
-    event SynthDepositRemoved(address indexed user, uint amount, uint indexed depositIndex);
-    event SynthDepositNotAccepted(address user, uint amount, uint minimum);
+    event TribeWithdrawal(address user, uint amount);
+    event TribeDeposit(address indexed user, uint amount, uint indexed depositIndex);
+    event TribeDepositRemoved(address indexed user, uint amount, uint indexed depositIndex);
+    event TribeDepositNotAccepted(address user, uint amount, uint minimum);
     event MinimumDepositAmountUpdated(uint amount);
     event NonPayableContract(address indexed receiver, uint amount);
     event ClearedDeposit(

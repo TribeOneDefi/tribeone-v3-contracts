@@ -31,8 +31,8 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 
 	const marketKeySuffix = '-perp';
 
-	const marketKey = toBytes32('sBTC' + marketKeySuffix);
-	const baseAsset = toBytes32('sBTC');
+	const marketKey = toBytes32('hBTC' + marketKeySuffix);
+	const baseAsset = toBytes32('hBTC');
 	const takerFeeDelayedOrder = toUnit('0.0005');
 	const makerFeeDelayedOrder = toUnit('0.0001');
 	const initialPrice = toUnit('100');
@@ -71,12 +71,12 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 			TestablePerpsV2MarketBTC: perpsV2MarketHelper,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'sETH'],
+			tribes: ['hUSD', 'hBTC', 'hETH'],
 			contracts: [
 				'PerpsV2MarketSettings',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
@@ -99,7 +99,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 		perpsV2MarketHelper = await PerpsV2MarketHelper.at(perpsV2Market.address);
 
 		// Update the rate so that it is not invalid
-		// await setupPriceAggregators(exchangeRates, owner, ['hUSD', 'sBTC', 'sETH'].map(toBytes32));
+		// await setupPriceAggregators(exchangeRates, owner, ['hUSD', 'hBTC', 'hETH'].map(toBytes32));
 		await setPrice(baseAsset, initialPrice);
 
 		// disable dynamic fee for most tests

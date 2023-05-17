@@ -109,7 +109,7 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
 
             // take keeper fee and send to flagger
             if (order.keeperDeposit > 0) {
-                _manager().issueSUSD(messageSender, order.keeperDeposit);
+                _manager().issueHUSD(messageSender, order.keeperDeposit);
             }
 
             marketState.deleteDelayedOrder(account);
@@ -154,11 +154,11 @@ contract PerpsV2MarketLiquidate is IPerpsV2MarketLiquidate, PerpsV2MarketProxyab
         );
 
         // Issue the reward to the flagger.
-        _manager().issueSUSD(marketState.positionFlagger(account), flaggerFee);
+        _manager().issueHUSD(marketState.positionFlagger(account), flaggerFee);
 
         // Issue the reward to the liquidator (keeper).
         if (liquidatorFee > 0) {
-            _manager().issueSUSD(liquidator, liquidatorFee);
+            _manager().issueHUSD(liquidator, liquidatorFee);
         }
 
         // Pay the remaining to feePool

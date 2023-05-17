@@ -38,11 +38,11 @@ module.exports = {
 		'OwnerRelayOnOptimism.sol',
 		'RewardEscrowV2Frozen',
 		'ShortingRewards.sol',
-		'SynthRedeemer.sol',
+		'TribeRedeemer.sol',
 		'TemporarilyOwned.sol',
 		'TradingRewards.sol',
-		'VirtualSynth.sol',
-		'VirtualSynthMastercopy.sol',
+		'VirtualTribe.sol',
+		'VirtualTribeMastercopy.sol',
 	],
 	providerOptions: {
 		default_balance_ether: 10000000000000, // extra zero just in case (coverage consumes more gas)

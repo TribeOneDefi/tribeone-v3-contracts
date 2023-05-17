@@ -26,15 +26,15 @@ node publish deploy # "--help" for options
 
 ### CLI Options
 
-- `-a, --add-new-synths` Whether or not any new synths in the synths.json file should be deployed if there is no entry in the config file.
+- `-a, --add-new-tribes` Whether or not any new tribes in the tribes.json file should be deployed if there is no entry in the config file.
 - `-b, --build-path [value]` Path for built files to go. (default of `./build` - relative to the root of this repo). The folders `compiled` and `flattened` will be made under this path and the respective files will go in there.
 - `-c, --contract-deployment-gas-limit <value>` Contract deployment gas limit (default: 7000000 (7m))
-- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the synths list (`synths.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/goerli/config.json)):
+- `-d, --deployment-path <value>` Path to a folder that has your input configuration file (`config.json`), the tribes list (`tribes.json`) and where your `deployment.json` file will be written (and read from if it currently exists). The `config.json` should be in the following format ([here's an example](deployed/goerli/config.json)):
 
   ```javascript
   // config.json
   {
-    "ProxysUSD": {
+    "ProxyhUSD": {
       "deploy": true // whether or not to deploy this or use existing instance from any deployment.json file
     },
 
@@ -89,8 +89,8 @@ node publish nominate # "--help" for options
 ### Example
 
 ```bash
-node publish nominate -n goerli -d publish/deployed/goerli -g 3 -c Tribeone -c ProxysUSD -o 0x0000000000000000000000000000000000000000
-node publish nominate -o 0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882 -n goerli -c ProxysUSD -d publish/deployed/goerli -g 20
+node publish nominate -n goerli -d publish/deployed/goerli -g 3 -c Tribeone -c ProxyhUSD -o 0x0000000000000000000000000000000000000000
+node publish nominate -o 0xB64fF7a4a33Acdf48d97dab0D764afD0F6176882 -n goerli -c ProxyhUSD -d publish/deployed/goerli -g 20
 ```
 
 ## 5. Owner Actions
@@ -101,34 +101,34 @@ Helps the owner take ownership of nominated contracts and run any deployment tas
 node publish owner # "--help" for options
 ```
 
-## 6. Remove Synths
+## 6. Remove Tribes
 
-Will attempt to remove all given synths from the `Tribeone` contract (as long as they have `totalSupply` of `0`) and update the `config.json` and `synths.json` for the deployment folder.
+Will attempt to remove all given tribes from the `Tribeone` contract (as long as they have `totalSupply` of `0`) and update the `config.json` and `tribes.json` for the deployment folder.
 
 ```bash
-node publish remove-synths # "--help" for options
+node publish remove-tribes # "--help" for options
 ```
 
 ### Example
 
 ```bash
-node publish remove-synths -n goerli -d publish/deployed/goerli -g 3 -s sRUB -s sETH
+node publish remove-tribes -n goerli -d publish/deployed/goerli -g 3 -s sRUB -s hETH
 ```
 
-## 7. Replace Synths
+## 7. Replace Tribes
 
-Will attempt to replace all given synths with a new given `subclass`. It does this by disconnecting the existing TokenState for the Synth and attaching it to the new one.
+Will attempt to replace all given tribes with a new given `subclass`. It does this by disconnecting the existing TokenState for the Tribe and attaching it to the new one.
 
 ```bash
-node publish replace-synths # "--help" for options
+node publish replace-tribes # "--help" for options
 ```
 
-## 7. Purge Synths
+## 7. Purge Tribes
 
-Will attempt purge the given synth with all token holders it can find. Uses the list of holders from mainnet, and as such won't do anything for other networks.
+Will attempt purge the given tribe with all token holders it can find. Uses the list of holders from mainnet, and as such won't do anything for other networks.
 
 ```bash
-node publish purge-synths # "--help" for options
+node publish purge-tribes # "--help" for options
 ```
 
 ## 8. Release
@@ -150,7 +150,7 @@ node publish deploy-staking-rewards # "--help" for options
 ### Examples
 
 ```bash
-node publish deploy-staking-rewards -n goerli -d publish/deployed/goerli -t sBTC --dry-run
+node publish deploy-staking-rewards -n goerli -d publish/deployed/goerli -t hBTC --dry-run
 node publish deploy-staking-rewards -n local -d publish/deployed/local
 
 ```
@@ -183,7 +183,7 @@ Using semantic versioning ([semver](https://semver.org/)): `v[MAJOR].[MINOR].[PA
 ### Examples
 
 - Say `v3.1.8` is a mainnet release
-- `v3.1.9-alpha` is a Goerli deployment of new synths (no contract changes)
+- `v3.1.9-alpha` is a Goerli deployment of new tribes (no contract changes)
 - `v3.1.9` is the mainnet release with all environments
 
 ### Example
@@ -192,11 +192,11 @@ Using semantic versioning ([semver](https://semver.org/)): `v[MAJOR].[MINOR].[PA
 node publish release --version 2.22.0 --branch master --release Altair
 ```
 
-# When adding new synths
+# When adding new tribes
 
-1. In the environment folder you are deploying to, add the synth key to the `synths.json` file. If you want the synth to be purgeable, add `subclass: "PurgeableSynth"` to the object.
+1. In the environment folder you are deploying to, add the tribe key to the `tribes.json` file. If you want the tribe to be purgeable, add `subclass: "PurgeableTribe"` to the object.
 2. [Optional] Run `build` if you've changed any source files, if not you can skip this step.
-3. Run `deploy` as usual but add the `--add-new-synths` flag
+3. Run `deploy` as usual but add the `--add-new-tribes` flag
 4. Run `verify` as usual.
 
 # `releases.json`

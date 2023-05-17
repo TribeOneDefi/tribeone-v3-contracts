@@ -9,25 +9,25 @@ const { skipWaitingPeriod } = require('../utils/skip');
 const { increaseStalePeriodAndCheckRatesAndCache } = require('../utils/rates');
 
 function itCanRedeem({ ctx }) {
-	describe('redemption of deprecated synths', () => {
+	describe('redemption of deprecated tribes', () => {
 		let owner;
 		let someUser;
-		let Tribeone, Issuer, SynthToRedeem, SynthsUSD, SynthToRedeemProxy, SynthRedeemer;
+		let Tribeone, Issuer, TribeToRedeem, TribehUSD, TribeToRedeemProxy, TribeRedeemer;
 		let totalDebtBeforeRemoval;
-		let synth;
+		let tribe;
 
 		before('target contracts and users', () => {
-			// sETH and sBTC can't be removed because the debt may be too large for removeSynth to not underflow
-			// during debt update, so sETHBTC is used here
-			synth = 'sETHBTC';
+			// hETH and hBTC can't be removed because the debt may be too large for removeTribe to not underflow
+			// during debt update, so hETHBTC is used here
+			tribe = 'hETHBTC';
 
 			({
 				Tribeone,
 				Issuer,
-				[`Synth${synth}`]: SynthToRedeem,
-				[`Proxy${synth}`]: SynthToRedeemProxy,
-				SynthsUSD,
-				SynthRedeemer,
+				[`Tribe${tribe}`]: TribeToRedeem,
+				[`Proxy${tribe}`]: TribeToRedeemProxy,
+				TribehUSD,
+				TribeRedeemer,
 			} = ctx.contracts);
 
 			({ owner, someUser } = ctx.users);
@@ -42,10 +42,10 @@ function itCanRedeem({ ctx }) {
 			});
 		});
 
-		before(`ensure the user has some of the target synth`, async () => {
+		before(`ensure the user has some of the target tribe`, async () => {
 			await ensureBalance({
 				ctx,
-				symbol: synth,
+				symbol: tribe,
 				user: someUser,
 				balance: ethers.utils.parseEther('100'),
 			});
@@ -60,45 +60,45 @@ function itCanRedeem({ ctx }) {
 		});
 
 		before('record total system debt', async () => {
-			totalDebtBeforeRemoval = await Issuer.totalIssuedSynths(toBytes32('hUSD'), true);
+			totalDebtBeforeRemoval = await Issuer.totalIssuedTribes(toBytes32('hUSD'), true);
 		});
 
-		describe(`deprecating the synth`, () => {
-			before(`when the owner removes the synth`, async () => {
+		describe(`deprecating the tribe`, () => {
+			before(`when the owner removes the tribe`, async () => {
 				Issuer = Issuer.connect(owner);
-				// note: this sets the synth as redeemed and cannot be undone without
+				// note: this sets the tribe as redeemed and cannot be undone without
 				// redeploying locally or restarting a fork
-				const tx = await Issuer.removeSynth(toBytes32(synth));
+				const tx = await Issuer.removeTribe(toBytes32(tribe));
 				await tx.wait();
 			});
 
 			it('then the total system debt is unchanged', async () => {
 				assert.bnEqual(
-					await Issuer.totalIssuedSynths(toBytes32('hUSD'), true),
+					await Issuer.totalIssuedTribes(toBytes32('hUSD'), true),
 					totalDebtBeforeRemoval
 				);
 			});
-			it(`and the synth is removed from the system`, async () => {
-				assert.equal(await Tribeone.synths(toBytes32(synth)), ZERO_ADDRESS);
+			it(`and the tribe is removed from the system`, async () => {
+				assert.equal(await Tribeone.tribes(toBytes32(tribe)), ZERO_ADDRESS);
 			});
 			describe('user redemption', () => {
-				let sUSDBeforeRedemption;
+				let hUSDBeforeRedemption;
 				before(async () => {
-					sUSDBeforeRedemption = await SynthsUSD.balanceOf(someUser.address);
+					hUSDBeforeRedemption = await TribehUSD.balanceOf(someUser.address);
 				});
 
-				before(`when the user redeems their synth`, async () => {
-					SynthRedeemer = SynthRedeemer.connect(someUser);
-					const tx = await SynthRedeemer.redeem(SynthToRedeemProxy.address);
+				before(`when the user redeems their tribe`, async () => {
+					TribeRedeemer = TribeRedeemer.connect(someUser);
+					const tx = await TribeRedeemer.redeem(TribeToRedeemProxy.address);
 					await tx.wait();
 				});
 
-				it(`then the user has no more synth`, async () => {
-					assert.equal(await SynthToRedeem.balanceOf(someUser.address), '0');
+				it(`then the user has no more tribe`, async () => {
+					assert.equal(await TribeToRedeem.balanceOf(someUser.address), '0');
 				});
 
 				it('and they have more hUSD again', async () => {
-					assert.bnGt(await SynthsUSD.balanceOf(someUser.address), sUSDBeforeRedemption);
+					assert.bnGt(await TribehUSD.balanceOf(someUser.address), hUSDBeforeRedemption);
 				});
 			});
 		});

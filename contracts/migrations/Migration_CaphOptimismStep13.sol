@@ -19,7 +19,7 @@ contract Migration_CaphOptimismStep13 is BaseMigration {
     address public constant OWNER = 0x6d4a64C57612841c2C6745dB2a4E4db34F002D20;
 
     // ----------------------------
-    // EXISTING TRIBEONE CONTRACTS
+    // EXISTING TRIBEONEETIX CONTRACTS
     // ----------------------------
 
     // https://explorer.optimism.io/address/0xE8c41bE1A167314ABAF2423b72Bf8da826943FFD
@@ -133,9 +133,9 @@ contract Migration_CaphOptimismStep13 is BaseMigration {
         perpsv2proxyethperp_i.addRoute(0x9cfbf4e4, 0x989D359dBF9C531aE6C305c37AC37220b8Dd99Eb, true);
         perpsv2proxyethperp_i.addRoute(0x917e77f5, 0x989D359dBF9C531aE6C305c37AC37220b8Dd99Eb, true);
         futuresmarketmanager_updateMarketsImplementations_57();
-        perpsv2marketsettings_i.setMaxLiquidationDelta("sETHPERP", 1500000000000000);
-        perpsv2marketsettings_i.setLiquidationBufferRatio("sETHPERP", 10000000000000000);
-        perpsv2marketsettings_i.setMaxPD("sETHPERP", 3000000000000000);
+        perpsv2marketsettings_i.setMaxLiquidationDelta("hETHPERP", 1500000000000000);
+        perpsv2marketsettings_i.setLiquidationBufferRatio("hETHPERP", 10000000000000000);
+        perpsv2marketsettings_i.setMaxPD("hETHPERP", 3000000000000000);
         perpsv2marketstatebtcperp_i.linkOrInitializeState();
         perpsv2marketstatebtcperplegacy_addAssociatedContracts_62();
         perpsv2exchangerate_addAssociatedContracts_63();
@@ -193,9 +193,9 @@ contract Migration_CaphOptimismStep13 is BaseMigration {
         perpsv2proxybtcperp_i.addRoute(0x9cfbf4e4, 0xE662e0aF5fCaBe78aaaF4cFF0a13ca69512Fc481, true);
         perpsv2proxybtcperp_i.addRoute(0x917e77f5, 0xE662e0aF5fCaBe78aaaF4cFF0a13ca69512Fc481, true);
         futuresmarketmanager_updateMarketsImplementations_117();
-        perpsv2marketsettings_i.setMaxLiquidationDelta("sBTCPERP", 1500000000000000);
-        perpsv2marketsettings_i.setLiquidationBufferRatio("sBTCPERP", 10000000000000000);
-        perpsv2marketsettings_i.setMaxPD("sBTCPERP", 3000000000000000);
+        perpsv2marketsettings_i.setMaxLiquidationDelta("hBTCPERP", 1500000000000000);
+        perpsv2marketsettings_i.setLiquidationBufferRatio("hBTCPERP", 10000000000000000);
+        perpsv2marketsettings_i.setMaxPD("hBTCPERP", 3000000000000000);
         systemstatus_i.updateAccessControl("Futures", address(this), false, false);
 
         // NOMINATE OWNERSHIP back to owner for aforementioned contracts

@@ -62,7 +62,7 @@
 	"SystemStatus": {
 		"deploy": false
 	},
-	"SynthUtil": {
+	"TribeUtil": {
 		"deploy": false
 	},
 	"DappMaintenance": {
@@ -81,15 +81,6 @@
 		"deploy": false
 	},
 	"TokenStateTribeone": {
-		"deploy": false
-	},
-	"TokenStatesETH": {
-		"deploy": false
-	},
-	"ProxysETH": {
-		"deploy": false
-	},
-	"SynthsETH": {
 		"deploy": false
 	},
 	"FlexibleStorage": {
@@ -125,10 +116,13 @@
 	"TribeoneBridgeToOptimism": {
 		"deploy": false
 	},
-	"VirtualSynthMastercopy": {
+	"VirtualTribeMastercopy": {
 		"deploy": false
 	},
 	"TribeoneBridgeEscrow": {
+		"deploy": false
+	},
+	"MockToken": {
 		"deploy": false
 	},
 	"EtherWrapper": {
@@ -143,7 +137,7 @@
 	"OwnerRelayOnEthereum": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
+	"TribeRedeemer": {
 		"deploy": false
 	},
 	"SystemSettingsLib": {
@@ -161,7 +155,7 @@
 	"FuturesMarketManager": {
 		"deploy": false
 	},
-	"OneNetAggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedTribes": {
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {
@@ -171,18 +165,6 @@
 		"deploy": false
 	},
 	"LiquidatorRewards": {
-		"deploy": false
-	},
-	"OneNetAggregatorsDEFI": {
-		"deploy": true
-	},
-	"TokenStatesBTC": {
-		"deploy": false
-	},
-	"ProxysBTC": {
-		"deploy": false
-	},
-	"SynthsBTC": {
 		"deploy": false
 	},
 	"CircuitBreaker": {
@@ -206,7 +188,25 @@
 	"ProxyhUSD": {
 		"deploy": false
 	},
-	"SynthhUSD": {
+	"TribehUSD": {
+		"deploy": false
+	},
+	"TokenStatehETH": {
+		"deploy": false
+	},
+	"ProxyhETH": {
+		"deploy": false
+	},
+	"TribehETH": {
+		"deploy": false
+	},
+	"TokenStatehBTC": {
+		"deploy": false
+	},
+	"ProxyhBTC": {
+		"deploy": false
+	},
+	"TribehBTC": {
 		"deploy": false
 	}
 }

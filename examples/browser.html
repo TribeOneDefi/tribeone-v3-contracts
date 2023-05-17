@@ -20,8 +20,8 @@
       console.log("sources", sources);
       const targets = tribeone.getTarget({network});
       console.log("targets", targets);
-      const synths = tribeone.getSynths({network});
-      console.log("synths", synths);
+      const tribes = tribeone.getTribes({network});
+      console.log("tribes", tribes);
       const users = tribeone.getUsers({network});
       console.log("users", users);
       console.log(
@@ -29,14 +29,14 @@
         tribeone.toBytes32("HAKA") ===
           "0x534e580000000000000000000000000000000000000000000000000000000000"
       );
-      const sETHContract = new ethers.Contract(
-        targets.SynthsETH.address,
-        sources[targets.SynthsETH.source].abi,
+      const hETHContract = new ethers.Contract(
+        targets.TribehETH.address,
+        sources[targets.TribehETH.source].abi,
         ethers.getDefaultProvider(network)
       );
-      sETHContract.totalSupply().then(unformattedTotalSupply => {
+      hETHContract.totalSupply().then(unformattedTotalSupply => {
         console.log(
-          "sETH supply",
+          "hETH supply",
           ethers.utils.formatEther(unformattedTotalSupply)
         );
       });

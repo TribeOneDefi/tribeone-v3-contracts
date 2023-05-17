@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./interfaces/IERC20.sol";
 import "./ExternStateToken.sol";
@@ -9,7 +8,7 @@ import "./MixinResolver.sol";
 import "./interfaces/ITribeone.sol";
 
 // Internal references
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 import "./TokenState.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchanger.sol";
@@ -17,13 +16,13 @@ import "./interfaces/IIssuer.sol";
 import "./interfaces/IRewardsDistribution.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
-import "./interfaces/IVirtualSynth.sol";
+import "./interfaces/IVirtualTribe.sol";
 import "./interfaces/IRewardEscrowV2.sol";
 
 contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     // ========== STATE VARIABLES ==========
 
-    // Available Synths which can be used with the system
+    // Available Tribes which can be used with the system
     string public constant TOKEN_NAME = "Tribeone Network Token";
     string public constant TOKEN_SYMBOL = "HAKA";
     uint8 public constant DECIMALS = 18;
@@ -100,47 +99,47 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         return issuer().debtBalanceOf(account, currencyKey);
     }
 
-    function totalIssuedSynths(bytes32 currencyKey) external view returns (uint) {
-        return issuer().totalIssuedSynths(currencyKey, false);
+    function totalIssuedTribes(bytes32 currencyKey) external view returns (uint) {
+        return issuer().totalIssuedTribes(currencyKey, false);
     }
 
-    function totalIssuedSynthsExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint) {
-        return issuer().totalIssuedSynths(currencyKey, true);
+    function totalIssuedTribesExcludeOtherCollateral(bytes32 currencyKey) external view returns (uint) {
+        return issuer().totalIssuedTribes(currencyKey, true);
     }
 
     function availableCurrencyKeys() external view returns (bytes32[] memory) {
         return issuer().availableCurrencyKeys();
     }
 
-    function availableSynthCount() external view returns (uint) {
-        return issuer().availableSynthCount();
+    function availableTribeCount() external view returns (uint) {
+        return issuer().availableTribeCount();
     }
 
-    function availableSynths(uint index) external view returns (ISynth) {
-        return issuer().availableSynths(index);
+    function availableTribes(uint index) external view returns (ITribe) {
+        return issuer().availableTribes(index);
     }
 
-    function synths(bytes32 currencyKey) external view returns (ISynth) {
-        return issuer().synths(currencyKey);
+    function tribes(bytes32 currencyKey) external view returns (ITribe) {
+        return issuer().tribes(currencyKey);
     }
 
-    function synthsByAddress(address synthAddress) external view returns (bytes32) {
-        return issuer().synthsByAddress(synthAddress);
+    function tribesByAddress(address tribeAddress) external view returns (bytes32) {
+        return issuer().tribesByAddress(tribeAddress);
     }
 
     function isWaitingPeriod(bytes32 currencyKey) external view returns (bool) {
         return exchanger().maxSecsLeftInWaitingPeriod(messageSender, currencyKey) > 0;
     }
 
-    function anySynthOrHAKARateIsInvalid() external view returns (bool anyRateInvalid) {
-        return issuer().anySynthOrHAKARateIsInvalid();
+    function anyTribeOrHAKARateIsInvalid() external view returns (bool anyRateInvalid) {
+        return issuer().anyTribeOrHAKARateIsInvalid();
     }
 
-    function maxIssuableSynths(address account) external view returns (uint maxIssuable) {
-        return issuer().maxIssuableSynths(account);
+    function maxIssuableTribes(address account) external view returns (uint maxIssuable) {
+        return issuer().maxIssuableTribes(account);
     }
 
-    function remainingIssuableSynths(address account)
+    function remainingIssuableTribes(address account)
         external
         view
         returns (
@@ -149,7 +148,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
             uint totalSystemDebt
         )
     {
-        return issuer().remainingIssuableSynths(account);
+        return issuer().remainingIssuableTribes(account);
     }
 
     function collateralisationRatio(address _issuer) external view returns (uint) {
@@ -193,7 +192,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
             (uint transferable, bool anyRateIsInvalid) =
                 issuer().transferableTribeoneAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
             require(value <= transferable, "Cannot transfer staked or escrowed HAKA");
-            require(!anyRateIsInvalid, "A synth or HAKA rate is invalid");
+            require(!anyRateIsInvalid, "A tribe or HAKA rate is invalid");
         }
 
         return true;
@@ -315,50 +314,50 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     }
 
     // SIP-252: migration of HAKA token balance from old to new escrow rewards contract
-    // function migrateEscrowContractBalance() external onlyOwner {
-    //     address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
-    //     // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
-    //     // using the cached value and read the most updated one directly from the resolver
-    //     address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
-    //     require(to != from, "cannot migrate to same address");
+    function migrateEscrowContractBalance() external onlyOwner {
+        address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
+        // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
+        // using the cached value and read the most updated one directly from the resolver
+        address to = resolver.requireAndGetAddress("RewardEscrowV2", "New escrow address unset");
+        require(to != from, "cannot migrate to same address");
 
-    //     uint currentBalance = tokenState.balanceOf(from);
-    //     // allow no-op for idempotent migration steps in case action was performed already
-    //     if (currentBalance > 0) {
-    //         _internalTransfer(from, to, currentBalance);
-    //     }
-    // }
-
-    function issueSynths(uint amount) external issuanceActive optionalProxy {
-        return issuer().issueSynths(messageSender, amount);
+        uint currentBalance = tokenState.balanceOf(from);
+        // allow no-op for idempotent migration steps in case action was performed already
+        if (currentBalance > 0) {
+            _internalTransfer(from, to, currentBalance);
+        }
     }
 
-    function issueSynthsOnBehalf(address issueForAddress, uint amount) external issuanceActive optionalProxy {
-        return issuer().issueSynthsOnBehalf(issueForAddress, messageSender, amount);
+    function issueTribes(uint amount) external issuanceActive optionalProxy {
+        return issuer().issueTribes(messageSender, amount);
     }
 
-    function issueMaxSynths() external issuanceActive optionalProxy {
-        return issuer().issueMaxSynths(messageSender);
+    function issueTribesOnBehalf(address issueForAddress, uint amount) external issuanceActive optionalProxy {
+        return issuer().issueTribesOnBehalf(issueForAddress, messageSender, amount);
     }
 
-    function issueMaxSynthsOnBehalf(address issueForAddress) external issuanceActive optionalProxy {
-        return issuer().issueMaxSynthsOnBehalf(issueForAddress, messageSender);
+    function issueMaxTribes() external issuanceActive optionalProxy {
+        return issuer().issueMaxTribes(messageSender);
     }
 
-    function burnSynths(uint amount) external issuanceActive optionalProxy {
-        return issuer().burnSynths(messageSender, amount);
+    function issueMaxTribesOnBehalf(address issueForAddress) external issuanceActive optionalProxy {
+        return issuer().issueMaxTribesOnBehalf(issueForAddress, messageSender);
     }
 
-    function burnSynthsOnBehalf(address burnForAddress, uint amount) external issuanceActive optionalProxy {
-        return issuer().burnSynthsOnBehalf(burnForAddress, messageSender, amount);
+    function burnTribes(uint amount) external issuanceActive optionalProxy {
+        return issuer().burnTribes(messageSender, amount);
     }
 
-    function burnSynthsToTarget() external issuanceActive optionalProxy {
-        return issuer().burnSynthsToTarget(messageSender);
+    function burnTribesOnBehalf(address burnForAddress, uint amount) external issuanceActive optionalProxy {
+        return issuer().burnTribesOnBehalf(burnForAddress, messageSender, amount);
     }
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress) external issuanceActive optionalProxy {
-        return issuer().burnSynthsToTargetOnBehalf(burnForAddress, messageSender);
+    function burnTribesToTarget() external issuanceActive optionalProxy {
+        return issuer().burnTribesToTarget(messageSender);
+    }
+
+    function burnTribesToTargetOnBehalf(address burnForAddress) external issuanceActive optionalProxy {
+        return issuer().burnTribesToTargetOnBehalf(burnForAddress, messageSender);
     }
 
     /// @notice Force liquidate a delinquent account and distribute the redeemed HAKA rewards amongst the appropriate recipients.
@@ -453,11 +452,11 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     /**
      * @notice allows for migration from v2x to v3 when an account has pending escrow entries
      */
-    // function revokeAllEscrow(address account) external systemActive {
-    //     address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
-    //     require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
-    //     rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
-    // }
+    function revokeAllEscrow(address account) external systemActive {
+        address legacyMarketAddress = resolver.getAddress(CONTRACT_V3_LEGACYMARKET);
+        require(msg.sender == legacyMarketAddress, "Only LegacyMarket can revoke escrow");
+        rewardEscrowV2().revokeFrom(account, legacyMarketAddress, rewardEscrowV2().totalEscrowedAccountBalance(account), 0);
+    }
 
     function migrateAccountBalances(address account)
         external
@@ -471,7 +470,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         totalLiquidBalance = tokenState.balanceOf(account);
         if (totalLiquidBalance > 0) {
             bool succeeded = _transferByProxy(account, debtMigratorOnEthereum, totalLiquidBalance);
-            require(succeeded, "haka transfer failed");
+            require(succeeded, "snx transfer failed");
         }
 
         // get their escrowed HAKA balance and revoke it all
@@ -496,7 +495,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         uint,
         bytes32,
         bytes32
-    ) external returns (uint, IVirtualSynth) {
+    ) external returns (uint, IVirtualTribe) {
         _notImplemented();
     }
 
@@ -556,7 +555,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     }
 
     function _exchangeActive(bytes32 src, bytes32 dest) private view {
-        systemStatus().requireExchangeBetweenSynthsAllowed(src, dest);
+        systemStatus().requireExchangeBetweenTribesAllowed(src, dest);
     }
 
     modifier onlyExchanger() {
@@ -602,17 +601,17 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     }
 
     // ========== EVENTS ==========
-    event AccountLiquidated(address indexed account, uint hakaRedeemed, uint amountLiquidated, address liquidator);
+    event AccountLiquidated(address indexed account, uint snxRedeemed, uint amountLiquidated, address liquidator);
     bytes32 internal constant ACCOUNTLIQUIDATED_SIG = keccak256("AccountLiquidated(address,uint256,uint256,address)");
 
     function emitAccountLiquidated(
         address account,
-        uint256 hakaRedeemed,
+        uint256 snxRedeemed,
         uint256 amountLiquidated,
         address liquidator
     ) internal {
         proxy._emit(
-            abi.encode(hakaRedeemed, amountLiquidated, liquidator),
+            abi.encode(snxRedeemed, amountLiquidated, liquidator),
             2,
             ACCOUNTLIQUIDATED_SIG,
             addressToBytes32(account),
@@ -621,7 +620,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         );
     }
 
-    event SynthExchange(
+    event TribeExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
         uint256 fromAmount,
@@ -629,10 +628,10 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 internal constant SYNTH_EXCHANGE_SIG =
-        keccak256("SynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+    bytes32 internal constant TRIBEONE_EXCHANGE_SIG =
+        keccak256("TribeExchange(address,bytes32,uint256,bytes32,uint256,address)");
 
-    function emitSynthExchange(
+    function emitTribeExchange(
         address account,
         bytes32 fromCurrencyKey,
         uint256 fromAmount,
@@ -643,7 +642,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         proxy._emit(
             abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
-            SYNTH_EXCHANGE_SIG,
+            TRIBEONE_EXCHANGE_SIG,
             addressToBytes32(account),
             0,
             0

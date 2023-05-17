@@ -11,12 +11,12 @@ defaultValue = "local"
 [setting.owner]
 defaultValue = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 
-# some haka and hUSD will be minted by this address
+# some snx and hUSD will be minted by this address
 [setting.test_user]
 defaultValue = "0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9"
 
 # how much should HAKA be worth (6 decimals)
-[setting.rate_haka]
+[setting.rate_snx]
 defaultValue = "5000000"
 
 # how much should ETH be worth (6 decimals)
@@ -27,11 +27,11 @@ defaultValue = "5000000000"
 [setting.rate_btc]
 defaultValue = "50000000000"
 
-[import.aggregator_haka]
+[import.aggregator_snx]
 source = "chainlink:0.7-mock"
-options.rate = "<%= settings.rate_haka %>"
+options.rate = "<%= settings.rate_snx %>"
 options.timestamp = "1558469483"
-options.salt = "haka"
+options.salt = "snx"
 
 [import.aggregator_eth]
 source = "chainlink:0.7-mock"
@@ -51,7 +51,7 @@ func = "deploy"
 args = ["<%= settings.network %>"]
 modified = ["contracts", "publish/src", "publish/deployed/local"]
 
-[invoke.transfer_owner_haka]
+[invoke.transfer_owner_snx]
 target = ["ProxyTribeone"]
 
 fromCall.func = "owner"
@@ -87,13 +87,13 @@ target = [
     "LiquidatorRewards",
     "NativeEtherWrapper",
     "OneNetAggregatorDebtRatio",
-    "OneNetAggregatorIssuedSynths",
+    "OneNetAggregatorIssuedTribes",
     "OwnerRelayOnEthereum",
     "ProxyFeePool",
     "ProxyTribeone",
-    "ProxysUSD",
-    "ProxysETH",
-    "ProxysBTC",
+    "ProxyhUSD",
+    "ProxyhETH",
+    "ProxyhBTC",
     "RewardEscrow",
     "RewardsDistribution",
     "Tribeone",
@@ -101,14 +101,14 @@ target = [
     "TribeoneBridgeToOptimism",
     "TribeoneDebtShare",
     "TribeoneEscrow",
-    "SynthsUSD",
-    "SynthsETH",
-    "SynthsBTC",
+    "TribehUSD",
+    "TribehETH",
+    "TribehBTC",
     "SystemSettings",
     "SystemStatus",
-    "TokenStatesUSD",
-    "TokenStatesETH",
-    "TokenStatesBTC",
+    "TokenStatehUSD",
+    "TokenStatehETH",
+    "TokenStatehBTC",
     "TradingRewards",
     "WrapperFactory",
 ]
@@ -148,13 +148,13 @@ target = [
     "LiquidatorRewards",
     "NativeEtherWrapper",
     "OneNetAggregatorDebtRatio",
-    "OneNetAggregatorIssuedSynths",
+    "OneNetAggregatorIssuedTribes",
     "OwnerRelayOnEthereum",
     "ProxyFeePool",
     "ProxyTribeone",
-    "ProxysUSD",
-    "ProxysETH",
-    "ProxysBTC",
+    "ProxyhUSD",
+    "ProxyhETH",
+    "ProxyhBTC",
     "RewardEscrow",
     "RewardsDistribution",
     "Tribeone",
@@ -162,14 +162,14 @@ target = [
     "TribeoneBridgeToOptimism",
     "TribeoneDebtShare",
     "TribeoneEscrow",
-    "SynthsUSD",
-    "SynthsETH",
-    "SynthsBTC",
+    "TribehUSD",
+    "TribehETH",
+    "TribehBTC",
     "SystemSettings",
     "SystemStatus",
-    "TokenStatesUSD",
-    "TokenStatesETH",
-    "TokenStatesBTC",
+    "TokenStatehUSD",
+    "TokenStatehETH",
+    "TokenStatehBTC",
     "TradingRewards",
     "WrapperFactory",
 ]
@@ -180,17 +180,17 @@ args = []
 
 depends = ["invoke.set_ownership"]
 
-[invoke.set_aggregator_haka]
+[invoke.set_aggregator_snx]
 target = ["ExchangeRates"]
 
 from = "<%= settings.owner %>"
 func = "addAggregator"
 args = [
     "0x534e580000000000000000000000000000000000000000000000000000000000",
-    "<%= imports.aggregator_haka.contracts.aggregator.address %>",
+    "<%= imports.aggregator_snx.contracts.aggregator.address %>",
 ]
 
-depends = ["invoke.accept_ownership", "import.aggregator_haka"]
+depends = ["invoke.accept_ownership", "import.aggregator_snx"]
 
 [invoke.set_aggregator_eth]
 target = ["ExchangeRates"]
@@ -241,25 +241,25 @@ func = "takeDebtSnapshot"
 
 depends = ["run.tribeone"]
 
-[invoke.test_user_haka]
+[invoke.test_user_snx]
 target = ["ProxyTribeone"]
 
 from = "<%= settings.owner %>"
 func = "transfer"
 args = ["<%= settings.test_user %>", "10000000000000000000000000"]
 
-depends = ["invoke.transfer_owner_haka"]
+depends = ["invoke.transfer_owner_snx"]
 
 [invoke.test_user_mint]
 target = ["Tribeone"]
 
 from = "<%= settings.test_user %>"
-func = "issueSynths"
+func = "issueTribes"
 args = ["1000000000000000000000"]
 #args = ['1']
 
 depends = [
-    "invoke.test_user_haka",
+    "invoke.test_user_snx",
     "invoke.increase_snapshot_stale_time",
     "invoke.increase_rate_stale_time",
 ]

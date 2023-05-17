@@ -38,7 +38,7 @@
 				"status": "current",
 				"keccak256": "0xe3f1ef97378050b355b6abd615ecb4fd202806b774355b944c04bb4365691366"
 			},
-			"OneNetAggregatorIssuedSynths": {
+			"OneNetAggregatorIssuedTribes": {
 				"address": "0x904c9424484ba6D5C47d979d8e9Fc5261747D681",
 				"status": "current",
 				"keccak256": "0x959b4559678871198948ef9575cf1315a6e21622566910cb9701932eae7d1383"
@@ -196,7 +196,7 @@
 				"status": "current",
 				"keccak256": "0xca25dd55b550ac2c84f0936c5608b79e4db8a309cb60b153a037306b26a69887"
 			},
-			"SynthRedeemer": {
+			"TribeRedeemer": {
 				"address": "0x2A8338199D802620B4516a557195a498595d7Eb6",
 				"status": "current",
 				"keccak256": "0x6183c39a5db747b0fbd7f6fb6a91de16fa64637f244497f8ab9b4cb68bb28b58"
@@ -206,48 +206,48 @@
 				"status": "current",
 				"keccak256": "0x0f35b4d59bcbb3b0e37dd3f4c7fd4a1e747ab05bbd888f51fbf1c7c1f5c91955"
 			},
-			"TokenStatesUSD": {
+			"TokenStatehUSD": {
 				"address": "0x43CA5848a2957C0718D240c02A4381A90111591e",
 				"status": "current",
 				"keccak256": "0xd22abb3b26a3a908924ea980e019c9e61bb2e80be675db7ff683d4f64c1e66f2"
 			},
-			"ProxysUSD": {
+			"ProxyhUSD": {
 				"address": "0xeBaEAAD9236615542844adC5c149F86C36aD1136",
 				"status": "current",
 				"keccak256": "0x450f870a93352e0feae6dfb45be1371d9e0dcb42c57b8795f2392ccf7ec6b87a"
 			},
-			"SynthsUSD": {
+			"TribehUSD": {
 				"address": "0x7c0B9FbA343fC80086ccC248A8431D5D8531d782",
 				"status": "replaced",
 				"keccak256": "0xd33c1c29758aa52cb5ee3b53e5bbb08f2183284029411acbe107114050280080",
 				"replaced_in": "v2.77.1-alpha"
 			},
-			"TokenStatesETH": {
+			"TokenStatehETH": {
 				"address": "0x1557769Cf42EE9e7c8D98CCFE0b454c2DEC125B6",
 				"status": "current",
 				"keccak256": "0xd22abb3b26a3a908924ea980e019c9e61bb2e80be675db7ff683d4f64c1e66f2"
 			},
-			"ProxysETH": {
+			"ProxyhETH": {
 				"address": "0x6c3856488e664C6b0380AAEfBFD1c28cd6727eC8",
 				"status": "current",
 				"keccak256": "0x450f870a93352e0feae6dfb45be1371d9e0dcb42c57b8795f2392ccf7ec6b87a"
 			},
-			"SynthsETH": {
+			"TribehETH": {
 				"address": "0x7D442107e2AD048C02F06332C918b1F81bd6850d",
 				"status": "current",
 				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
 			},
-			"TokenStatesBTC": {
+			"TokenStatehBTC": {
 				"address": "0x716044850a48DeD57B0581298018D2d8502B1091",
 				"status": "current",
 				"keccak256": "0xd22abb3b26a3a908924ea980e019c9e61bb2e80be675db7ff683d4f64c1e66f2"
 			},
-			"ProxysBTC": {
+			"ProxyhBTC": {
 				"address": "0x23c7a77D22Fc1274eCecB703f74699500db106E6",
 				"status": "current",
 				"keccak256": "0x450f870a93352e0feae6dfb45be1371d9e0dcb42c57b8795f2392ccf7ec6b87a"
 			},
-			"SynthsBTC": {
+			"TribehBTC": {
 				"address": "0xFdB84151Bfc76857398BC3efd8d1b32A32c571f2",
 				"status": "current",
 				"keccak256": "0x548d16dab51321918778c500b04c32240f3d720f19d48533e0db9c2b9b722ebe"
@@ -308,7 +308,7 @@
 				"status": "current",
 				"keccak256": "0x3ebacd4c67da05bc8157f069d2f3546fb71cd8a5ccea2018a23a1e1399c5a6cf"
 			},
-			"SynthUtil": {
+			"TribeUtil": {
 				"address": "0xC647DecC9c4f9162dBF77E4367199F5ED0950355",
 				"status": "current",
 				"keccak256": "0x3e860c4917122cf1ce46047a3c3839cbe2ef5b3767b2c1ce953f83d71769a981"
@@ -424,7 +424,7 @@
 				"keccak256": "0x46ee08b601ed69f547ba282d3e6c5a30e5163cd3652d7aa77c45633a7905da6d",
 				"replaced_in": "v2.78.0-alpha"
 			},
-			"SynthsUSD": {
+			"TribehUSD": {
 				"address": "0xfDa54191F3C0999dbf4c193dEF1B83EDD3e3Ba39",
 				"status": "current",
 				"keccak256": "0xf57c8b4b5c7f8534be6c98ca83ddda4d0f10609eb84e5418c886d6dfabea11ba"
@@ -622,7 +622,7 @@
 				"keccak256": "0x344e77e84c1ff81851093679e5fa715d48a774045d80b2a081c5d47aecf4ef18",
 				"replaced_in": "v2.80.1-alpha"
 			},
-			"PerpsV2MarketViewsBTCPERP": {
+			"PerpsV2MarketViewhBTCPERP": {
 				"address": "0x0a3fbB025aBB1a49E7a1b3A60D95b5bD584FBEF2",
 				"status": "replaced",
 				"keccak256": "0x983cf1765f00996f9d94fdd28a0084d43bdac7584f4be8b104678da58e2ad081",
@@ -657,7 +657,7 @@
 				"keccak256": "0x344e77e84c1ff81851093679e5fa715d48a774045d80b2a081c5d47aecf4ef18",
 				"replaced_in": "v2.80.2-alpha"
 			},
-			"PerpsV2MarketViewsETHPERP": {
+			"PerpsV2MarketViewhETHPERP": {
 				"address": "0x7f778ae58281B035ED56f02C1f931129d5B94BEC",
 				"status": "replaced",
 				"keccak256": "0x983cf1765f00996f9d94fdd28a0084d43bdac7584f4be8b104678da58e2ad081",
@@ -715,7 +715,7 @@
 				"keccak256": "0x349b17e5f4cf23221b59bec08abc7f722b73c3c6286163601a11c2a3b317aa9a",
 				"replaced_in": "v2.80.2-alpha"
 			},
-			"PerpsV2MarketViewsBTCPERP": {
+			"PerpsV2MarketViewhBTCPERP": {
 				"address": "0x775CcD342b5e3101e36724773d2CfD1c3612B302",
 				"status": "replaced",
 				"keccak256": "0x9e7a47fd262d656ff4ec67f50fecc4984b0d2ab4fd39847a8a2787d57ea611e6",
@@ -773,7 +773,7 @@
 				"keccak256": "0x349b17e5f4cf23221b59bec08abc7f722b73c3c6286163601a11c2a3b317aa9a",
 				"replaced_in": "v2.80.4-alpha"
 			},
-			"PerpsV2MarketViewsBTCPERP": {
+			"PerpsV2MarketViewhBTCPERP": {
 				"address": "0x35E9b5C094887B82b4230de1f0aE355964831933",
 				"status": "replaced",
 				"keccak256": "0x9e7a47fd262d656ff4ec67f50fecc4984b0d2ab4fd39847a8a2787d57ea611e6",
@@ -797,7 +797,7 @@
 				"keccak256": "0x349b17e5f4cf23221b59bec08abc7f722b73c3c6286163601a11c2a3b317aa9a",
 				"replaced_in": "v2.80.4-alpha"
 			},
-			"PerpsV2MarketViewsETHPERP": {
+			"PerpsV2MarketViewhETHPERP": {
 				"address": "0xDD0C5Fb003d152d99bA68C2C2b7D432b832a43d5",
 				"status": "replaced",
 				"keccak256": "0x9e7a47fd262d656ff4ec67f50fecc4984b0d2ab4fd39847a8a2787d57ea611e6",
@@ -837,7 +837,7 @@
 				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
 				"replaced_in": "v2.86.0-alpha"
 			},
-			"PerpsV2MarketViewsBTCPERP": {
+			"PerpsV2MarketViewhBTCPERP": {
 				"address": "0x9904F58ed6BB6feB7AD412A81F584dE2dee7CD98",
 				"status": "replaced",
 				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
@@ -859,7 +859,7 @@
 				"keccak256": "0x9a4f8d3df9202f93f5406da0e3590cf16011548c236d561c3d6f052585a76f7f",
 				"replaced_in": "v2.86.0-alpha"
 			},
-			"PerpsV2MarketViewsETHPERP": {
+			"PerpsV2MarketViewhETHPERP": {
 				"address": "0xfa1151791F9dbCd3eD7aA76DBc07582c3320E743",
 				"status": "replaced",
 				"keccak256": "0x24b9e9fe81b2e92e7449e5f766e6fbb0c2013110523531ff21de7d19ff6bed0c",
@@ -1710,7 +1710,7 @@
 				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238",
 				"replaced_in": "v2.87.0-alpha"
 			},
-			"PerpsV2MarketViewsBTCPERP": {
+			"PerpsV2MarketViewhBTCPERP": {
 				"address": "0x0BeFda37686a53B0A7A817e58D98ed9f6f1aCf4d",
 				"status": "current",
 				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"
@@ -1726,7 +1726,7 @@
 				"keccak256": "0x18ae2cb980261c8e4c9e9a2813f41a64a005c9a4f040f849aafd24996c19a238",
 				"replaced_in": "v2.87.0-alpha"
 			},
-			"PerpsV2MarketViewsETHPERP": {
+			"PerpsV2MarketViewhETHPERP": {
 				"address": "0xf2D9a9A2d79fFC36912bE87d504FA476A339E1Bb",
 				"status": "current",
 				"keccak256": "0xf5ac63ad2b3ca0cda1f69256b9a2c31b527742934bc43491c2b22c6429823ddb"

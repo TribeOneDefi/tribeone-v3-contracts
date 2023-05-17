@@ -46,7 +46,7 @@ contract('RewardEscrowV2Storage', async accounts => {
 		);
 		await frozenRewardEscrowV2.rebuildCache();
 		await tribeone.rebuildCache();
-		// mint some haka into it
+		// mint some snx into it
 		await tribeone.mintSecondary(frozenRewardEscrowV2.address, toUnit(1000), {
 			from: owner,
 		});

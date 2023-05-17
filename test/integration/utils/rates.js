@@ -56,7 +56,7 @@ async function _isCacheInvalid({ ctx }) {
 async function _areRatesInvalid({ ctx }) {
 	const { Tribeone } = ctx.contracts;
 
-	return Tribeone.anySynthOrHAKARateIsInvalid();
+	return Tribeone.anyTribeOrHAKARateIsInvalid();
 }
 
 async function _printCacheInfo({ ctx }) {
@@ -106,12 +106,12 @@ async function _getAvailableCurrencyKeys({ ctx }) {
 async function _setMissingRates({ ctx }) {
 	let currencyKeys;
 	if (ctx.fork) {
-		// this adds a rate for only e.g. sREDEEMER in fork mode (which is not an existing synth
+		// this adds a rate for only e.g. sREDEEMER in fork mode (which is not an existing tribe
 		// but is added to test the redeeming functionality)
-		// All other synths should have feeds in fork mode
-		currencyKeys = (ctx.addedSynths || []).map(o => toBytes32(o.name));
+		// All other tribes should have feeds in fork mode
+		currencyKeys = (ctx.addedTribes || []).map(o => toBytes32(o.name));
 	} else {
-		// set missing rates for all synths, since not in fork mode we don't have existing feeds
+		// set missing rates for all tribes, since not in fork mode we don't have existing feeds
 		currencyKeys = await _getAvailableCurrencyKeys({ ctx });
 	}
 

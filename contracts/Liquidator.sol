@@ -31,10 +31,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 private constant CONTRACT_TRIBEONEETIX = "Tribeone";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_TRIBEONEESCROW = "TribeoneEscrow";
+    bytes32 private constant CONTRACT_TRIBEONEETIXESCROW = "TribeoneEscrow";
     bytes32 private constant CONTRACT_V3_LEGACYMARKET = "LegacyMarket";
 
     /* ========== CONSTANTS ========== */
@@ -52,14 +52,14 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](4);
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[1] = CONTRACT_TRIBEONE;
+        newAddresses[1] = CONTRACT_TRIBEONEETIX;
         newAddresses[2] = CONTRACT_ISSUER;
         newAddresses[3] = CONTRACT_EXRATES;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
     function tribeone() internal view returns (ITribeone) {
-        return ITribeone(requireAndGetAddress(CONTRACT_TRIBEONE));
+        return ITribeone(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function systemStatus() internal view returns (ISystemStatus) {
@@ -91,10 +91,10 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     function liquidationPenalty() external view returns (uint) {
-        // SIP-251: use getHakaLiquidationPenalty instead of getLiquidationPenalty
+        // SIP-251: use getSnxLiquidationPenalty instead of getLiquidationPenalty
         // which is used for loans / shorts (collateral contracts).
         // Keeping the view name because it makes sense in the context of this contract.
-        return getHakaLiquidationPenalty();
+        return getSnxLiquidationPenalty();
     }
 
     function selfLiquidationPenalty() external view returns (uint) {
@@ -145,7 +145,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         } else {
             // Not open for self-liquidation when the account's collateral value is less than debt issued + forced penalty
             uint unit = SafeDecimalMath.unit();
-            if (accountCollateralisationRatio > (unit.divideDecimal(unit.add(getHakaLiquidationPenalty())))) {
+            if (accountCollateralisationRatio > (unit.divideDecimal(unit.add(getSnxLiquidationPenalty())))) {
                 return false;
             }
         }
@@ -201,7 +201,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
      * V = collateral value
      * P = liquidation penalty
      * S = debt amount to redeem
-     * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     * Calculates amount of tribes = (D - V * r) / (1 - (1 + P) * r)
      *
      * Derivation of the formula:
      *   Collateral "sold" with penalty: collateral-sold = S * (1 + P)
@@ -240,8 +240,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // totalIssuedSynths checks synths for staleness
-    // check haka rate is not stale
+    // totalIssuedTribes checks tribes for staleness
+    // check snx rate is not stale
     function flagAccountForLiquidation(address account) external rateNotInvalid("HAKA") {
         systemStatus().requireSystemActive();
 
@@ -323,7 +323,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     modifier rateNotInvalid(bytes32 currencyKey) {
-        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate invalid or not a synth");
+        require(!exchangeRates().rateIsInvalid(currencyKey), "Rate invalid or not a tribe");
         _;
     }
 

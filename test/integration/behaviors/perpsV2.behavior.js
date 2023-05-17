@@ -62,7 +62,7 @@ function itCanTrade({ ctx }) {
 	describe('opening positions', function() {
 		this.retries(0);
 
-		const sUSDAmount = ethers.utils.parseEther('100000');
+		const hUSDAmount = ethers.utils.parseEther('100000');
 
 		let owner, someUser, otherUser;
 		let FuturesMarketManager,
@@ -75,13 +75,13 @@ function itCanTrade({ ctx }) {
 			PerpsV2MarketLiquidateETHPERP,
 			PerpsV2DelayedIntentETHPERP,
 			PerpsV2DelayedExecutionETHPERP,
-			PerpsV2MarketViewsETHPERP,
+			PerpsV2MarketViewhETHPERP,
 			PerpsV2MarketStateETHPERP,
 			PerpsV2ProxyETHPERP,
 			FuturesMarketBTC,
 			ExchangeRates,
 			AddressResolver,
-			SynthsUSD;
+			TribehUSD;
 
 		before('target contracts and users', async () => {
 			({
@@ -94,13 +94,13 @@ function itCanTrade({ ctx }) {
 				PerpsV2MarketLiquidateETHPERP,
 				PerpsV2DelayedIntentETHPERP,
 				PerpsV2DelayedExecutionETHPERP,
-				PerpsV2MarketViewsETHPERP,
+				PerpsV2MarketViewhETHPERP,
 				PerpsV2MarketStateETHPERP,
 				PerpsV2ProxyETHPERP,
 				FuturesMarketBTC,
 				ExchangeRates,
 				AddressResolver,
-				SynthsUSD,
+				TribehUSD,
 			} = ctx.contracts);
 
 			owner = ctx.users.owner;
@@ -123,7 +123,7 @@ function itCanTrade({ ctx }) {
 
 			const unifiedAbis = unifyAbis([
 				PerpsV2MarketImplETHPERP,
-				PerpsV2MarketViewsETHPERP,
+				PerpsV2MarketViewhETHPERP,
 				PerpsV2MarketLiquidateETHPERP,
 				PerpsV2DelayedIntentETHPERP,
 				PerpsV2DelayedExecutionETHPERP,
@@ -134,7 +134,7 @@ function itCanTrade({ ctx }) {
 		});
 
 		before('ensure users have hUSD ', async () => {
-			await ensureBalance({ ctx, symbol: 'hUSD', user: someUser, balance: sUSDAmount });
+			await ensureBalance({ ctx, symbol: 'hUSD', user: someUser, balance: hUSDAmount });
 		});
 
 		after('reset the hUSD balance', async () => {
@@ -167,14 +167,14 @@ function itCanTrade({ ctx }) {
 				// Cleanup any outstanding margin (flaky)
 				await (await market.withdrawAllMargin()).wait();
 
-				const balance = await SynthsUSD.balanceOf(someUser.address);
+				const balance = await TribehUSD.balanceOf(someUser.address);
 				// transfer
 				await market.transferMargin(margin);
-				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
+				assert.bnEqual(await TribehUSD.balanceOf(someUser.address), balance.sub(margin));
 
 				// withdraw
 				await (await market.withdrawAllMargin()).wait();
-				const withdrawBalance = await SynthsUSD.balanceOf(someUser.address);
+				const withdrawBalance = await TribehUSD.balanceOf(someUser.address);
 				assert.bnEqual(withdrawBalance, balance);
 			});
 
@@ -435,10 +435,15 @@ function itCanTrade({ ctx }) {
 					assert.bnGt(maxLeverage, toUnit(1));
 					assert.bnLte(maxLeverage, toUnit(100));
 
-					const maxMarketValue = marketKeyIsV2[marketKey]
-						? await PerpsV2MarketSettings.maxMarketValue(marketKey)
-						: await FuturesMarketSettings.maxMarketValueUSD(marketKey);
-					assert.bnLt(maxMarketValue, toUnit(100000000));
+					if (marketKeyIsV2[marketKey]) {
+						// units (not dollar value), depends on asset price
+						// with markets like SHIBA we need to adjust the "makes sense" notion
+						const maxMarketValue = await PerpsV2MarketSettings.maxMarketValue(marketKey);
+						assert.bnLt(maxMarketValue, toUnit(100000000000));
+					} else {
+						const maxMarketValue = await FuturesMarketSettings.maxMarketValueUSD(marketKey);
+						assert.bnLt(maxMarketValue, toUnit(100000000));
+					}
 
 					const skewScale = marketKeyIsV2[marketKey]
 						? await PerpsV2MarketSettings.skewScale(marketKey)

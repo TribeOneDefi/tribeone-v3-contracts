@@ -29,8 +29,8 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 
 	const marketKeySuffix = '-perp';
 
-	const marketKey = toBytes32('sBTC' + marketKeySuffix);
-	const baseAsset = toBytes32('sBTC');
+	const marketKey = toBytes32('hBTC' + marketKeySuffix);
+	const baseAsset = toBytes32('hBTC');
 	const takerFeeNextPrice = toUnit('0.0005');
 	const makerFeeNextPrice = toUnit('0.0001');
 	const initialPrice = toUnit('100');
@@ -50,13 +50,13 @@ contract('FuturesMarket MixinFuturesNextPriceOrders', accounts => {
 			FuturesMarketBTC: futuresMarket,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			FeePool: feePool,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'sETH'],
+			tribes: ['hUSD', 'hBTC', 'hETH'],
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',

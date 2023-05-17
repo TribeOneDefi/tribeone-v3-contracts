@@ -18,13 +18,13 @@ contract OneNetAggregatorDebtRatio is BaseOneNetAggregator {
             uint80
         )
     {
-        uint totalIssuedSynths =
-            IIssuer(resolver.requireAndGetAddress("Issuer", "aggregate debt info")).totalIssuedSynths("hUSD", true);
+        uint totalIssuedTribes =
+            IIssuer(resolver.requireAndGetAddress("Issuer", "aggregate debt info")).totalIssuedTribes("hUSD", true);
         uint totalDebtShares =
             ITribeoneDebtShare(resolver.requireAndGetAddress("TribeoneDebtShare", "aggregate debt info")).totalSupply();
 
         uint result =
-            totalDebtShares == 0 ? 10**27 : totalIssuedSynths.decimalToPreciseDecimal().divideDecimalRound(totalDebtShares);
+            totalDebtShares == 0 ? 10**27 : totalIssuedTribes.decimalToPreciseDecimal().divideDecimalRound(totalDebtShares);
 
         uint dataTimestamp = now;
 

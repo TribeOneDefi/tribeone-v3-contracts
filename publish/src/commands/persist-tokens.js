@@ -51,18 +51,18 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 
 	const output = {
 		name: 'Tribeone',
-		logoURI: `${baseURI}/haka/HAKA.svg`,
-		keywords: ['tribeone', 'defi', 'derivatives', 'synths', 'synthetics'],
+		logoURI: `${baseURI}/snx/HAKA.svg`,
+		keywords: ['tribeone', 'defi', 'derivatives', 'tribes', 'tribeetics'],
 		timestamp: new Date().toISOString(),
 		tags: {
-			synth: {
-				name: 'Synth',
+			tribe: {
+				name: 'Tribe',
 				description:
-					'A synthetic asset within the Tribeone protocol which can at any time ' +
-					'be exchanged in its entirety into any other synth within Tribeone.',
+					'A tribeetic asset within the Tribeone protocol which can at any time ' +
+					'be exchanged in its entirety into any other tribe within Tribeone.',
 			},
 			index: {
-				name: 'Index Synth',
+				name: 'Index Tribe',
 				description:
 					'Tokens that are compromised of a basket of underlying assets ' +
 					'determined by a set number of units of each. These units are ' +
@@ -78,10 +78,10 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 			chainId,
 			address,
 			symbol,
-			name: symbol === 'HAKA' ? 'Tribeone Network Token' : `Synth ${name}`,
+			name: symbol === 'HAKA' ? 'Tribeone Network Token' : `Tribe ${name}`,
 			decimals,
-			logoURI: baseURI + (symbol === 'HAKA' ? '/haka/HAKA.svg' : `/synths/${symbol}.svg`),
-			tags: [].concat(index ? 'index' : []).concat(symbol !== 'HAKA' ? 'synth' : []),
+			logoURI: baseURI + (symbol === 'HAKA' ? '/snx/HAKA.svg' : `/tribes/${symbol}.svg`),
+			tags: [].concat(index ? 'index' : []).concat(symbol !== 'HAKA' ? 'tribe' : []),
 		})),
 	};
 
@@ -108,7 +108,7 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 
 	if (!yes) {
 		try {
-			await confirmAction(yellow(`Do you want to continue uploading Synths JSON to IPFS (y/n) ?`));
+			await confirmAction(yellow(`Do you want to continue uploading Tribes JSON to IPFS (y/n) ?`));
 		} catch (err) {
 			console.log(gray('Operation cancelled'));
 			process.exit();
@@ -120,7 +120,7 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 		hash = await uploadFileToIPFS({ body: output });
 
 		console.log(
-			gray('Uploaded Synths JSON to IPFS:'),
+			gray('Uploaded Tribes JSON to IPFS:'),
 			yellow(`https://gateway.ipfs.io/ipfs/${hash}`)
 		);
 	} catch (err) {
@@ -128,7 +128,7 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 		process.exit(1);
 	}
 
-	const ensName = 'synths.haka.eth';
+	const ensName = 'tribes.snx.eth';
 	const content = `ipfs://${hash}`;
 
 	console.log(red('setContent not emitted. Not supported at the moment.'));

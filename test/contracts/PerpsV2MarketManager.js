@@ -79,7 +79,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			PerpsV2MarketSettings: perpsV2MarketSettings,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			DebtCache: debtCache,
 			FeePool: feePool,
 			Tribeone: tribeone,
@@ -87,7 +87,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD'],
+			tribes: ['hUSD'],
 			feeds: ['BTC', 'ETH', 'LINK'],
 			contracts: [
 				'FuturesMarketManager',
@@ -115,7 +115,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	describe('Basic parameters', () => {
 		it('Requires hUSD contract', async () => {
 			const required = await futuresMarketManager.resolverAddressesRequired();
-			assert.deepEqual(required, ['SynthsUSD', 'FeePool', 'Exchanger'].map(toBytes32));
+			assert.deepEqual(required, ['TribehUSD', 'FeePool', 'Exchanger'].map(toBytes32));
 		});
 
 		it('only expected functions are mutable', () => {
@@ -127,8 +127,8 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 					'addProxiedMarkets',
 					'removeMarkets',
 					'removeMarketsByKey',
-					'issueSUSD',
-					'burnSUSD',
+					'issueHUSD',
+					'burnHUSD',
 					'payFee',
 					'payFee',
 					'updateMarketsImplementations',
@@ -144,7 +144,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	});
 
 	describe('Market management', () => {
-		const currencyKeys = ['sBTC', 'sETH'].map(toBytes32);
+		const currencyKeys = ['hBTC', 'hETH'].map(toBytes32);
 		let markets, marketProxies, proxyAddresses;
 		beforeEach(async () => {
 			markets = await Promise.all(
@@ -241,8 +241,8 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				contract: 'MockPerpsV2Market',
 				args: [
 					futuresMarketManager.address,
-					toBytes32('sETH'),
-					toBytes32('sETH'),
+					toBytes32('hETH'),
+					toBytes32('hETH'),
 					toUnit('1000'),
 					false,
 				],
@@ -260,7 +260,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			const market1 = markets[1];
 			const proxy1 = marketProxies[1];
 
-			const secondKey = toBytes32('sETH-2'); // different market key
+			const secondKey = toBytes32('hETH-2'); // different market key
 			const market2 = await setupContract({
 				accounts,
 				contract: 'MockPerpsV2Market',
@@ -320,7 +320,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		});
 
 		it('Removing markets by key', async () => {
-			await futuresMarketManager.removeMarketsByKey([toBytes32('sETH')], { from: owner });
+			await futuresMarketManager.removeMarketsByKey([toBytes32('hETH')], { from: owner });
 
 			let markets = await futuresMarketManager.allMarkets();
 			assert.bnEqual(await futuresMarketManager.numMarkets(), toBN(1));
@@ -342,7 +342,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 			const proxy = await putBehindProxy(market);
 			await futuresMarketManager.addProxiedMarkets([proxy.address], { from: owner });
-			await futuresMarketManager.removeMarketsByKey(['sBTC', 'sLINK'].map(toBytes32), {
+			await futuresMarketManager.removeMarketsByKey(['hBTC', 'sLINK'].map(toBytes32), {
 				from: owner,
 			});
 
@@ -413,7 +413,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 			await onlyGivenAddressCanInvoke({
 				fnc: futuresMarketManager.removeMarketsByKey,
-				args: [['sETH', 'sBTC'].map(toBytes32)],
+				args: [['hETH', 'hBTC'].map(toBytes32)],
 				accounts,
 				address: owner,
 				skipPassCheck: false,
@@ -490,7 +490,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 				});
 
 				// check new implementation can issue
-				await updatedMarketImplementation.issueSUSD(owner, toUnit('10'));
+				await updatedMarketImplementation.issueHUSD(owner, toUnit('10'));
 				assert.bnEqual(await hUSD.balanceOf(owner), toUnit('10'));
 			});
 		});
@@ -517,17 +517,17 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		});
 
 		it('issuing/burning hUSD', async () => {
-			await market.issueSUSD(owner, toUnit('10'));
+			await market.issueHUSD(owner, toUnit('10'));
 			assert.bnEqual(await hUSD.balanceOf(owner), toUnit('10'));
 
-			await market.burnSUSD(owner, toUnit('5'));
+			await market.burnHUSD(owner, toUnit('5'));
 			assert.bnEqual(await hUSD.balanceOf(owner), toUnit('5'));
 
-			await market.issueSUSD(owner, toUnit('2'));
-			await market.burnSUSD(owner, toUnit('7'));
+			await market.issueHUSD(owner, toUnit('2'));
+			await market.burnHUSD(owner, toUnit('7'));
 
 			assert.bnEqual(await hUSD.balanceOf(owner), toUnit('0'));
-			await assert.revert(market.burnSUSD(owner, toUnit('1')), 'SafeMath: subtraction overflow');
+			await assert.revert(market.burnHUSD(owner, toUnit('1')), 'SafeMath: subtraction overflow');
 		});
 
 		it('burning respects settlement', async () => {
@@ -543,24 +543,24 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 			await mockExchanger.setNumEntries('1');
 
 			// Issuance works fine
-			await market.issueSUSD(owner, toUnit('100'));
+			await market.issueHUSD(owner, toUnit('100'));
 			assert.bnEqual(await hUSD.balanceOf(owner), toUnit('100'));
 
 			// But burning properly deducts the reclamation amount
-			await market.burnSUSD(owner, toUnit('90'));
+			await market.burnHUSD(owner, toUnit('90'));
 			assert.bnEqual(await hUSD.balanceOf(owner), toUnit('0'));
 		});
 
 		it('only markets are permitted to issue or burn hUSD', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.issueSUSD,
+				fnc: futuresMarketManager.issueHUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
 				reason: 'Permitted only for market implementations',
 			});
 			await onlyGivenAddressCanInvoke({
-				fnc: futuresMarketManager.burnSUSD,
+				fnc: futuresMarketManager.burnHUSD,
 				args: [owner, toUnit('1')],
 				accounts,
 				skipPassCheck: true,
@@ -637,7 +637,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 
 		describe('when there are multiple markets', () => {
 			const individualDebt = toUnit('1000');
-			const currencyKeys = ['sBTC', 'sETH', 'sLINK'].map(toBytes32);
+			const currencyKeys = ['hBTC', 'hETH', 'sLINK'].map(toBytes32);
 			let markets, proxies;
 			beforeEach(async () => {
 				markets = await Promise.all(
@@ -1117,8 +1117,8 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 		it('All summaries', async () => {
 			const summaries = await futuresMarketManager.allMarketSummaries();
 
-			const btcSummary = summaries.find(summary => summary.marketKey === toBytes32('sBTC'));
-			const ethSummary = summaries.find(summary => summary.marketKey === toBytes32('sETH'));
+			const btcSummary = summaries.find(summary => summary.marketKey === toBytes32('hBTC'));
+			const ethSummary = summaries.find(summary => summary.marketKey === toBytes32('hETH'));
 			const linkSummary = summaries.find(summary => summary.marketKey === toBytes32('sLINK'));
 
 			assert.equal(btcSummary.market, markets[0].address);
@@ -1150,7 +1150,7 @@ contract('FuturesMarketManager (PerpsV2)', accounts => {
 	});
 
 	describe('Legacy Markets management', () => {
-		const currencies = ['sBTC', 'sETH'];
+		const currencies = ['hBTC', 'hETH'];
 		const currencyKeys = currencies.map(toBytes32);
 		let legacyMarkets, legacyMarketsAddress, markets, marketProxies, proxyAddresses;
 		beforeEach(async () => {

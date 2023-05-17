@@ -86,13 +86,13 @@
 	"SystemStatus": {
 		"deploy": true
 	},
-	"SynthUtil": {
+	"TribeUtil": {
 		"deploy": true
 	},
 	"DappMaintenance": {
 		"deploy": true
 	},
-	"SynthsUSD": {
+	"TribehUSD": {
 		"deploy": true
 	},
 	"ProxyFeePool": {
@@ -101,7 +101,7 @@
 	"ProxyTribeone": {
 		"deploy": true
 	},
-	"ProxysUSD": {
+	"ProxyhUSD": {
 		"deploy": true
 	},
 	"SafeDecimalMath": {
@@ -113,25 +113,25 @@
 	"TokenStateTribeone": {
 		"deploy": true
 	},
-	"TokenStatesUSD": {
+	"TokenStatehUSD": {
 		"deploy": true
 	},
-	"TokenStatesBTC": {
+	"TokenStatehBTC": {
 		"deploy": true
 	},
-	"ProxysBTC": {
+	"ProxyhBTC": {
 		"deploy": true
 	},
-	"SynthsBTC": {
+	"TribehBTC": {
 		"deploy": true
 	},
-	"TokenStatesETH": {
+	"TokenStatehETH": {
 		"deploy": true
 	},
-	"ProxysETH": {
+	"ProxyhETH": {
 		"deploy": true
 	},
-	"SynthsETH": {
+	"TribehETH": {
 		"deploy": true
 	},
 	"TokenStatesLINK": {
@@ -140,16 +140,16 @@
 	"ProxysLINK": {
 		"deploy": true
 	},
-	"SynthsLINK": {
+	"TribesLINK": {
 		"deploy": true
 	},
-	"TokenStatesETHBTC": {
+	"TokenStatehETHBTC": {
 		"deploy": true
 	},
-	"ProxysETHBTC": {
+	"ProxyhETHBTC": {
 		"deploy": true
 	},
-	"SynthsETHBTC": {
+	"TribehETHBTC": {
 		"deploy": true
 	},
 	"TribeoneBridgeToBase": {
@@ -194,10 +194,10 @@
 	"PerpsV2MarketBTC": {
 		"deploy": true
 	},
-	"PerpsV2MarketViewsBTC": {
+	"PerpsV2MarketViewhBTC": {
 		"deploy": true
 	},
-	"PerpsV2MarketNextPriceOrdersBTC": {
+	"PerpsV2MarketNextPriceOrderhBTC": {
 		"deploy": true
 	},
 	"PerpsV2ProxyETH": {
@@ -209,10 +209,10 @@
 	"PerpsV2MarketETH": {
 		"deploy": true
 	},
-	"PerpsV2MarketViewsETH": {
+	"PerpsV2MarketViewhETH": {
 		"deploy": true
 	},
-	"PerpsV2MarketNextPriceOrdersETH": {
+	"PerpsV2MarketNextPriceOrderhETH": {
 		"deploy": true
 	},
 	"PerpsV2MarketSettings": {
@@ -233,10 +233,10 @@
 	"OwnerRelayOnOptimism": {
 		"deploy": true
 	},
-	"SynthRedeemer": {
+	"TribeRedeemer": {
 		"deploy": true
 	},
-	"OneNetAggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedTribes": {
 		"deploy": true
 	},
 	"OneNetAggregatorDebtRatio": {

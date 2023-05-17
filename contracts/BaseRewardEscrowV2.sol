@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
@@ -40,7 +39,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 private constant CONTRACT_TRIBEONEETIX = "Tribeone";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_REWARDESCROWV2STORAGE = "RewardEscrowV2Storage";
@@ -55,8 +54,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         return IFeePool(requireAndGetAddress(CONTRACT_FEEPOOL));
     }
 
-    function tribeoneERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONE));
+    function tribeetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -76,7 +75,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     // Note: use public visibility so that it can be invoked in a subclass
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](4);
-        addresses[0] = CONTRACT_TRIBEONE;
+        addresses[0] = CONTRACT_TRIBEONEETIX;
         addresses[1] = CONTRACT_FEEPOOL;
         addresses[2] = CONTRACT_ISSUER;
         addresses[3] = CONTRACT_REWARDESCROWV2STORAGE;
@@ -305,7 +304,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         uint256 amount
     ) internal {
         state().updateEscrowAccountBalance(subtractFrom, -SafeCast.toInt256(amount));
-        tribeoneERC20().transfer(transferTo, amount);
+        tribeetixERC20().transfer(transferTo, amount);
     }
 
     /**
@@ -321,7 +320,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
         require(beneficiary != address(0), "Cannot create escrow with address(0)");
 
         /* Transfer HAKA from msg.sender */
-        require(tribeoneERC20().transferFrom(msg.sender, address(this), deposit), "token transfer failed");
+        require(tribeetixERC20().transferFrom(msg.sender, address(this), deposit), "token transfer failed");
 
         /* Append vesting entry for the beneficiary address */
         _appendVestingEntry(beneficiary, deposit, duration);
@@ -357,7 +356,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
 
         /* There must be enough balance in the contract to provide for the vesting entry. */
         require(
-            totalEscrowedBalance() <= tribeoneERC20().balanceOf(address(this)),
+            totalEscrowedBalance() <= tribeetixERC20().balanceOf(address(this)),
             "Must be enough balance in the contract to provide for the vesting entry"
         );
 
@@ -478,7 +477,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     }
 
     modifier onlyTribeone() {
-        require(msg.sender == address(tribeoneERC20()), "Only Tribeone");
+        require(msg.sender == address(tribeetixERC20()), "Only Tribeone");
         _;
     }
 

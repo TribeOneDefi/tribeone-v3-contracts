@@ -60,23 +60,23 @@ module.exports = async ({
 			comment: 'Ensure the CollateralEth is connected to the CollateralManager',
 		});
 
-		const CollateralEthSynths = (await getDeployParameter('COLLATERAL_ETH'))['SYNTHS']; // COLLATERAL_ETH synths - ['hUSD', 'sETH']
+		const CollateralEthTribes = (await getDeployParameter('COLLATERAL_ETH'))['TRIBES']; // COLLATERAL_ETH tribes - ['hUSD', 'hETH']
 		await runStep({
 			contract: 'CollateralEth',
 			gasLimit: 1e6,
 			target: CollateralEth,
-			read: 'areSynthsAndCurrenciesSet',
+			read: 'areTribesAndCurrenciesSet',
 			readArg: [
-				CollateralEthSynths.map(key => toBytes32(`Synth${key}`)),
-				CollateralEthSynths.map(toBytes32),
+				CollateralEthTribes.map(key => toBytes32(`Tribe${key}`)),
+				CollateralEthTribes.map(toBytes32),
 			],
 			expected: input => input,
-			write: 'addSynths',
+			write: 'addTribes',
 			writeArg: [
-				CollateralEthSynths.map(key => toBytes32(`Synth${key}`)),
-				CollateralEthSynths.map(toBytes32),
+				CollateralEthTribes.map(key => toBytes32(`Tribe${key}`)),
+				CollateralEthTribes.map(toBytes32),
 			],
-			comment: 'Ensure the CollateralEth contract has all associated synths added',
+			comment: 'Ensure the CollateralEth contract has all associated tribes added',
 		});
 
 		const issueFeeRate = (await getDeployParameter('COLLATERAL_ETH'))['ISSUE_FEE_RATE'];
@@ -102,23 +102,23 @@ module.exports = async ({
 			comment: 'Ensure the CollateralErc20 contract is connected to the CollateralManager',
 		});
 
-		const CollateralErc20Synths = (await getDeployParameter('COLLATERAL_RENBTC'))['SYNTHS']; // COLLATERAL_RENBTC synths - ['hUSD', 'sBTC']
+		const CollateralErc20Tribes = (await getDeployParameter('COLLATERAL_RENBTC'))['TRIBES']; // COLLATERAL_RENBTC tribes - ['hUSD', 'hBTC']
 		await runStep({
 			contract: 'CollateralErc20',
 			gasLimit: 1e6,
 			target: CollateralErc20,
-			read: 'areSynthsAndCurrenciesSet',
+			read: 'areTribesAndCurrenciesSet',
 			readArg: [
-				CollateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
-				CollateralErc20Synths.map(toBytes32),
+				CollateralErc20Tribes.map(key => toBytes32(`Tribe${key}`)),
+				CollateralErc20Tribes.map(toBytes32),
 			],
 			expected: input => input,
-			write: 'addSynths',
+			write: 'addTribes',
 			writeArg: [
-				CollateralErc20Synths.map(key => toBytes32(`Synth${key}`)),
-				CollateralErc20Synths.map(toBytes32),
+				CollateralErc20Tribes.map(key => toBytes32(`Tribe${key}`)),
+				CollateralErc20Tribes.map(toBytes32),
 			],
-			comment: 'Ensure the CollateralErc20 contract has all associated synths added',
+			comment: 'Ensure the CollateralErc20 contract has all associated tribes added',
 		});
 
 		const issueFeeRate = (await getDeployParameter('COLLATERAL_RENBTC'))['ISSUE_FEE_RATE'];
@@ -144,23 +144,23 @@ module.exports = async ({
 			comment: 'Ensure the CollateralShort contract is connected to the CollateralManager',
 		});
 
-		const CollateralShortSynths = (await getDeployParameter('COLLATERAL_SHORT'))['SYNTHS']; // COLLATERAL_SHORT synths - ['sBTC', 'sETH']
+		const CollateralShortTribes = (await getDeployParameter('COLLATERAL_SHORT'))['TRIBES']; // COLLATERAL_SHORT tribes - ['hBTC', 'hETH']
 		await runStep({
 			contract: 'CollateralShort',
 			gasLimit: 1e6,
 			target: CollateralShort,
-			read: 'areSynthsAndCurrenciesSet',
+			read: 'areTribesAndCurrenciesSet',
 			readArg: [
-				CollateralShortSynths.map(key => toBytes32(`Synth${key}`)),
-				CollateralShortSynths.map(toBytes32),
+				CollateralShortTribes.map(key => toBytes32(`Tribe${key}`)),
+				CollateralShortTribes.map(toBytes32),
 			],
 			expected: input => input,
-			write: 'addSynths',
+			write: 'addTribes',
 			writeArg: [
-				CollateralShortSynths.map(key => toBytes32(`Synth${key}`)),
-				CollateralShortSynths.map(toBytes32),
+				CollateralShortTribes.map(key => toBytes32(`Tribe${key}`)),
+				CollateralShortTribes.map(toBytes32),
 			],
-			comment: 'Ensure the CollateralShort contract has all associated synths added',
+			comment: 'Ensure the CollateralShort contract has all associated tribes added',
 		});
 
 		const issueFeeRate = (await getDeployParameter('COLLATERAL_SHORT'))['ISSUE_FEE_RATE'];
@@ -235,35 +235,35 @@ module.exports = async ({
 		comment: 'Set the base short rate in the CollateralManager',
 	});
 
-	// add to the manager if the synths aren't already added.
-	const CollateralManagerSynths = collateralManagerDefaults['SYNTHS'];
-	for (const synth of CollateralManagerSynths) {
+	// add to the manager if the tribes aren't already added.
+	const CollateralManagerTribes = collateralManagerDefaults['TRIBES'];
+	for (const tribe of CollateralManagerTribes) {
 		await runStep({
 			contract: 'CollateralManager',
 			gasLimit: 1e6,
 			target: CollateralManager,
-			read: 'synthsByKey',
-			readArg: toBytes32(synth),
+			read: 'tribesByKey',
+			readArg: toBytes32(tribe),
 			expected: input => input,
-			write: 'addSynths',
-			writeArg: [toBytes32(`Synth${synth}`), toBytes32(synth)],
-			comment: `Ensure the CollateralManager contract has associated ${synth} added`,
+			write: 'addTribes',
+			writeArg: [toBytes32(`Tribe${tribe}`), toBytes32(tribe)],
+			comment: `Ensure the CollateralManager contract has associated ${tribe} added`,
 		});
 	}
 
 	const CollateralManagerShorts = collateralManagerDefaults['SHORTS'];
-	if (CollateralManager.shortableSynthsByKey) {
-		for (const synth of CollateralManagerShorts) {
+	if (CollateralManager.shortableTribesByKey) {
+		for (const tribe of CollateralManagerShorts) {
 			await runStep({
 				contract: 'CollateralManager',
 				gasLimit: 1e6,
 				target: CollateralManager,
-				read: 'shortableSynthsByKey',
-				readArg: toBytes32(synth),
+				read: 'shortableTribesByKey',
+				readArg: toBytes32(tribe),
 				expected: input => input,
-				write: 'addShortableSynths',
-				writeArg: [toBytes32(`Synth${synth}`), toBytes32(synth)],
-				comment: `Ensure the CollateralManager contract has associated short ${synth} added`,
+				write: 'addShortableTribes',
+				writeArg: [toBytes32(`Tribe${tribe}`), toBytes32(tribe)],
+				comment: `Ensure the CollateralManager contract has associated short ${tribe} added`,
 			});
 		}
 	}

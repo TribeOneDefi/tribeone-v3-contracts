@@ -8,16 +8,16 @@ async function exchangeSomething({ ctx }) {
 	let { Tribeone } = ctx.contracts;
 	Tribeone = Tribeone.connect(ctx.users.owner);
 
-	const sUSDAmount = ethers.utils.parseEther('10');
-	await ensureBalance({ ctx, symbol: 'hUSD', user: ctx.users.owner, balance: sUSDAmount });
+	const hUSDAmount = ethers.utils.parseEther('10');
+	await ensureBalance({ ctx, symbol: 'hUSD', user: ctx.users.owner, balance: hUSDAmount });
 
 	await updateCache({ ctx });
 
-	const tx = await Tribeone.exchange(toBytes32('hUSD'), sUSDAmount, toBytes32('sETH'));
+	const tx = await Tribeone.exchange(toBytes32('hUSD'), hUSDAmount, toBytes32('hETH'));
 	await tx.wait();
 }
 
-async function exchangeSynths({ ctx, src, dest, amount, user }) {
+async function exchangeTribes({ ctx, src, dest, amount, user }) {
 	let { Tribeone, CircuitBreaker } = ctx.contracts;
 	const { ExchangeRates } = ctx.contracts;
 	Tribeone = Tribeone.connect(user);
@@ -46,5 +46,5 @@ async function exchangeSynths({ ctx, src, dest, amount, user }) {
 
 module.exports = {
 	exchangeSomething,
-	exchangeSynths,
+	exchangeTribes,
 };

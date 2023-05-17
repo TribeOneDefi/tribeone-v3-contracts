@@ -48,7 +48,7 @@ class Deployer {
 		this.useOvm = useOvm;
 
 		this.provider =
-			provider || new ethers.providers.JsonRpcProvider(providerUrl || 'https://goerli.infura.io/v3/e7631065f3c044f69188f39628368bd7');
+			provider || new ethers.providers.JsonRpcProvider(providerUrl || 'http://127.0.0.1:8545');
 
 		if (signer) {
 			this.signer = signer;
@@ -417,15 +417,12 @@ class Deployer {
 				useOvm: this.useOvm,
 				byContract: true,
 			})[contract];
-			
-			console.log(contract, address);
 			const lastEntry = contractVersion.slice(-1)[0];
 			address = lastEntry.address;
 		}
 
 		const { source } = this.deployment.targets[contract];
 		const { abi } = this.deployment.sources[source];
-
 		return this.makeContract({ abi, address });
 	}
 

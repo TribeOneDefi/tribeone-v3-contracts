@@ -27,26 +27,26 @@ const { artifacts } = require('hardhat');
 
 contract('Depot', async accounts => {
 	let tribeone,
-		tribeoneProxy,
-		synth,
+		tribeetixProxy,
+		tribe,
 		depot,
 		addressResolver,
 		systemStatus,
 		exchangeRates,
 		ethRate,
-		hakaRate;
+		snxRate;
 
 	const [, owner, , fundsWallet, address1, address2, address3] = accounts;
 
 	const [HAKA, ETH] = ['HAKA', 'ETH'].map(toBytes32);
 
-	const approveAndDepositSynths = async (synthsToDeposit, depositor) => {
+	const approveAndDepositTribes = async (tribesToDeposit, depositor) => {
 		// Approve Transaction
-		await synth.approve(depot.address, synthsToDeposit, { from: depositor });
+		await tribe.approve(depot.address, tribesToDeposit, { from: depositor });
 
 		// Deposit hUSD in Depot
-		// console.log('Deposit hUSD in Depot amount', synthsToDeposit, depositor);
-		const txn = await depot.depositSynths(synthsToDeposit, {
+		// console.log('Deposit hUSD in Depot amount', tribesToDeposit, depositor);
+		const txn = await depot.depositTribes(tribesToDeposit, {
 			from: depositor,
 		});
 
@@ -56,8 +56,8 @@ contract('Depot', async accounts => {
 	// Run once at beginning - snapshots will take care of resetting this before each test
 	before(async () => {
 		// Mock hUSD as Depot only needs its ERC20 methods (System Pause will not work for suspending hUSD transfers)
-		[{ token: synth }] = await Promise.all([
-			mockToken({ accounts, synth: 'hUSD', name: 'Synthetic USD', symbol: 'hUSD' }),
+		[{ token: tribe }] = await Promise.all([
+			mockToken({ accounts, tribe: 'hUSD', name: 'Tribeetic USD', symbol: 'hUSD' }),
 		]);
 
 		({
@@ -66,12 +66,12 @@ contract('Depot', async accounts => {
 			ExchangeRates: exchangeRates,
 			SystemStatus: systemStatus,
 			Tribeone: tribeone,
-			ProxyERC20Tribeone: tribeoneProxy,
+			ProxyERC20Tribeone: tribeetixProxy,
 		} = await setupAllContracts({
 			accounts,
 			mocks: {
 				// mocks necessary for address resolver imports
-				SynthsUSD: synth,
+				TribehUSD: tribe,
 			},
 			contracts: [
 				'Depot',
@@ -84,7 +84,7 @@ contract('Depot', async accounts => {
 		}));
 
 		// use implementation ABI on the proxy address to simplify calling
-		tribeone = await artifacts.require('Tribeone').at(tribeoneProxy.address);
+		tribeone = await artifacts.require('Tribeone').at(tribeetixProxy.address);
 
 		await setupPriceAggregators(exchangeRates, owner, [ETH]);
 	});
@@ -92,9 +92,9 @@ contract('Depot', async accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	beforeEach(async () => {
-		hakaRate = toUnit('0.1');
+		snxRate = toUnit('0.1');
 		ethRate = toUnit('172');
-		await updateAggregatorRates(exchangeRates, null, [HAKA, ETH], [hakaRate, ethRate]);
+		await updateAggregatorRates(exchangeRates, null, [HAKA, ETH], [snxRate, ethRate]);
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -109,17 +109,17 @@ contract('Depot', async accounts => {
 				hasFallback: true,
 				ignoreParents: ['Pausable', 'ReentrancyGuard', 'MixinResolver'],
 				expected: [
-					'depositSynths',
+					'depositTribes',
 					'exchangeEtherForHAKA',
 					'exchangeEtherForHAKAAtRate',
-					'exchangeEtherForSynths',
-					'exchangeEtherForSynthsAtRate',
-					'exchangeSynthsForHAKA',
-					'exchangeSynthsForHAKAAtRate',
+					'exchangeEtherForTribes',
+					'exchangeEtherForTribesAtRate',
+					'exchangeTribesForHAKA',
+					'exchangeTribesForHAKAAtRate',
 					'setFundsWallet',
 					'setMaxEthPurchase',
 					'setMinimumDepositAmount',
-					'withdrawMyDepositedSynths',
+					'withdrawMyDepositedTribes',
 					'withdrawTribeone',
 				],
 			});
@@ -208,12 +208,12 @@ contract('Depot', async accounts => {
 	});
 
 	describe('should increment depositor smallDeposits balance', async () => {
-		const synthsBalance = toUnit('100');
+		const tribesBalance = toUnit('100');
 		const depositor = address1;
 
 		beforeEach(async () => {
-			// Set up the depositor with an amount of synths to deposit.
-			await synth.transfer(depositor, synthsBalance, {
+			// Set up the depositor with an amount of tribes to deposit.
+			await tribe.transfer(depositor, tribesBalance, {
 				from: owner,
 			});
 		});
@@ -222,9 +222,9 @@ contract('Depot', async accounts => {
 			beforeEach(async () => {
 				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 			});
-			it('when depositSynths is invoked, it reverts with operation prohibited', async () => {
+			it('when depositTribes is invoked, it reverts with operation prohibited', async () => {
 				await assert.revert(
-					approveAndDepositSynths(toUnit('1'), depositor),
+					approveAndDepositTribes(toUnit('1'), depositor),
 					'Operation prohibited'
 				);
 			});
@@ -233,127 +233,127 @@ contract('Depot', async accounts => {
 				beforeEach(async () => {
 					await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 				});
-				it('when depositSynths is invoked, it works as expected', async () => {
-					await approveAndDepositSynths(toUnit('1'), depositor);
+				it('when depositTribes is invoked, it works as expected', async () => {
+					await approveAndDepositTribes(toUnit('1'), depositor);
 				});
 			});
 		});
 
-		it('if the deposit synth amount is a tiny amount', async () => {
-			const synthsToDeposit = toUnit('0.01');
+		it('if the deposit tribe amount is a tiny amount', async () => {
+			const tribesToDeposit = toUnit('0.01');
 			// Depositor should initially have a smallDeposits balance of 0
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await approveAndDepositSynths(synthsToDeposit, depositor);
+			await approveAndDepositTribes(tribesToDeposit, depositor);
 
 			// Now balance should be equal to the amount we just sent
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			assert.bnEqual(smallDepositsBalance, synthsToDeposit);
+			assert.bnEqual(smallDepositsBalance, tribesToDeposit);
 		});
 
-		it('if the deposit synth of 10 amount is less than the minimumDepositAmount', async () => {
-			const synthsToDeposit = toUnit('10');
+		it('if the deposit tribe of 10 amount is less than the minimumDepositAmount', async () => {
+			const tribesToDeposit = toUnit('10');
 			// Depositor should initially have a smallDeposits balance of 0
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await approveAndDepositSynths(synthsToDeposit, depositor);
+			await approveAndDepositTribes(tribesToDeposit, depositor);
 
 			// Now balance should be equal to the amount we just sent
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			assert.bnEqual(smallDepositsBalance, synthsToDeposit);
+			assert.bnEqual(smallDepositsBalance, tribesToDeposit);
 		});
 
-		it('if the deposit synth amount of 49.99 is less than the minimumDepositAmount', async () => {
-			const synthsToDeposit = toUnit('49.99');
+		it('if the deposit tribe amount of 49.99 is less than the minimumDepositAmount', async () => {
+			const tribesToDeposit = toUnit('49.99');
 			// Depositor should initially have a smallDeposits balance of 0
 			const initialSmallDepositsBalance = await depot.smallDeposits(depositor);
 			assert.equal(initialSmallDepositsBalance, 0);
 
-			await approveAndDepositSynths(synthsToDeposit, depositor);
+			await approveAndDepositTribes(tribesToDeposit, depositor);
 
 			// Now balance should be equal to the amount we just sent
 			const smallDepositsBalance = await depot.smallDeposits(depositor);
-			assert.bnEqual(smallDepositsBalance, synthsToDeposit);
+			assert.bnEqual(smallDepositsBalance, tribesToDeposit);
 		});
 	});
 
-	describe('should accept synth deposits', async () => {
-		const synthsBalance = toUnit('100');
+	describe('should accept tribe deposits', async () => {
+		const tribesBalance = toUnit('100');
 		const depositor = address1;
 
 		beforeEach(async () => {
-			// Set up the depositor with an amount of synths to deposit.
-			await synth.transfer(depositor, synthsBalance, {
+			// Set up the depositor with an amount of tribes to deposit.
+			await tribe.transfer(depositor, tribesBalance, {
 				from: owner,
 			});
 		});
 
-		it('if the deposit synth amount of 50 is the minimumDepositAmount', async () => {
-			const synthsToDeposit = toUnit('50');
+		it('if the deposit tribe amount of 50 is the minimumDepositAmount', async () => {
+			const tribesToDeposit = toUnit('50');
 
-			await approveAndDepositSynths(synthsToDeposit, depositor);
+			await approveAndDepositTribes(tribesToDeposit, depositor);
 
 			const events = await depot.getPastEvents();
-			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
-			const synthDepositIndex = synthDepositEvent.args.depositIndex.toString();
+			const tribeDepositEvent = events.find(log => log.event === 'TribeDeposit');
+			const tribeDepositIndex = tribeDepositEvent.args.depositIndex.toString();
 
-			assert.eventEqual(synthDepositEvent, 'SynthDeposit', {
+			assert.eventEqual(tribeDepositEvent, 'TribeDeposit', {
 				user: depositor,
-				amount: synthsToDeposit,
-				depositIndex: synthDepositIndex,
+				amount: tribesToDeposit,
+				depositIndex: tribeDepositIndex,
 			});
 
-			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			assert.bnEqual(depotSynthBalanceCurrent, synthsToDeposit);
+			const depotTribeBalanceCurrent = await tribe.balanceOf(depot.address);
+			assert.bnEqual(depotTribeBalanceCurrent, tribesToDeposit);
 
 			const depositStartIndexAfter = await depot.depositStartIndex();
-			const synthDeposit = await depot.deposits.call(depositStartIndexAfter);
-			assert.equal(synthDeposit.user, depositor);
-			assert.bnEqual(synthDeposit.amount, synthsToDeposit);
+			const tribeDeposit = await depot.deposits.call(depositStartIndexAfter);
+			assert.equal(tribeDeposit.user, depositor);
+			assert.bnEqual(tribeDeposit.amount, tribesToDeposit);
 		});
 
-		it('if the deposit synth amount of 51 is more than the minimumDepositAmount', async () => {
-			const synthsToDeposit = toUnit('51');
+		it('if the deposit tribe amount of 51 is more than the minimumDepositAmount', async () => {
+			const tribesToDeposit = toUnit('51');
 
-			await approveAndDepositSynths(synthsToDeposit, depositor);
+			await approveAndDepositTribes(tribesToDeposit, depositor);
 
 			const events = await depot.getPastEvents();
-			const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
-			const synthDepositIndex = synthDepositEvent.args.depositIndex.toString();
+			const tribeDepositEvent = events.find(log => log.event === 'TribeDeposit');
+			const tribeDepositIndex = tribeDepositEvent.args.depositIndex.toString();
 
-			assert.eventEqual(synthDepositEvent, 'SynthDeposit', {
+			assert.eventEqual(tribeDepositEvent, 'TribeDeposit', {
 				user: depositor,
-				amount: synthsToDeposit,
-				depositIndex: synthDepositIndex,
+				amount: tribesToDeposit,
+				depositIndex: tribeDepositIndex,
 			});
 
-			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			assert.bnEqual(depotSynthBalanceCurrent, synthsToDeposit);
+			const depotTribeBalanceCurrent = await tribe.balanceOf(depot.address);
+			assert.bnEqual(depotTribeBalanceCurrent, tribesToDeposit);
 
 			const depositStartIndexAfter = await depot.depositStartIndex();
-			const synthDeposit = await depot.deposits.call(depositStartIndexAfter);
-			assert.equal(synthDeposit.user, depositor);
-			assert.bnEqual(synthDeposit.amount, synthsToDeposit);
+			const tribeDeposit = await depot.deposits.call(depositStartIndexAfter);
+			assert.equal(tribeDeposit.user, depositor);
+			assert.bnEqual(tribeDeposit.amount, tribesToDeposit);
 		});
 	});
 
-	describe('should not exchange ether for synths', async () => {
+	describe('should not exchange ether for tribes', async () => {
 		let fundsWalletFromContract;
 		let fundsWalletEthBalanceBefore;
-		let synthsBalance;
-		let depotSynthBalanceBefore;
+		let tribesBalance;
+		let depotTribeBalanceBefore;
 
 		beforeEach(async () => {
 			fundsWalletFromContract = await depot.fundsWallet();
 			fundsWalletEthBalanceBefore = await getEthBalance(fundsWallet);
-			// Set up the depot so it contains some synths to convert Ether for
-			synthsBalance = await synth.balanceOf(owner, { from: owner });
+			// Set up the depot so it contains some tribes to convert Ether for
+			tribesBalance = await tribe.balanceOf(owner, { from: owner });
 
-			await approveAndDepositSynths(synthsBalance, owner);
+			await approveAndDepositTribes(tribesBalance, owner);
 
-			depotSynthBalanceBefore = await synth.balanceOf(depot.address);
+			depotTribeBalanceBefore = await tribe.balanceOf(depot.address);
 		});
 
 		it('if the price is stale', async () => {
@@ -362,15 +362,15 @@ contract('Depot', async accounts => {
 
 			// Attempt exchange
 			await assert.revert(
-				depot.exchangeEtherForSynths({
+				depot.exchangeEtherForTribes({
 					from: address1,
 					value: 10,
 				}),
-				'Rate invalid or not a synth'
+				'Rate invalid or not a tribe'
 			);
-			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
-			assert.bnEqual(await synth.balanceOf(address1), 0);
+			const depotTribeBalanceCurrent = await tribe.balanceOf(depot.address);
+			assert.bnEqual(depotTribeBalanceCurrent, depotTribeBalanceBefore);
+			assert.bnEqual(await tribe.balanceOf(address1), 0);
 			assert.equal(fundsWalletFromContract, fundsWallet);
 			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore);
 		});
@@ -381,16 +381,16 @@ contract('Depot', async accounts => {
 
 			// Attempt exchange
 			await assert.revert(
-				depot.exchangeEtherForSynths({
+				depot.exchangeEtherForTribes({
 					from: address1,
 					value: 10,
 				}),
 				'This action cannot be performed while the contract is paused'
 			);
 
-			const depotSynthBalanceCurrent = await synth.balanceOf(depot.address);
-			assert.bnEqual(depotSynthBalanceCurrent, depotSynthBalanceBefore);
-			assert.bnEqual(await synth.balanceOf(address1), 0);
+			const depotTribeBalanceCurrent = await tribe.balanceOf(depot.address);
+			assert.bnEqual(depotTribeBalanceCurrent, depotTribeBalanceBefore);
+			assert.bnEqual(await tribe.balanceOf(address1), 0);
 			assert.equal(fundsWalletFromContract, fundsWallet);
 			assert.bnEqual(await getEthBalance(fundsWallet), fundsWalletEthBalanceBefore.toString());
 		});
@@ -405,7 +405,7 @@ contract('Depot', async accounts => {
 
 			await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 			await assert.revert(
-				depot.exchangeEtherForSynths({
+				depot.exchangeEtherForTribes({
 					from: address1,
 					value: toUnit('1'),
 				}),
@@ -414,18 +414,18 @@ contract('Depot', async accounts => {
 			// resume
 			await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 			// no errors
-			await depot.exchangeEtherForSynths({
+			await depot.exchangeEtherForTribes({
 				from: address1,
 				value: 10,
 			});
 		});
 	});
 
-	describe('Ensure user can exchange ETH for Synths where the amount', async () => {
+	describe('Ensure user can exchange ETH for Tribes where the amount', async () => {
 		const depositor = address1;
 		const depositor2 = address2;
 		const purchaser = address3;
-		const synthsBalance = toUnit('1000');
+		const tribesBalance = toUnit('1000');
 		let ethUsd;
 
 		beforeEach(async () => {
@@ -438,16 +438,16 @@ contract('Depot', async accounts => {
 			assert.equal(depositStartIndex, 0);
 			assert.equal(depositEndIndex, 0);
 
-			// Set up the depositor with an amount of synths to deposit.
-			await synth.transfer(depositor, synthsBalance.toString(), {
+			// Set up the depositor with an amount of tribes to deposit.
+			await tribe.transfer(depositor, tribesBalance.toString(), {
 				from: owner,
 			});
-			await synth.transfer(depositor2, synthsBalance.toString(), {
+			await tribe.transfer(depositor2, tribesBalance.toString(), {
 				from: owner,
 			});
 		});
 
-		['exchangeEtherForSynths function directly', 'fallback function'].forEach(type => {
+		['exchangeEtherForTribes function directly', 'fallback function'].forEach(type => {
 			const isFallback = type === 'fallback function';
 
 			describe(`using the ${type}`, () => {
@@ -455,9 +455,9 @@ contract('Depot', async accounts => {
 					const ethToSendFromPurchaser = { from: purchaser, value: toUnit('1') };
 					let fnc;
 					beforeEach(async () => {
-						fnc = isFallback ? 'sendTransaction' : 'exchangeEtherForSynths';
+						fnc = isFallback ? 'sendTransaction' : 'exchangeEtherForTribes';
 						// setup with deposits
-						await approveAndDepositSynths(toUnit('1000'), depositor);
+						await approveAndDepositTribes(toUnit('1000'), depositor);
 
 						await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 					});
@@ -469,7 +469,7 @@ contract('Depot', async accounts => {
 						beforeEach(async () => {
 							await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 						});
-						it('when depositSynths is invoked, it works as expected', async () => {
+						it('when depositTribes is invoked, it works as expected', async () => {
 							await depot[fnc](ethToSendFromPurchaser);
 						});
 					});
@@ -479,19 +479,19 @@ contract('Depot', async accounts => {
 			it('exactly matches one deposit (and that the queue is correctly updated) [ @cov-skip ]', async () => {
 				const gasPrice = 1e9;
 
-				const synthsToDeposit = ethUsd;
+				const tribesToDeposit = ethUsd;
 				const ethToSend = toUnit('1');
 				const depositorStartingBalance = await getEthBalance(depositor);
 
-				// Send the synths to the Depot.
-				const approveTxn = await synth.approve(depot.address, synthsToDeposit, {
+				// Send the tribes to the Depot.
+				const approveTxn = await tribe.approve(depot.address, tribesToDeposit, {
 					from: depositor,
 					gasPrice,
 				});
 				const gasPaidApprove = web3.utils.toBN(approveTxn.receipt.gasUsed * gasPrice);
 
 				// Deposit hUSD in Depot
-				const depositTxn = await depot.depositSynths(synthsToDeposit, {
+				const depositTxn = await depot.depositTribes(tribesToDeposit, {
 					from: depositor,
 					gasPrice,
 				});
@@ -507,7 +507,7 @@ contract('Depot', async accounts => {
 
 				// And assert that our total has increased by the right amount.
 				const totalSellableDeposits = await depot.totalSellableDeposits();
-				assert.bnEqual(totalSellableDeposits, synthsToDeposit);
+				assert.bnEqual(totalSellableDeposits, tribesToDeposit);
 
 				// Now purchase some.
 				let txn;
@@ -518,7 +518,7 @@ contract('Depot', async accounts => {
 						value: ethToSend,
 					});
 				} else {
-					txn = await depot.exchangeEtherForSynths({
+					txn = await depot.exchangeEtherForTribes({
 						from: purchaser,
 						value: ethToSend,
 					});
@@ -530,16 +530,16 @@ contract('Depot', async accounts => {
 					fromCurrency: 'ETH',
 					fromAmount: ethToSend,
 					toCurrency: 'hUSD',
-					toAmount: synthsToDeposit,
+					toAmount: tribesToDeposit,
 				});
 
-				// Purchaser should have received the Synths
-				const purchaserSynthBalance = await synth.balanceOf(purchaser);
-				assert.bnEqual(purchaserSynthBalance, synthsToDeposit);
+				// Purchaser should have received the Tribes
+				const purchaserTribeBalance = await tribe.balanceOf(purchaser);
+				assert.bnEqual(purchaserTribeBalance, tribesToDeposit);
 
-				// Depot should no longer have the synths
-				const depotSynthBalance = await synth.balanceOf(depot.address);
-				assert.equal(depotSynthBalance, 0);
+				// Depot should no longer have the tribes
+				const depotTribeBalance = await tribe.balanceOf(depot.address);
+				assert.equal(depotTribeBalance, 0);
 
 				// We should have no deposit in the queue anymore
 				assert.equal(await depot.depositStartIndex(), 1);
@@ -560,11 +560,11 @@ contract('Depot', async accounts => {
 			});
 
 			it('is less than one deposit (and that the queue is correctly updated)', async () => {
-				const synthsToDeposit = web3.utils.toBN(ethUsd); // ETH Price
+				const tribesToDeposit = web3.utils.toBN(ethUsd); // ETH Price
 				const ethToSend = toUnit('0.5');
 
-				// Send the synths to the Token Depot.
-				await approveAndDepositSynths(synthsToDeposit, depositor);
+				// Send the tribes to the Token Depot.
+				await approveAndDepositTribes(tribesToDeposit, depositor);
 
 				const depositStartIndex = await depot.depositStartIndex();
 				const depositEndIndex = await depot.depositEndIndex();
@@ -575,7 +575,7 @@ contract('Depot', async accounts => {
 
 				// And assert that our total has increased by the right amount.
 				const totalSellableDeposits = await depot.totalSellableDeposits();
-				assert.bnEqual(totalSellableDeposits, synthsToDeposit);
+				assert.bnEqual(totalSellableDeposits, tribesToDeposit);
 
 				assert.bnEqual(await depot.totalSellableDeposits(), (await depot.deposits(0)).amount);
 
@@ -588,7 +588,7 @@ contract('Depot', async accounts => {
 						value: ethToSend,
 					});
 				} else {
-					txn = await depot.exchangeEtherForSynths({
+					txn = await depot.exchangeEtherForTribes({
 						from: purchaser,
 						value: ethToSend,
 					});
@@ -600,7 +600,7 @@ contract('Depot', async accounts => {
 					fromCurrency: 'ETH',
 					fromAmount: ethToSend,
 					toCurrency: 'hUSD',
-					toAmount: synthsToDeposit.div(web3.utils.toBN('2')),
+					toAmount: tribesToDeposit.div(web3.utils.toBN('2')),
 				});
 
 				// We should have one deposit in the queue with half the amount
@@ -611,18 +611,18 @@ contract('Depot', async accounts => {
 
 				assert.bnEqual(
 					await depot.totalSellableDeposits(),
-					synthsToDeposit.div(web3.utils.toBN('2'))
+					tribesToDeposit.div(web3.utils.toBN('2'))
 				);
 			});
 
 			it('exceeds one deposit (and that the queue is correctly updated)', async () => {
-				const synthsToDeposit = toUnit('172'); // 1 ETH worth
-				const totalSynthsDeposit = toUnit('344'); // 2 ETH worth
+				const tribesToDeposit = toUnit('172'); // 1 ETH worth
+				const totalTribesDeposit = toUnit('344'); // 2 ETH worth
 				const ethToSend = toUnit('1.5');
 
-				// Send the synths to the Token Depot.
-				await approveAndDepositSynths(synthsToDeposit, depositor);
-				await approveAndDepositSynths(synthsToDeposit, depositor2);
+				// Send the tribes to the Token Depot.
+				await approveAndDepositTribes(tribesToDeposit, depositor);
+				await approveAndDepositTribes(tribesToDeposit, depositor2);
 
 				const depositStartIndex = await depot.depositStartIndex();
 				const depositEndIndex = await depot.depositEndIndex();
@@ -633,7 +633,7 @@ contract('Depot', async accounts => {
 
 				// And assert that our total has increased by the right amount.
 				const totalSellableDeposits = await depot.totalSellableDeposits();
-				assert.bnEqual(totalSellableDeposits, totalSynthsDeposit);
+				assert.bnEqual(totalSellableDeposits, totalTribesDeposit);
 
 				// Now purchase some.
 				let transaction;
@@ -643,7 +643,7 @@ contract('Depot', async accounts => {
 						value: ethToSend,
 					});
 				} else {
-					transaction = await depot.exchangeEtherForSynths({
+					transaction = await depot.exchangeEtherForTribes({
 						from: purchaser,
 						value: ethToSend,
 					});
@@ -651,40 +651,40 @@ contract('Depot', async accounts => {
 
 				// Exchange("ETH", msg.value, "hUSD", fulfilled);
 				const exchangeEvent = transaction.logs.find(log => log.event === 'Exchange');
-				const synthsAmount = multiplyDecimal(ethToSend, ethUsd);
+				const tribesAmount = multiplyDecimal(ethToSend, ethUsd);
 
 				assert.eventEqual(exchangeEvent, 'Exchange', {
 					fromCurrency: 'ETH',
 					fromAmount: ethToSend,
 					toCurrency: 'hUSD',
-					toAmount: synthsAmount,
+					toAmount: tribesAmount,
 				});
 
-				// Purchaser should have received the Synths
-				const purchaserSynthBalance = await synth.balanceOf(purchaser);
-				const depotSynthBalance = await synth.balanceOf(depot.address);
-				const remainingSynths = web3.utils.toBN(totalSynthsDeposit).sub(synthsAmount);
-				assert.bnEqual(purchaserSynthBalance, synthsAmount);
+				// Purchaser should have received the Tribes
+				const purchaserTribeBalance = await tribe.balanceOf(purchaser);
+				const depotTribeBalance = await tribe.balanceOf(depot.address);
+				const remainingTribes = web3.utils.toBN(totalTribesDeposit).sub(tribesAmount);
+				assert.bnEqual(purchaserTribeBalance, tribesAmount);
 
-				assert.bnEqual(depotSynthBalance, remainingSynths);
+				assert.bnEqual(depotTribeBalance, remainingTribes);
 
 				// We should have one deposit left in the queue
 				assert.equal(await depot.depositStartIndex(), 1);
 				assert.equal(await depot.depositEndIndex(), 2);
 
-				// And our total should be totalSynthsDeposit - last purchase
-				assert.bnEqual(await depot.totalSellableDeposits(), remainingSynths);
+				// And our total should be totalTribesDeposit - last purchase
+				assert.bnEqual(await depot.totalSellableDeposits(), remainingTribes);
 			});
 
-			xit('exceeds available synths (and that the remainder of the ETH is correctly refunded)', async () => {
+			xit('exceeds available tribes (and that the remainder of the ETH is correctly refunded)', async () => {
 				const gasPrice = 1e9;
 
 				const ethToSend = toUnit('2');
-				const synthsToDeposit = multiplyDecimal(ethToSend, ethRate); // 344
+				const tribesToDeposit = multiplyDecimal(ethToSend, ethRate); // 344
 				const purchaserInitialBalance = await getEthBalance(purchaser);
 
-				// Send the synths to the Token Depot.
-				await approveAndDepositSynths(synthsToDeposit, depositor);
+				// Send the tribes to the Token Depot.
+				await approveAndDepositTribes(tribesToDeposit, depositor);
 
 				// Assert that there is now one deposit in the queue.
 				assert.equal(await depot.depositStartIndex(), 0);
@@ -692,7 +692,7 @@ contract('Depot', async accounts => {
 
 				// And assert that our total has increased by the right amount.
 				const totalSellableDeposits = await depot.totalSellableDeposits();
-				assert.equal(totalSellableDeposits.toString(), synthsToDeposit);
+				assert.equal(totalSellableDeposits.toString(), tribesToDeposit);
 
 				// Now purchase some
 				let txn;
@@ -704,7 +704,7 @@ contract('Depot', async accounts => {
 						gasPrice,
 					});
 				} else {
-					txn = await depot.exchangeEtherForSynths({
+					txn = await depot.exchangeEtherForTribes({
 						from: purchaser,
 						value: ethToSend,
 						gasPrice,
@@ -720,22 +720,22 @@ contract('Depot', async accounts => {
 					fromCurrency: 'ETH',
 					fromAmount: ethToSend,
 					toCurrency: 'hUSD',
-					toAmount: synthsToDeposit,
+					toAmount: tribesToDeposit,
 				});
 
 				// We need to calculate the amount - fees the purchaser is supposed to get
-				const synthsAvailableInETH = divideDecimal(synthsToDeposit, ethUsd);
+				const tribesAvailableInETH = divideDecimal(tribesToDeposit, ethUsd);
 
-				// Purchaser should have received the total available synths
-				const purchaserSynthBalance = await synth.balanceOf(purchaser);
-				assert.equal(synthsToDeposit.toString(), purchaserSynthBalance.toString());
+				// Purchaser should have received the total available tribes
+				const purchaserTribeBalance = await tribe.balanceOf(purchaser);
+				assert.equal(tribesToDeposit.toString(), purchaserTribeBalance.toString());
 
-				// Token Depot should have 0 synths left
-				const depotSynthBalance = await synth.balanceOf(depot.address);
-				assert.equal(depotSynthBalance, 0);
+				// Token Depot should have 0 tribes left
+				const depotTribeBalance = await tribe.balanceOf(depot.address);
+				assert.equal(depotTribeBalance, 0);
 
 				// The purchaser should have received the refund
-				// which can be checked by initialBalance = endBalance + fees + amount of synths bought in ETH
+				// which can be checked by initialBalance = endBalance + fees + amount of tribes bought in ETH
 				const purchaserEndingBalance = await getEthBalance(purchaser);
 
 				// Note: currently failing under coverage via:
@@ -747,51 +747,51 @@ contract('Depot', async accounts => {
 					web3.utils
 						.toBN(purchaserEndingBalance)
 						.add(gasPaid)
-						.add(synthsAvailableInETH),
+						.add(tribesAvailableInETH),
 					web3.utils.toBN(purchaserInitialBalance)
 				);
 			});
 		});
 
-		describe('exchangeEtherForSynthsAtRate', () => {
+		describe('exchangeEtherForTribesAtRate', () => {
 			const ethToSend = toUnit('1');
-			let synthsToPurchase;
+			let tribesToPurchase;
 			let payload;
 			let txn;
 
 			beforeEach(async () => {
-				synthsToPurchase = multiplyDecimal(ethToSend, ethRate);
+				tribesToPurchase = multiplyDecimal(ethToSend, ethRate);
 				payload = { from: purchaser, value: ethToSend };
-				await approveAndDepositSynths(toUnit('1000'), depositor);
+				await approveAndDepositTribes(toUnit('1000'), depositor);
 			});
 
 			describe('when the purchaser supplies a rate', () => {
-				it('when exchangeEtherForSynthsAtRate is invoked, it works as expected', async () => {
-					txn = await depot.exchangeEtherForSynthsAtRate(ethRate, payload);
+				it('when exchangeEtherForTribesAtRate is invoked, it works as expected', async () => {
+					txn = await depot.exchangeEtherForTribesAtRate(ethRate, payload);
 					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
 					assert.eventEqual(exchangeEvent, 'Exchange', {
 						fromCurrency: 'ETH',
 						fromAmount: ethToSend,
 						toCurrency: 'hUSD',
-						toAmount: synthsToPurchase,
+						toAmount: tribesToPurchase,
 					});
 				});
 				it('when purchaser supplies a rate lower than the current rate', async () => {
 					await assert.revert(
-						depot.exchangeEtherForSynthsAtRate('99', payload),
+						depot.exchangeEtherForTribesAtRate('99', payload),
 						'Guaranteed rate would not be received'
 					);
 				});
 				it('when purchaser supplies a rate higher than the current rate', async () => {
 					await assert.revert(
-						depot.exchangeEtherForSynthsAtRate('9999', payload),
+						depot.exchangeEtherForTribesAtRate('9999', payload),
 						'Guaranteed rate would not be received'
 					);
 				});
 				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
 					await updateAggregatorRates(exchangeRates, null, [HAKA, ETH], ['0.1', '134'].map(toUnit));
 					await assert.revert(
-						depot.exchangeEtherForSynthsAtRate(ethRate, payload),
+						depot.exchangeEtherForTribesAtRate(ethRate, payload),
 						'Guaranteed rate would not be received'
 					);
 				});
@@ -801,12 +801,12 @@ contract('Depot', async accounts => {
 		describe('exchangeEtherForHAKAAtRate', () => {
 			const ethToSend = toUnit('1');
 			const ethToSendFromPurchaser = { from: purchaser, value: ethToSend };
-			let hakaToPurchase;
+			let snxToPurchase;
 			let txn;
 
 			beforeEach(async () => {
 				const purchaseValueDollars = multiplyDecimal(ethToSend, ethRate);
-				hakaToPurchase = divideDecimal(purchaseValueDollars, hakaRate);
+				snxToPurchase = divideDecimal(purchaseValueDollars, snxRate);
 				// Send some HAKA to the Depot contract
 				await tribeone.transfer(depot.address, toUnit('1000000'), {
 					from: owner,
@@ -815,14 +815,14 @@ contract('Depot', async accounts => {
 
 			describe('when the purchaser supplies a rate', () => {
 				it('when exchangeEtherForHAKAAtRate is invoked, it works as expected', async () => {
-					txn = await depot.exchangeEtherForHAKAAtRate(ethRate, hakaRate, ethToSendFromPurchaser);
+					txn = await depot.exchangeEtherForHAKAAtRate(ethRate, snxRate, ethToSendFromPurchaser);
 					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
 
 					assert.eventEqual(exchangeEvent, 'Exchange', {
 						fromCurrency: 'ETH',
 						fromAmount: ethToSend,
 						toCurrency: 'HAKA',
-						toAmount: hakaToPurchase,
+						toAmount: snxToPurchase,
 					});
 				});
 				it('when purchaser supplies a rate lower than the current rate', async () => {
@@ -840,25 +840,25 @@ contract('Depot', async accounts => {
 				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
 					await updateAggregatorRates(exchangeRates, null, [HAKA, ETH], ['0.1', '134'].map(toUnit));
 					await assert.revert(
-						depot.exchangeEtherForHAKAAtRate(ethRate, hakaRate, ethToSendFromPurchaser),
+						depot.exchangeEtherForHAKAAtRate(ethRate, snxRate, ethToSendFromPurchaser),
 						'Guaranteed ether rate would not be received'
 					);
 				});
 			});
 		});
 
-		describe('exchangeSynthsForHAKAAtRate', () => {
+		describe('exchangeTribesForHAKAAtRate', () => {
 			const purchaser = address1;
-			const purchaserSynthAmount = toUnit('2000');
+			const purchaserTribeAmount = toUnit('2000');
 			const depotHAKAAmount = toUnit('1000000');
-			const synthsToSend = toUnit('1');
+			const tribesToSend = toUnit('1');
 			const fromPurchaser = { from: purchaser };
-			let hakaToPurchase;
+			let snxToPurchase;
 			let txn;
 
 			beforeEach(async () => {
-				// Send the purchaser some synths
-				await synth.transfer(purchaser, purchaserSynthAmount, {
+				// Send the purchaser some tribes
+				await tribe.transfer(purchaser, purchaserTribeAmount, {
 					from: owner,
 				});
 				// Send some HAKA to the Token Depot contract
@@ -866,35 +866,35 @@ contract('Depot', async accounts => {
 					from: owner,
 				});
 
-				await synth.approve(depot.address, synthsToSend, fromPurchaser);
+				await tribe.approve(depot.address, tribesToSend, fromPurchaser);
 
 				const depotHAKABalance = await tribeone.balanceOf(depot.address);
 				assert.bnEqual(depotHAKABalance, depotHAKAAmount);
 
-				hakaToPurchase = divideDecimal(synthsToSend, hakaRate);
+				snxToPurchase = divideDecimal(tribesToSend, snxRate);
 			});
 
 			describe('when the purchaser supplies a rate', () => {
-				it('when exchangeSynthsForHAKAAtRate is invoked, it works as expected', async () => {
-					txn = await depot.exchangeSynthsForHAKAAtRate(synthsToSend, hakaRate, fromPurchaser);
+				it('when exchangeTribesForHAKAAtRate is invoked, it works as expected', async () => {
+					txn = await depot.exchangeTribesForHAKAAtRate(tribesToSend, snxRate, fromPurchaser);
 					const exchangeEvent = txn.logs.find(log => log.event === 'Exchange');
 
 					assert.eventEqual(exchangeEvent, 'Exchange', {
 						fromCurrency: 'hUSD',
-						fromAmount: synthsToSend,
+						fromAmount: tribesToSend,
 						toCurrency: 'HAKA',
-						toAmount: hakaToPurchase,
+						toAmount: snxToPurchase,
 					});
 				});
 				it('when purchaser supplies a rate lower than the current rate', async () => {
 					await assert.revert(
-						depot.exchangeSynthsForHAKAAtRate(synthsToSend, '99', fromPurchaser),
+						depot.exchangeTribesForHAKAAtRate(tribesToSend, '99', fromPurchaser),
 						'Guaranteed rate would not be received'
 					);
 				});
 				it('when purchaser supplies a rate higher than the current rate', async () => {
 					await assert.revert(
-						depot.exchangeSynthsForHAKAAtRate(synthsToSend, '9999', fromPurchaser),
+						depot.exchangeTribesForHAKAAtRate(tribesToSend, '9999', fromPurchaser),
 						'Guaranteed rate would not be received'
 					);
 				});
@@ -903,22 +903,22 @@ contract('Depot', async accounts => {
 				it.skip('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
 					await updateAggregatorRates(exchangeRates, null, [HAKA], ['0.05'].map(toUnit));
 					await assert.revert(
-						depot.exchangeSynthsForHAKAAtRate(synthsToSend, hakaRate, fromPurchaser),
+						depot.exchangeTribesForHAKAAtRate(tribesToSend, snxRate, fromPurchaser),
 						'Guaranteed rate would not be received'
 					);
 				});
 			});
 		});
 
-		describe('withdrawMyDepositedSynths()', () => {
+		describe('withdrawMyDepositedTribes()', () => {
 			describe('when the system is suspended', () => {
 				beforeEach(async () => {
-					await approveAndDepositSynths(toUnit('100'), depositor);
+					await approveAndDepositTribes(toUnit('100'), depositor);
 					await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 				});
-				it('when withdrawMyDepositedSynths() is invoked, it reverts with operation prohibited', async () => {
+				it('when withdrawMyDepositedTribes() is invoked, it reverts with operation prohibited', async () => {
 					await assert.revert(
-						depot.withdrawMyDepositedSynths({ from: depositor }),
+						depot.withdrawMyDepositedTribes({ from: depositor }),
 						'Operation prohibited'
 					);
 				});
@@ -927,90 +927,90 @@ contract('Depot', async accounts => {
 					beforeEach(async () => {
 						await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 					});
-					it('when withdrawMyDepositedSynths() is invoked, it works as expected', async () => {
-						await depot.withdrawMyDepositedSynths({ from: depositor });
+					it('when withdrawMyDepositedTribes() is invoked, it works as expected', async () => {
+						await depot.withdrawMyDepositedTribes({ from: depositor });
 					});
 				});
 			});
 
-			it('Ensure user can withdraw their Synth deposit', async () => {
-				const synthsToDeposit = toUnit('500');
-				// Send the synths to the Token Depot.
-				await approveAndDepositSynths(synthsToDeposit, depositor);
+			it('Ensure user can withdraw their Tribe deposit', async () => {
+				const tribesToDeposit = toUnit('500');
+				// Send the tribes to the Token Depot.
+				await approveAndDepositTribes(tribesToDeposit, depositor);
 
 				const events = await depot.getPastEvents();
-				const synthDepositEvent = events.find(log => log.event === 'SynthDeposit');
-				const synthDepositIndex = synthDepositEvent.args.depositIndex.toString();
+				const tribeDepositEvent = events.find(log => log.event === 'TribeDeposit');
+				const tribeDepositIndex = tribeDepositEvent.args.depositIndex.toString();
 
 				// And assert that our total has increased by the right amount.
 				const totalSellableDeposits = await depot.totalSellableDeposits();
-				assert.bnEqual(totalSellableDeposits, synthsToDeposit);
+				assert.bnEqual(totalSellableDeposits, tribesToDeposit);
 
-				// Wthdraw the deposited synths
-				const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
+				// Wthdraw the deposited tribes
+				const txn = await depot.withdrawMyDepositedTribes({ from: depositor });
 				const depositRemovedEvent = txn.logs[0];
 				const withdrawEvent = txn.logs[1];
 
-				// The sent synths should be equal the initial deposit
-				assert.eventEqual(depositRemovedEvent, 'SynthDepositRemoved', {
+				// The sent tribes should be equal the initial deposit
+				assert.eventEqual(depositRemovedEvent, 'TribeDepositRemoved', {
 					user: depositor,
-					amount: synthsToDeposit,
-					depositIndex: synthDepositIndex,
+					amount: tribesToDeposit,
+					depositIndex: tribeDepositIndex,
 				});
 
 				// Tells the DApps the deposit is removed from the fifi queue
-				assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+				assert.eventEqual(withdrawEvent, 'TribeWithdrawal', {
 					user: depositor,
-					amount: synthsToDeposit,
+					amount: tribesToDeposit,
 				});
 			});
 
-			it('Ensure user can withdraw their Synth deposit even if they sent an amount smaller than the minimum required', async () => {
-				const synthsToDeposit = toUnit('10');
+			it('Ensure user can withdraw their Tribe deposit even if they sent an amount smaller than the minimum required', async () => {
+				const tribesToDeposit = toUnit('10');
 
-				await approveAndDepositSynths(synthsToDeposit, depositor);
+				await approveAndDepositTribes(tribesToDeposit, depositor);
 
 				// Now balance should be equal to the amount we just sent minus the fees
 				const smallDepositsBalance = await depot.smallDeposits(depositor);
-				assert.bnEqual(smallDepositsBalance, synthsToDeposit);
+				assert.bnEqual(smallDepositsBalance, tribesToDeposit);
 
-				// Wthdraw the deposited synths
-				const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
+				// Wthdraw the deposited tribes
+				const txn = await depot.withdrawMyDepositedTribes({ from: depositor });
 				const withdrawEvent = txn.logs[0];
 
-				// The sent synths should be equal the initial deposit
-				assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+				// The sent tribes should be equal the initial deposit
+				assert.eventEqual(withdrawEvent, 'TribeWithdrawal', {
 					user: depositor,
-					amount: synthsToDeposit,
+					amount: tribesToDeposit,
 				});
 			});
 
-			it('Ensure user can withdraw their multiple Synth deposits when they sent amounts smaller than the minimum required', async () => {
-				const synthsToDeposit1 = toUnit('10');
-				const synthsToDeposit2 = toUnit('15');
-				const totalSynthDeposits = synthsToDeposit1.add(synthsToDeposit2);
+			it('Ensure user can withdraw their multiple Tribe deposits when they sent amounts smaller than the minimum required', async () => {
+				const tribesToDeposit1 = toUnit('10');
+				const tribesToDeposit2 = toUnit('15');
+				const totalTribeDeposits = tribesToDeposit1.add(tribesToDeposit2);
 
-				await approveAndDepositSynths(synthsToDeposit1, depositor);
+				await approveAndDepositTribes(tribesToDeposit1, depositor);
 
-				await approveAndDepositSynths(synthsToDeposit2, depositor);
+				await approveAndDepositTribes(tribesToDeposit2, depositor);
 
 				// Now balance should be equal to the amount we just sent minus the fees
 				const smallDepositsBalance = await depot.smallDeposits(depositor);
-				assert.bnEqual(smallDepositsBalance, synthsToDeposit1.add(synthsToDeposit2));
+				assert.bnEqual(smallDepositsBalance, tribesToDeposit1.add(tribesToDeposit2));
 
-				// Wthdraw the deposited synths
-				const txn = await depot.withdrawMyDepositedSynths({ from: depositor });
+				// Wthdraw the deposited tribes
+				const txn = await depot.withdrawMyDepositedTribes({ from: depositor });
 				const withdrawEvent = txn.logs[0];
 
-				// The sent synths should be equal the initial deposit
-				assert.eventEqual(withdrawEvent, 'SynthWithdrawal', {
+				// The sent tribes should be equal the initial deposit
+				assert.eventEqual(withdrawEvent, 'TribeWithdrawal', {
 					user: depositor,
-					amount: totalSynthDeposits,
+					amount: totalTribeDeposits,
 				});
 			});
 		});
 
-		it('Ensure user can exchange ETH for Synths after a withdrawal and that the queue correctly skips the empty entry', async () => {
+		it('Ensure user can exchange ETH for Tribes after a withdrawal and that the queue correctly skips the empty entry', async () => {
 			//   - e.g. Deposits of [1, 2, 3], user withdraws 2, so [1, (empty), 3], then
 			//      - User can exchange for 1, and queue is now [(empty), 3]
 			//      - User can exchange for 2 and queue is now [2]
@@ -1018,25 +1018,25 @@ contract('Depot', async accounts => {
 			const deposit2 = toUnit('200');
 			const deposit3 = toUnit('300');
 
-			// Send the synths to the Token Depot.
-			await approveAndDepositSynths(deposit1, depositor);
-			await approveAndDepositSynths(deposit2, depositor2);
-			await approveAndDepositSynths(deposit3, depositor);
+			// Send the tribes to the Token Depot.
+			await approveAndDepositTribes(deposit1, depositor);
+			await approveAndDepositTribes(deposit2, depositor2);
+			await approveAndDepositTribes(deposit3, depositor);
 
 			// Assert that there is now three deposits in the queue.
 			assert.equal(await depot.depositStartIndex(), 0);
 			assert.equal(await depot.depositEndIndex(), 3);
 
-			// Depositor 2 withdraws Synths
-			await depot.withdrawMyDepositedSynths({ from: depositor2 });
+			// Depositor 2 withdraws Tribes
+			await depot.withdrawMyDepositedTribes({ from: depositor2 });
 
 			// Queue should be  [1, (empty), 3]
 			const queueResultForDeposit2 = await depot.deposits(1);
 			assert.equal(queueResultForDeposit2.amount, 0);
 
-			// User exchange ETH for Synths (same amount as first deposit)
+			// User exchange ETH for Tribes (same amount as first deposit)
 			const ethToSend = divideDecimal(deposit1, ethRate);
-			await depot.exchangeEtherForSynths({
+			await depot.exchangeEtherForTribes({
 				from: purchaser,
 				value: ethToSend,
 			});
@@ -1047,56 +1047,56 @@ contract('Depot', async accounts => {
 			const queueResultForDeposit1 = await depot.deposits(1);
 			assert.equal(queueResultForDeposit1.amount, 0);
 
-			// User exchange ETH for Synths
-			await depot.exchangeEtherForSynths({
+			// User exchange ETH for Tribes
+			await depot.exchangeEtherForTribes({
 				from: purchaser,
 				value: ethToSend,
 			});
 
-			// Queue should now be [(deposit3 - synthsPurchasedAmount )]
-			const remainingSynths =
+			// Queue should now be [(deposit3 - tribesPurchasedAmount )]
+			const remainingTribes =
 				web3.utils.fromWei(deposit3) - web3.utils.fromWei(ethToSend) * web3.utils.fromWei(ethUsd);
 			assert.equal(await depot.depositStartIndex(), 2);
 			assert.equal(await depot.depositEndIndex(), 3);
 			const totalSellableDeposits = await depot.totalSellableDeposits();
-			assert.equal(totalSellableDeposits.toString(), toUnit(remainingSynths.toString()));
+			assert.equal(totalSellableDeposits.toString(), toUnit(remainingTribes.toString()));
 		});
 
-		it('Ensure multiple users can make multiple Synth deposits', async () => {
+		it('Ensure multiple users can make multiple Tribe deposits', async () => {
 			const deposit1 = toUnit('100');
 			const deposit2 = toUnit('200');
 			const deposit3 = toUnit('300');
 			const deposit4 = toUnit('400');
 
-			// Send the synths to the Token Depot.
-			await approveAndDepositSynths(deposit1, depositor);
-			await approveAndDepositSynths(deposit2, depositor2);
-			await approveAndDepositSynths(deposit3, depositor);
-			await approveAndDepositSynths(deposit4, depositor2);
+			// Send the tribes to the Token Depot.
+			await approveAndDepositTribes(deposit1, depositor);
+			await approveAndDepositTribes(deposit2, depositor2);
+			await approveAndDepositTribes(deposit3, depositor);
+			await approveAndDepositTribes(deposit4, depositor2);
 
 			// We should have now 4 deposits
 			assert.equal(await depot.depositStartIndex(), 0);
 			assert.equal(await depot.depositEndIndex(), 4);
 		});
 
-		it('Ensure multiple users can make multiple Synth deposits and multiple withdrawals (and that the queue is correctly updated)', async () => {
+		it('Ensure multiple users can make multiple Tribe deposits and multiple withdrawals (and that the queue is correctly updated)', async () => {
 			const deposit1 = toUnit('100');
 			const deposit2 = toUnit('200');
 			const deposit3 = toUnit('300');
 			const deposit4 = toUnit('400');
 
-			// Send the synths to the Token Depot.
-			await approveAndDepositSynths(deposit1, depositor);
-			await approveAndDepositSynths(deposit2, depositor);
-			await approveAndDepositSynths(deposit3, depositor2);
-			await approveAndDepositSynths(deposit4, depositor2);
+			// Send the tribes to the Token Depot.
+			await approveAndDepositTribes(deposit1, depositor);
+			await approveAndDepositTribes(deposit2, depositor);
+			await approveAndDepositTribes(deposit3, depositor2);
+			await approveAndDepositTribes(deposit4, depositor2);
 
 			// We should have now 4 deposits
 			assert.equal(await depot.depositStartIndex(), 0);
 			assert.equal(await depot.depositEndIndex(), 4);
 
 			// Depositors withdraws all his deposits
-			await depot.withdrawMyDepositedSynths({ from: depositor });
+			await depot.withdrawMyDepositedTribes({ from: depositor });
 
 			// We should have now 4 deposits
 			assert.equal(await depot.depositStartIndex(), 0);
@@ -1160,8 +1160,8 @@ contract('Depot', async accounts => {
 				value: ethToSend,
 			});
 
-			const purchaseValueInSynths = multiplyDecimal(ethToSend, ethRate);
-			const purchaseValueInTribeone = divideDecimal(purchaseValueInSynths, hakaRate);
+			const purchaseValueInTribes = multiplyDecimal(ethToSend, ethRate);
+			const purchaseValueInTribeone = divideDecimal(purchaseValueInTribes, snxRate);
 
 			const purchaserHAKAEndBalance = await tribeone.balanceOf(purchaser);
 
@@ -1170,15 +1170,15 @@ contract('Depot', async accounts => {
 		});
 	});
 
-	describe('Ensure user can exchange Synths for Tribeone', async () => {
+	describe('Ensure user can exchange Tribes for Tribeone', async () => {
 		const purchaser = address1;
-		const purchaserSynthAmount = toUnit('2000');
+		const purchaserTribeAmount = toUnit('2000');
 		const depotHAKAAmount = toUnit('1000000');
-		const synthsToSend = toUnit('1');
+		const tribesToSend = toUnit('1');
 
 		beforeEach(async () => {
-			// Send the purchaser some synths
-			await synth.transfer(purchaser, purchaserSynthAmount, {
+			// Send the purchaser some tribes
+			await tribe.transfer(purchaser, purchaserTribeAmount, {
 				from: owner,
 			});
 			// We need to send some HAKA to the Token Depot contract
@@ -1186,21 +1186,21 @@ contract('Depot', async accounts => {
 				from: owner,
 			});
 
-			await synth.approve(depot.address, synthsToSend, { from: purchaser });
+			await tribe.approve(depot.address, tribesToSend, { from: purchaser });
 
 			const depotHAKABalance = await tribeone.balanceOf(depot.address);
-			const purchaserSynthBalance = await synth.balanceOf(purchaser);
+			const purchaserTribeBalance = await tribe.balanceOf(purchaser);
 			assert.bnEqual(depotHAKABalance, depotHAKAAmount);
-			assert.bnEqual(purchaserSynthBalance, purchaserSynthAmount);
+			assert.bnEqual(purchaserTribeBalance, purchaserTribeAmount);
 		});
 
 		describe('when the system is suspended', () => {
 			beforeEach(async () => {
 				await setStatus({ owner, systemStatus, section: 'System', suspend: true });
 			});
-			it('when exchangeSynthsForHAKA() is invoked, it reverts with operation prohibited', async () => {
+			it('when exchangeTribesForHAKA() is invoked, it reverts with operation prohibited', async () => {
 				await assert.revert(
-					depot.exchangeSynthsForHAKA(synthsToSend, {
+					depot.exchangeTribesForHAKA(tribesToSend, {
 						from: purchaser,
 					}),
 					'Operation prohibited'
@@ -1211,8 +1211,8 @@ contract('Depot', async accounts => {
 				beforeEach(async () => {
 					await setStatus({ owner, systemStatus, section: 'System', suspend: false });
 				});
-				it('when exchangeSynthsForHAKA() is invoked, it works as expected', async () => {
-					await depot.exchangeSynthsForHAKA(synthsToSend, {
+				it('when exchangeTribesForHAKA() is invoked, it works as expected', async () => {
+					await depot.exchangeTribesForHAKA(tribesToSend, {
 						from: purchaser,
 					});
 				});
@@ -1225,11 +1225,11 @@ contract('Depot', async accounts => {
 			assert.equal(purchaserHAKAStartBalance, 0);
 
 			// Purchaser sends hUSD
-			const txn = await depot.exchangeSynthsForHAKA(synthsToSend, {
+			const txn = await depot.exchangeTribesForHAKA(tribesToSend, {
 				from: purchaser,
 			});
 
-			const purchaseValueInTribeone = divideDecimal(synthsToSend, hakaRate);
+			const purchaseValueInTribeone = divideDecimal(tribesToSend, snxRate);
 
 			const purchaserHAKAEndBalance = await tribeone.balanceOf(purchaser);
 
@@ -1241,7 +1241,7 @@ contract('Depot', async accounts => {
 
 			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'hUSD',
-				fromAmount: synthsToSend,
+				fromAmount: tribesToSend,
 				toCurrency: 'HAKA',
 				toAmount: purchaseValueInTribeone,
 			});
@@ -1249,11 +1249,11 @@ contract('Depot', async accounts => {
 	});
 
 	describe('withdrawTribeone', () => {
-		const hakaAmount = toUnit('1000000');
+		const snxAmount = toUnit('1000000');
 
 		beforeEach(async () => {
 			// Send some HAKA to the Depot contract
-			await tribeone.transfer(depot.address, hakaAmount, {
+			await tribeone.transfer(depot.address, snxAmount, {
 				from: owner,
 			});
 		});
@@ -1261,7 +1261,7 @@ contract('Depot', async accounts => {
 		it('when non owner withdrawTribeone calls then revert', async () => {
 			await onlyGivenAddressCanInvoke({
 				fnc: depot.withdrawTribeone,
-				args: [hakaAmount],
+				args: [snxAmount],
 				accounts,
 				address: owner,
 				reason: 'Only the contract owner may perform this action',
@@ -1271,9 +1271,9 @@ contract('Depot', async accounts => {
 		it('when owner calls withdrawTribeone then withdrawTribeone', async () => {
 			const depotHAKABalanceBefore = await tribeone.balanceOf(depot.address);
 
-			assert.bnEqual(depotHAKABalanceBefore, hakaAmount);
+			assert.bnEqual(depotHAKABalanceBefore, snxAmount);
 
-			await depot.withdrawTribeone(hakaAmount, { from: owner });
+			await depot.withdrawTribeone(snxAmount, { from: owner });
 
 			const depotHAKABalanceAfter = await tribeone.balanceOf(depot.address);
 			assert.bnEqual(depotHAKABalanceAfter, toUnit('0'));

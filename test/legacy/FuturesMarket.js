@@ -56,8 +56,8 @@ contract('FuturesMarket', accounts => {
 
 	const marketKeySuffix = '-perp';
 
-	const marketKey = toBytes32('sBTC' + marketKeySuffix);
-	const baseAsset = toBytes32('sBTC');
+	const marketKey = toBytes32('hBTC' + marketKeySuffix);
+	const baseAsset = toBytes32('hBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
 	const takerFeeNextPrice = toUnit('0.0005');
@@ -110,7 +110,7 @@ contract('FuturesMarket', accounts => {
 			Exchanger: exchanger,
 			CircuitBreaker: circuitBreaker,
 			AddressResolver: addressResolver,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			Tribeone: tribeone,
 			FeePool: feePool,
 			DebtCache: debtCache,
@@ -118,7 +118,7 @@ contract('FuturesMarket', accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'sETH'],
+			tribes: ['hUSD', 'hBTC', 'hETH'],
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
@@ -151,9 +151,9 @@ contract('FuturesMarket', accounts => {
 			await hUSD.issue(t, traderInitialBalance);
 		}
 
-		// allow ownder to suspend system or synths
+		// allow ownder to suspend system or tribes
 		await systemStatus.updateAccessControls(
-			[toBytes32('System'), toBytes32('Synth')],
+			[toBytes32('System'), toBytes32('Tribe')],
 			[owner, owner],
 			[true, true],
 			[true, true],
@@ -798,19 +798,19 @@ contract('FuturesMarket', accounts => {
 			assert.bnClose((await futuresMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
 		});
 
-		it('Reverts if the synth is suspended', async () => {
+		it('Reverts if the tribe is suspended', async () => {
 			await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 
 			// suspend
-			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 			// should revert
 			await assert.revert(
 				futuresMarket.transferMargin(toUnit('-1000'), { from: trader }),
-				'Synth is suspended'
+				'Tribe is suspended'
 			);
 
 			// resume
-			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			await systemStatus.resumeTribe(baseAsset, { from: owner });
 			// should work now
 			await futuresMarket.transferMargin(toUnit('-1000'), { from: trader });
 			assert.bnClose((await futuresMarket.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
@@ -985,7 +985,7 @@ contract('FuturesMarket', accounts => {
 			assert.bnEqual(position.lastPrice, price);
 		});
 
-		it('Cannot modify a position if the synth is suspended', async () => {
+		it('Cannot modify a position if the tribe is suspended', async () => {
 			const margin = toUnit('1000');
 			await futuresMarket.transferMargin(margin, { from: trader });
 			const size = toUnit('10');
@@ -993,15 +993,15 @@ contract('FuturesMarket', accounts => {
 			await setPrice(baseAsset, price);
 
 			// suspend
-			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 			// should revert modifying position
 			await assert.revert(
 				futuresMarket.modifyPosition(size, { from: trader }),
-				'Synth is suspended'
+				'Tribe is suspended'
 			);
 
 			// resume
-			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			await systemStatus.resumeTribe(baseAsset, { from: owner });
 			// should work now
 			await futuresMarket.modifyPosition(size, { from: trader });
 			const position = await futuresMarket.positions(trader);
@@ -2139,19 +2139,19 @@ contract('FuturesMarket', accounts => {
 					);
 				});
 
-				it('Reverts if the synth is suspended', async () => {
+				it('Reverts if the tribe is suspended', async () => {
 					await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 
 					// suspend
-					await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+					await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 					// should revert
 					await assert.revert(
 						futuresMarket.withdrawAllMargin({ from: trader }),
-						'Synth is suspended'
+						'Tribe is suspended'
 					);
 
 					// resume
-					await systemStatus.resumeSynth(baseAsset, { from: owner });
+					await systemStatus.resumeTribe(baseAsset, { from: owner });
 					// should work now
 					await futuresMarket.withdrawAllMargin({ from: trader });
 					assert.bnClose(
@@ -3122,7 +3122,7 @@ contract('FuturesMarket', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 			});
 
-			it('No liquidations while the synth is suspended', async () => {
+			it('No liquidations while the tribe is suspended', async () => {
 				await setPrice(baseAsset, toUnit('250'));
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('20'), { from: trader });
@@ -3130,11 +3130,11 @@ contract('FuturesMarket', accounts => {
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 
 				// suspend
-				await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+				await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 				assert.isFalse(await futuresMarket.canLiquidate(trader));
 
 				// resume
-				await systemStatus.resumeSynth(baseAsset, { from: owner });
+				await systemStatus.resumeTribe(baseAsset, { from: owner });
 				// should work now
 				assert.isTrue(await futuresMarket.canLiquidate(trader));
 			});
@@ -3636,7 +3636,7 @@ contract('FuturesMarket', accounts => {
 			beforeEach(async () => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
-				// base rate of sETH is 100 from shared setup above
+				// base rate of hETH is 100 from shared setup above
 				await setPrice(baseAsset, toUnit('300'), false);
 			});
 
@@ -3647,7 +3647,7 @@ contract('FuturesMarket', accounts => {
 			beforeEach(async () => {
 				await futuresMarket.transferMargin(toUnit('1000'), { from: trader });
 				await futuresMarket.modifyPosition(toUnit('1'), { from: trader });
-				// base rate of sETH is 100 from shared setup above
+				// base rate of hETH is 100 from shared setup above
 				await setPrice(baseAsset, toUnit('30'), false);
 			});
 

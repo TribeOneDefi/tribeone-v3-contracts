@@ -5,13 +5,13 @@ const { artifacts, contract, web3 } = require('hardhat');
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const MockExchanger = artifacts.require('MockExchanger');
-const Synth = artifacts.require('Synth');
+const Tribe = artifacts.require('Tribe');
 
 const { setupAllContracts } = require('./setup');
 
 const { toUnit, bytesToString } = require('../utils')();
 const {
-	issueSynthsToUser,
+	issueTribesToUser,
 	ensureOnlyExpectedMutativeFunctions,
 	onlyGivenAddressCanInvoke,
 	setStatus,
@@ -24,7 +24,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-contract('Synth', async accounts => {
+contract('Tribe', async accounts => {
 	const [hUSD, HAKA, sEUR] = ['hUSD', 'HAKA', 'sEUR'].map(toBytes32);
 
 	const [deployerAccount, owner, , , account1, account2] = accounts;
@@ -33,8 +33,8 @@ contract('Synth', async accounts => {
 		FEE_ADDRESS,
 		tribeone,
 		exchangeRates,
-		sUSDProxy,
-		sUSDImpl,
+		hUSDProxy,
+		hUSDImpl,
 		addressResolver,
 		systemStatus,
 		systemSettings,
@@ -49,8 +49,8 @@ contract('Synth', async accounts => {
 			ExchangeRates: exchangeRates,
 			FeePool: feePool,
 			SystemStatus: systemStatus,
-			Synth: sUSDImpl,
-			ProxyERC20Synth: sUSDProxy,
+			Tribe: hUSDImpl,
+			ProxyERC20Tribe: hUSDProxy,
 			Exchanger: exchanger,
 			DebtCache: debtCache,
 			Issuer: issuer,
@@ -58,10 +58,10 @@ contract('Synth', async accounts => {
 		} = await setupAllContracts({
 			accounts,
 			contracts: [
-				'Synth',
+				'Tribe',
 				'ExchangeRates',
 				'FeePool',
-				'FeePoolEternalStorage', // required for Exchanger/FeePool to access the synth exchange fee rates
+				'FeePoolEternalStorage', // required for Exchanger/FeePool to access the tribe exchange fee rates
 				'Tribeone',
 				'SystemStatus',
 				'AddressResolver',
@@ -81,7 +81,7 @@ contract('Synth', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		// use implementation ABI on the proxy address to simplify calling
-		sUSDProxy = await Synth.at(sUSDProxy.address);
+		hUSDProxy = await Tribe.at(hUSDProxy.address);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -96,10 +96,10 @@ contract('Synth', async accounts => {
 	});
 
 	it('should set constructor params on deployment', async () => {
-		const synth = await Synth.new(
+		const tribe = await Tribe.new(
 			account1,
 			account2,
-			'Synth XYZ',
+			'Tribe XYZ',
 			'sXYZ',
 			owner,
 			toBytes32('sXYZ'),
@@ -108,21 +108,21 @@ contract('Synth', async accounts => {
 			{ from: deployerAccount }
 		);
 
-		assert.equal(await synth.proxy(), account1);
-		assert.equal(await synth.tokenState(), account2);
-		assert.equal(await synth.name(), 'Synth XYZ');
-		assert.equal(await synth.symbol(), 'sXYZ');
-		assert.bnEqual(await synth.decimals(), 18);
-		assert.equal(await synth.owner(), owner);
-		assert.equal(bytesToString(await synth.currencyKey()), 'sXYZ');
-		assert.bnEqual(await synth.totalSupply(), toUnit('100'));
-		assert.equal(await synth.resolver(), addressResolver.address);
+		assert.equal(await tribe.proxy(), account1);
+		assert.equal(await tribe.tokenState(), account2);
+		assert.equal(await tribe.name(), 'Tribe XYZ');
+		assert.equal(await tribe.symbol(), 'sXYZ');
+		assert.bnEqual(await tribe.decimals(), 18);
+		assert.equal(await tribe.owner(), owner);
+		assert.equal(bytesToString(await tribe.currencyKey()), 'sXYZ');
+		assert.bnEqual(await tribe.totalSupply(), toUnit('100'));
+		assert.equal(await tribe.resolver(), addressResolver.address);
 	});
 
 	describe('mutative functions and access', () => {
 		it('ensure only known functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: sUSDImpl.abi,
+				abi: hUSDImpl.abi,
 				ignoreParents: ['ExternStateToken', 'MixinResolver'],
 				expected: [
 					'issue',
@@ -139,13 +139,13 @@ contract('Synth', async accounts => {
 		describe('when non-internal contract tries to issue', () => {
 			it('then it fails', async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: sUSDProxy.issue,
+					fnc: hUSDProxy.issue,
 					args: [account1, toUnit('1')],
 					accounts,
 					reason: 'Only internal contracts allowed',
 				});
 				await onlyGivenAddressCanInvoke({
-					fnc: sUSDImpl.issue,
+					fnc: hUSDImpl.issue,
 					args: [account1, toUnit('1')],
 					accounts,
 					reason: 'Only internal contracts allowed',
@@ -155,13 +155,13 @@ contract('Synth', async accounts => {
 		describe('when non-internal tries to burn', () => {
 			it('then it fails', async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: sUSDProxy.burn,
+					fnc: hUSDProxy.burn,
 					args: [account1, toUnit('1')],
 					accounts,
 					reason: 'Only internal contracts allowed',
 				});
 				await onlyGivenAddressCanInvoke({
-					fnc: sUSDImpl.burn,
+					fnc: hUSDImpl.burn,
 					args: [account1, toUnit('1')],
 					accounts,
 					reason: 'Only internal contracts allowed',
@@ -175,42 +175,42 @@ contract('Synth', async accounts => {
 			const revertMsg = 'Only the proxy';
 			beforeEach(async () => {
 				// ensure owner has funds
-				await tribeone.issueSynths(amount, { from: owner });
+				await tribeone.issueTribes(amount, { from: owner });
 
 				// approve for transferFrom to work
-				await sUSDProxy.approve(account1, amount, { from: owner });
+				await hUSDProxy.approve(account1, amount, { from: owner });
 			});
 			it('approve does not revert', async () => {
-				await sUSDImpl.approve(account1, amount, { from: owner });
+				await hUSDImpl.approve(account1, amount, { from: owner });
 			});
 			it('transfer reverts', async () => {
-				await assert.revert(sUSDImpl.transfer(account1, amount, { from: owner }), revertMsg);
+				await assert.revert(hUSDImpl.transfer(account1, amount, { from: owner }), revertMsg);
 			});
 			it('transferFrom reverts', async () => {
 				await assert.revert(
-					sUSDImpl.transferFrom(owner, account1, amount, { from: account1 }),
+					hUSDImpl.transferFrom(owner, account1, amount, { from: account1 }),
 					revertMsg
 				);
 			});
 			it('transferAndSettle reverts', async () => {
 				await assert.revert(
-					sUSDImpl.transferAndSettle(account1, amount, { from: account1 }),
+					hUSDImpl.transferAndSettle(account1, amount, { from: account1 }),
 					revertMsg
 				);
 			});
 			it('transferFromAndSettle reverts', async () => {
 				await assert.revert(
-					sUSDImpl.transferFromAndSettle(owner, account1, amount, { from: account1 }),
+					hUSDImpl.transferFromAndSettle(owner, account1, amount, { from: account1 }),
 					revertMsg
 				);
 			});
 
 			it('transfer does not revert from a whitelisted contract', async () => {
-				// set owner as SynthRedeemer
-				await addressResolver.importAddresses(['SynthRedeemer'].map(toBytes32), [owner], {
+				// set owner as TribeRedeemer
+				await addressResolver.importAddresses(['TribeRedeemer'].map(toBytes32), [owner], {
 					from: owner,
 				});
-				await sUSDImpl.transfer(account1, amount, { from: owner });
+				await hUSDImpl.transfer(account1, amount, { from: owner });
 			});
 		});
 	});
@@ -219,21 +219,21 @@ contract('Synth', async accounts => {
 		const amount = toUnit('10000');
 		beforeEach(async () => {
 			// ensure owner has funds
-			await tribeone.issueSynths(amount, { from: owner });
+			await tribeone.issueTribes(amount, { from: owner });
 
 			// approve for transferFrom to work
-			await sUSDProxy.approve(account1, amount, { from: owner });
+			await hUSDProxy.approve(account1, amount, { from: owner });
 		});
 
-		['System', 'Synth'].forEach(section => {
+		['System', 'Tribe'].forEach(section => {
 			describe(`when ${section} is suspended`, () => {
-				const synth = toBytes32('hUSD');
+				const tribe = toBytes32('hUSD');
 				beforeEach(async () => {
-					await setStatus({ owner, systemStatus, section, suspend: true, synth });
+					await setStatus({ owner, systemStatus, section, suspend: true, tribe });
 				});
 				it('when transfer() is invoked, it reverts with operation prohibited', async () => {
 					await assert.revert(
-						sUSDProxy.transfer(account1, amount, {
+						hUSDProxy.transfer(account1, amount, {
 							from: owner,
 						}),
 						'Operation prohibited'
@@ -241,7 +241,7 @@ contract('Synth', async accounts => {
 				});
 				it('when transferFrom() is invoked, it reverts with operation prohibited', async () => {
 					await assert.revert(
-						sUSDProxy.transferFrom(owner, account1, amount, {
+						hUSDProxy.transferFrom(owner, account1, amount, {
 							from: account1,
 						}),
 						'Operation prohibited'
@@ -249,48 +249,48 @@ contract('Synth', async accounts => {
 				});
 				describe('when the system is resumed', () => {
 					beforeEach(async () => {
-						await setStatus({ owner, systemStatus, section, suspend: false, synth });
+						await setStatus({ owner, systemStatus, section, suspend: false, tribe });
 					});
 					it('when transfer() is invoked, it works as expected', async () => {
-						await sUSDProxy.transfer(account1, amount, {
+						await hUSDProxy.transfer(account1, amount, {
 							from: owner,
 						});
 					});
 					it('when transferFrom() is invoked, it works as expected', async () => {
-						await sUSDProxy.transferFrom(owner, account1, amount, {
+						await hUSDProxy.transferFrom(owner, account1, amount, {
 							from: account1,
 						});
 					});
 				});
 			});
 		});
-		describe('when sETH is suspended', () => {
-			const synth = toBytes32('sETH');
+		describe('when hETH is suspended', () => {
+			const tribe = toBytes32('hETH');
 			beforeEach(async () => {
-				await setStatus({ owner, systemStatus, section: 'Synth', synth, suspend: true });
+				await setStatus({ owner, systemStatus, section: 'Tribe', tribe, suspend: true });
 			});
 			it('when transfer() is invoked for hUSD, it works as expected', async () => {
-				await sUSDProxy.transfer(account1, amount, {
+				await hUSDProxy.transfer(account1, amount, {
 					from: owner,
 				});
 			});
 			it('when transferFrom() is invoked for hUSD, it works as expected', async () => {
-				await sUSDProxy.transferFrom(owner, account1, amount, {
+				await hUSDProxy.transferFrom(owner, account1, amount, {
 					from: account1,
 				});
 			});
 			describe('when hUSD is suspended for exchanging', () => {
-				const synth = toBytes32('hUSD');
+				const tribe = toBytes32('hUSD');
 				beforeEach(async () => {
-					await setStatus({ owner, systemStatus, section: 'SynthExchange', synth, suspend: true });
+					await setStatus({ owner, systemStatus, section: 'TribeExchange', tribe, suspend: true });
 				});
 				it('when transfer() is invoked for hUSD, it works as expected', async () => {
-					await sUSDProxy.transfer(account1, amount, {
+					await hUSDProxy.transfer(account1, amount, {
 						from: owner,
 					});
 				});
-				it('when transferFrom() is invoked for sETH, it works as expected', async () => {
-					await sUSDProxy.transferFrom(owner, account1, amount, {
+				it('when transferFrom() is invoked for hETH, it works as expected', async () => {
+					await hUSDProxy.transferFrom(owner, account1, amount, {
 						from: account1,
 					});
 				});
@@ -301,83 +301,83 @@ contract('Synth', async accounts => {
 	it('should transfer (ERC20) without error @gasprofile', async () => {
 		// Issue 10,000 hUSD.
 		const amount = toUnit('10000');
-		await tribeone.issueSynths(amount, { from: owner });
+		await tribeone.issueTribes(amount, { from: owner });
 
 		// Do a single transfer of all our hUSD.
-		const transaction = await sUSDProxy.transfer(account1, amount, {
+		const transaction = await hUSDProxy.transfer(account1, amount, {
 			from: owner,
 		});
 
 		// Events should be a fee exchange and a transfer to account1
 		assert.eventEqual(
 			transaction,
-			// The original synth transfer
+			// The original tribe transfer
 			'Transfer',
 			{ from: owner, to: account1, value: amount }
 		);
 
 		// Sender should have nothing
-		assert.bnEqual(await sUSDProxy.balanceOf(owner), 0);
+		assert.bnEqual(await hUSDProxy.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDProxy.balanceOf(account1), amount);
+		assert.bnEqual(await hUSDProxy.balanceOf(account1), amount);
 	});
 
 	it('should revert when transferring (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 hUSD.
 		const amount = toUnit('10000');
-		await tribeone.issueSynths(amount, { from: owner });
+		await tribeone.issueTribes(amount, { from: owner });
 
 		// Try to transfer 10,000 + 1 wei, which we don't have the balance for.
 		await assert.revert(
-			sUSDProxy.transfer(account1, amount.add(web3.utils.toBN('1')), { from: owner })
+			hUSDProxy.transfer(account1, amount.add(web3.utils.toBN('1')), { from: owner })
 		);
 	});
 
 	it('should transferFrom (ERC20) without error @gasprofile', async () => {
 		// Issue 10,000 hUSD.
 		const amount = toUnit('10000');
-		await tribeone.issueSynths(amount, { from: owner });
+		await tribeone.issueTribes(amount, { from: owner });
 
 		// Give account1 permission to act on our behalf
-		await sUSDProxy.approve(account1, amount, { from: owner });
+		await hUSDProxy.approve(account1, amount, { from: owner });
 
 		// Do a single transfer of all our hUSD.
-		const transaction = await sUSDProxy.transferFrom(owner, account1, amount, {
+		const transaction = await hUSDProxy.transferFrom(owner, account1, amount, {
 			from: account1,
 		});
 
 		// Events should be a transfer to account1
 		assert.eventEqual(
 			transaction,
-			// The original synth transfer
+			// The original tribe transfer
 			'Transfer',
 			{ from: owner, to: account1, value: amount }
 		);
 
 		// Sender should have nothing
-		assert.bnEqual(await sUSDProxy.balanceOf(owner), 0);
+		assert.bnEqual(await hUSDProxy.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDProxy.balanceOf(account1), amount);
+		assert.bnEqual(await hUSDProxy.balanceOf(account1), amount);
 
 		// And allowance should be exhausted
-		assert.bnEqual(await sUSDProxy.allowance(owner, account1), 0);
+		assert.bnEqual(await hUSDProxy.allowance(owner, account1), 0);
 	});
 
 	it('should revert when calling transferFrom (ERC20) with insufficient allowance', async () => {
 		// Issue 10,000 hUSD.
 		const amount = toUnit('10000');
-		await tribeone.issueSynths(amount, { from: owner });
+		await tribeone.issueTribes(amount, { from: owner });
 
 		// Approve for 1 wei less than amount
-		await sUSDProxy.approve(account1, amount.sub(web3.utils.toBN('1')), {
+		await hUSDProxy.approve(account1, amount.sub(web3.utils.toBN('1')), {
 			from: owner,
 		});
 
 		// Try to transfer 10,000, which we don't have the allowance for.
 		await assert.revert(
-			sUSDProxy.transferFrom(owner, account1, amount, {
+			hUSDProxy.transferFrom(owner, account1, amount, {
 				from: account1,
 			})
 		);
@@ -386,14 +386,14 @@ contract('Synth', async accounts => {
 	it('should revert when calling transferFrom (ERC20) with insufficient balance', async () => {
 		// Issue 10,000 - 1 wei hUSD.
 		const amount = toUnit('10000');
-		await tribeone.issueSynths(amount.sub(web3.utils.toBN('1')), { from: owner });
+		await tribeone.issueTribes(amount.sub(web3.utils.toBN('1')), { from: owner });
 
 		// Approve for full amount
-		await sUSDProxy.approve(account1, amount, { from: owner });
+		await hUSDProxy.approve(account1, amount, { from: owner });
 
 		// Try to transfer 10,000, which we don't have the balance for.
 		await assert.revert(
-			sUSDProxy.transferFrom(owner, account1, amount, {
+			hUSDProxy.transferFrom(owner, account1, amount, {
 				from: account1,
 			})
 		);
@@ -401,13 +401,13 @@ contract('Synth', async accounts => {
 
 	describe('invoking issue/burn directly as Issuer', () => {
 		beforeEach(async () => {
-			// Overwrite Tribeone address to the owner to allow us to invoke issue on the Synth
+			// Overwrite Tribeone address to the owner to allow us to invoke issue on the Tribe
 			await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], { from: owner });
-			// now have the synth resync its cache
-			await sUSDProxy.rebuildCache();
+			// now have the tribe resync its cache
+			await hUSDProxy.rebuildCache();
 		});
 		it('should issue successfully when called by Issuer', async () => {
-			const transaction = await sUSDImpl.issue(account1, toUnit('10000'), {
+			const transaction = await hUSDImpl.issue(account1, toUnit('10000'), {
 				from: owner,
 			});
 			assert.eventsEqual(
@@ -427,13 +427,13 @@ contract('Synth', async accounts => {
 		});
 
 		it('should burn successfully when called by Issuer', async () => {
-			// Issue a bunch of synths so we can play with them.
-			await sUSDImpl.issue(owner, toUnit('10000'), {
+			// Issue a bunch of tribes so we can play with them.
+			await hUSDImpl.issue(owner, toUnit('10000'), {
 				from: owner,
 			});
-			// await tribeone.issueSynths(toUnit('10000'), { from: owner });
+			// await tribeone.issueTribes(toUnit('10000'), { from: owner });
 
-			const transaction = await sUSDImpl.burn(owner, toUnit('10000'), { from: owner });
+			const transaction = await hUSDImpl.burn(owner, toUnit('10000'), { from: owner });
 
 			assert.eventsEqual(
 				transaction,
@@ -449,10 +449,10 @@ contract('Synth', async accounts => {
 		// Issue 10,000 hUSD.
 		const amount = toUnit('10000');
 
-		await tribeone.issueSynths(amount, { from: owner });
+		await tribeone.issueTribes(amount, { from: owner });
 
 		// Do a single transfer of all our hUSD.
-		const transaction = await sUSDProxy.transfer(account1, amount, {
+		const transaction = await hUSDProxy.transfer(account1, amount, {
 			from: owner,
 		});
 
@@ -460,19 +460,19 @@ contract('Synth', async accounts => {
 		assert.eventEqual(
 			transaction,
 
-			// The original synth transfer
+			// The original tribe transfer
 			'Transfer',
 			{ from: owner, to: account1, value: amount }
 		);
 
 		// Sender should have nothing
-		assert.bnEqual(await sUSDProxy.balanceOf(owner), 0);
+		assert.bnEqual(await hUSDProxy.balanceOf(owner), 0);
 
 		// The recipient should have the correct amount
-		assert.bnEqual(await sUSDProxy.balanceOf(account1), amount);
+		assert.bnEqual(await hUSDProxy.balanceOf(account1), amount);
 
 		// The fee pool should have zero balance
-		assert.bnEqual(await sUSDProxy.balanceOf(FEE_ADDRESS), 0);
+		assert.bnEqual(await hUSDProxy.balanceOf(FEE_ADDRESS), 0);
 	});
 
 	describe('transfer / transferFrom And Settle', async () => {
@@ -481,24 +481,24 @@ contract('Synth', async accounts => {
 			// Issue 1,000 hUSD.
 			amount = toUnit('1000');
 
-			await tribeone.issueSynths(amount, { from: owner });
+			await tribeone.issueTribes(amount, { from: owner });
 		});
 
 		describe('suspension conditions', () => {
 			beforeEach(async () => {
 				// approve for transferFrom to work
-				await sUSDProxy.approve(account1, amount, { from: owner });
+				await hUSDProxy.approve(account1, amount, { from: owner });
 			});
 
-			['System', 'Synth'].forEach(section => {
+			['System', 'Tribe'].forEach(section => {
 				describe(`when ${section} is suspended`, () => {
-					const synth = toBytes32('hUSD');
+					const tribe = toBytes32('hUSD');
 					beforeEach(async () => {
-						await setStatus({ owner, systemStatus, section, suspend: true, synth });
+						await setStatus({ owner, systemStatus, section, suspend: true, tribe });
 					});
 					it('when transferAndSettle() is invoked, it reverts with operation prohibited', async () => {
 						await assert.revert(
-							sUSDProxy.transferAndSettle(account1, amount, {
+							hUSDProxy.transferAndSettle(account1, amount, {
 								from: owner,
 							}),
 							'Operation prohibited'
@@ -506,7 +506,7 @@ contract('Synth', async accounts => {
 					});
 					it('when transferFromAndSettle() is invoked, it reverts with operation prohibited', async () => {
 						await assert.revert(
-							sUSDProxy.transferFromAndSettle(owner, account1, amount, {
+							hUSDProxy.transferFromAndSettle(owner, account1, amount, {
 								from: account1,
 							}),
 							'Operation prohibited'
@@ -514,33 +514,33 @@ contract('Synth', async accounts => {
 					});
 					describe('when the system is resumed', () => {
 						beforeEach(async () => {
-							await setStatus({ owner, systemStatus, section, suspend: false, synth });
+							await setStatus({ owner, systemStatus, section, suspend: false, tribe });
 						});
 						it('when transferAndSettle() is invoked, it works as expected', async () => {
-							await sUSDProxy.transferAndSettle(account1, amount, {
+							await hUSDProxy.transferAndSettle(account1, amount, {
 								from: owner,
 							});
 						});
 						it('when transferFromAndSettle() is invoked, it works as expected', async () => {
-							await sUSDProxy.transferFromAndSettle(owner, account1, amount, {
+							await hUSDProxy.transferFromAndSettle(owner, account1, amount, {
 								from: account1,
 							});
 						});
 					});
 				});
 			});
-			describe('when sETH is suspended', () => {
-				const synth = toBytes32('sETH');
+			describe('when hETH is suspended', () => {
+				const tribe = toBytes32('hETH');
 				beforeEach(async () => {
-					await setStatus({ owner, systemStatus, section: 'Synth', synth, suspend: true });
+					await setStatus({ owner, systemStatus, section: 'Tribe', tribe, suspend: true });
 				});
 				it('when transferAndSettle() is invoked for hUSD, it works as expected', async () => {
-					await sUSDProxy.transferAndSettle(account1, amount, {
+					await hUSDProxy.transferAndSettle(account1, amount, {
 						from: owner,
 					});
 				});
 				it('when transferFromAndSettle() is invoked for hUSD, it works as expected', async () => {
-					await sUSDProxy.transferFromAndSettle(owner, account1, amount, {
+					await hUSDProxy.transferFromAndSettle(owner, account1, amount, {
 						from: account1,
 					});
 				});
@@ -561,25 +561,25 @@ contract('Synth', async accounts => {
 				});
 				// now have tribeone resync its cache
 				await tribeone.rebuildCache();
-				await sUSDImpl.rebuildCache();
+				await hUSDImpl.rebuildCache();
 			});
-			it('then transferableSynths should be the total amount', async () => {
-				assert.bnEqual(await sUSDProxy.transferableSynths(owner), toUnit('1000'));
+			it('then transferableTribes should be the total amount', async () => {
+				assert.bnEqual(await hUSDProxy.transferableTribes(owner), toUnit('1000'));
 			});
 
 			describe('when max seconds in waiting period is non-zero', () => {
 				beforeEach(async () => {
 					await exchanger.setMaxSecsLeft('1');
 				});
-				it('when the synth is attempted to be transferred away by the user, it reverts', async () => {
+				it('when the tribe is attempted to be transferred away by the user, it reverts', async () => {
 					await assert.revert(
-						sUSDProxy.transfer(account1, toUnit('1'), { from: owner }),
+						hUSDProxy.transfer(account1, toUnit('1'), { from: owner }),
 						'Cannot transfer during waiting period'
 					);
 				});
 				it('when sEUR is attempted to be transferFrom away by another user, it reverts', async () => {
 					await assert.revert(
-						sUSDProxy.transferFrom(owner, account2, toUnit('1'), { from: account1 }),
+						hUSDProxy.transferFrom(owner, account2, toUnit('1'), { from: account1 }),
 						'Cannot transfer during waiting period'
 					);
 				});
@@ -591,45 +591,45 @@ contract('Synth', async accounts => {
 					await exchanger.setReclaim(reclaimAmount);
 					await exchanger.setNumEntries('1');
 				});
-				it('then transferableSynths should be the total amount minus the reclaim', async () => {
-					assert.bnEqual(await sUSDProxy.transferableSynths(owner), toUnit('990'));
+				it('then transferableTribes should be the total amount minus the reclaim', async () => {
+					assert.bnEqual(await hUSDProxy.transferableTribes(owner), toUnit('990'));
 				});
 				it('should transfer all and settle 1000 hUSD less reclaim amount', async () => {
 					// Do a single transfer of all our hUSD.
-					await sUSDProxy.transferAndSettle(account1, amount, {
+					await hUSDProxy.transferAndSettle(account1, amount, {
 						from: owner,
 					});
 
 					const expectedAmountTransferred = amount.sub(reclaimAmount);
 
 					// Sender balance should be 0
-					assert.bnEqual(await sUSDProxy.balanceOf(owner), 0);
+					assert.bnEqual(await hUSDProxy.balanceOf(owner), 0);
 
 					// The recipient should have the correct amount minus reclaimed
-					assert.bnEqual(await sUSDProxy.balanceOf(account1), expectedAmountTransferred);
+					assert.bnEqual(await hUSDProxy.balanceOf(account1), expectedAmountTransferred);
 				});
 				it('should transferFrom all and settle 1000 hUSD less reclaim amount', async () => {
 					// Give account1 permission to act on our behalf
-					await sUSDProxy.approve(account1, amount, { from: owner });
+					await hUSDProxy.approve(account1, amount, { from: owner });
 
 					// Do a single transfer of all our hUSD.
-					await sUSDProxy.transferFromAndSettle(owner, account1, amount, {
+					await hUSDProxy.transferFromAndSettle(owner, account1, amount, {
 						from: account1,
 					});
 
 					const expectedAmountTransferred = amount.sub(reclaimAmount);
 
 					// Sender balance should be 0
-					assert.bnEqual(await sUSDProxy.balanceOf(owner), 0);
+					assert.bnEqual(await hUSDProxy.balanceOf(owner), 0);
 
 					// The recipient should have the correct amount minus reclaimed
-					assert.bnEqual(await sUSDProxy.balanceOf(account1), expectedAmountTransferred);
+					assert.bnEqual(await hUSDProxy.balanceOf(account1), expectedAmountTransferred);
 				});
 				describe('when account has more balance than transfer amount + reclaim', async () => {
 					it('should transfer 50 hUSD and burn 10 hUSD', async () => {
 						const transferAmount = toUnit('50');
 						// Do a single transfer of all our hUSD.
-						await sUSDProxy.transferAndSettle(account1, transferAmount, {
+						await hUSDProxy.transferAndSettle(account1, transferAmount, {
 							from: owner,
 						});
 
@@ -637,21 +637,21 @@ contract('Synth', async accounts => {
 
 						// Sender balance should be balance - transfer - reclaimed
 						assert.bnEqual(
-							await sUSDProxy.balanceOf(owner),
+							await hUSDProxy.balanceOf(owner),
 							amount.sub(transferAmount).sub(reclaimAmount)
 						);
 
 						// The recipient should have the correct amount
-						assert.bnEqual(await sUSDProxy.balanceOf(account1), expectedAmountTransferred);
+						assert.bnEqual(await hUSDProxy.balanceOf(account1), expectedAmountTransferred);
 					});
 					it('should transferFrom 50 hUSD and settle reclaim amount', async () => {
 						const transferAmount = toUnit('50');
 
 						// Give account1 permission to act on our behalf
-						await sUSDProxy.approve(account1, transferAmount, { from: owner });
+						await hUSDProxy.approve(account1, transferAmount, { from: owner });
 
 						// Do a single transferFrom of transferAmount.
-						await sUSDProxy.transferFromAndSettle(owner, account1, transferAmount, {
+						await hUSDProxy.transferFromAndSettle(owner, account1, transferAmount, {
 							from: account1,
 						});
 
@@ -659,40 +659,40 @@ contract('Synth', async accounts => {
 
 						// Sender balance should be balance - transfer - reclaimed
 						assert.bnEqual(
-							await sUSDProxy.balanceOf(owner),
+							await hUSDProxy.balanceOf(owner),
 							amount.sub(transferAmount).sub(reclaimAmount)
 						);
 
 						// The recipient should have the correct amount
-						assert.bnEqual(await sUSDProxy.balanceOf(account1), expectedAmountTransferred);
+						assert.bnEqual(await hUSDProxy.balanceOf(account1), expectedAmountTransferred);
 					});
 				});
 			});
-			describe('when synth balance after reclamation is less than requested transfer value', async () => {
+			describe('when tribe balance after reclamation is less than requested transfer value', async () => {
 				let balanceBefore;
 				const reclaimAmount = toUnit('600');
 				beforeEach(async () => {
 					await exchanger.setReclaim(reclaimAmount);
 					await exchanger.setNumEntries('1');
-					balanceBefore = await sUSDProxy.balanceOf(owner);
+					balanceBefore = await hUSDProxy.balanceOf(owner);
 				});
-				describe('when reclaim 600 hUSD and attempting to transfer 500 hUSD synths', async () => {
+				describe('when reclaim 600 hUSD and attempting to transfer 500 hUSD tribes', async () => {
 					// original balance is 1000, reclaim 600 and should send 400
 					const transferAmount = toUnit('500');
 
 					describe('using regular transfer and transferFrom', () => {
 						it('via regular transfer it reverts', async () => {
 							await assert.revert(
-								sUSDProxy.transfer(account1, transferAmount, {
+								hUSDProxy.transfer(account1, transferAmount, {
 									from: owner,
 								}),
 								'Insufficient balance after any settlement owing'
 							);
 						});
 						it('via transferFrom it also reverts', async () => {
-							await sUSDProxy.approve(account1, transferAmount, { from: owner });
+							await hUSDProxy.approve(account1, transferAmount, { from: owner });
 							await assert.revert(
-								sUSDProxy.transferFrom(owner, account1, transferAmount, {
+								hUSDProxy.transferFrom(owner, account1, transferAmount, {
 									from: account1,
 								}),
 								'Insufficient balance after any settlement owing'
@@ -700,13 +700,13 @@ contract('Synth', async accounts => {
 						});
 					});
 					describe('using transferAndSettle', () => {
-						it('then transferableSynths should be the total amount', async () => {
-							assert.bnEqual(await sUSDProxy.transferableSynths(owner), toUnit('400'));
+						it('then transferableTribes should be the total amount', async () => {
+							assert.bnEqual(await hUSDProxy.transferableTribes(owner), toUnit('400'));
 						});
 
 						it('should transfer remaining balance less reclaimed', async () => {
 							// Do a single transfer of all our hUSD.
-							await sUSDProxy.transferAndSettle(account1, transferAmount, {
+							await hUSDProxy.transferAndSettle(account1, transferAmount, {
 								from: owner,
 							});
 
@@ -714,46 +714,46 @@ contract('Synth', async accounts => {
 							const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
 
 							// Sender balance should be 0
-							assert.bnEqual(await sUSDProxy.balanceOf(owner), 0);
+							assert.bnEqual(await hUSDProxy.balanceOf(owner), 0);
 
 							// The recipient should have the correct amount
-							assert.bnEqual(await sUSDProxy.balanceOf(account1), balanceAfterReclaim);
+							assert.bnEqual(await hUSDProxy.balanceOf(account1), balanceAfterReclaim);
 						});
 						it('should transferFrom and send balance minus reclaimed amount', async () => {
 							// Give account1 permission to act on our behalf
-							await sUSDProxy.approve(account1, transferAmount, { from: owner });
+							await hUSDProxy.approve(account1, transferAmount, { from: owner });
 
 							// Do a single transferFrom of transferAmount.
-							await sUSDProxy.transferFromAndSettle(owner, account1, transferAmount, {
+							await hUSDProxy.transferFromAndSettle(owner, account1, transferAmount, {
 								from: account1,
 							});
 
 							const balanceAfterReclaim = balanceBefore.sub(reclaimAmount);
 
 							// Sender balance should be 0
-							assert.bnEqual(await sUSDProxy.balanceOf(owner), 0);
+							assert.bnEqual(await hUSDProxy.balanceOf(owner), 0);
 
 							// The recipient should have the correct amount
-							assert.bnEqual(await sUSDProxy.balanceOf(account1), balanceAfterReclaim);
+							assert.bnEqual(await hUSDProxy.balanceOf(account1), balanceAfterReclaim);
 						});
 					});
 				});
 			});
 		});
 	});
-	describe('when transferring synths to FEE_ADDRESS', async () => {
+	describe('when transferring tribes to FEE_ADDRESS', async () => {
 		let amount;
 		beforeEach(async () => {
 			// Issue 10,000 hUSD.
 			amount = toUnit('10000');
 
-			await tribeone.issueSynths(amount, { from: owner });
+			await tribeone.issueTribes(amount, { from: owner });
 		});
 		it('should transfer to FEE_ADDRESS and recorded as fee', async () => {
-			const feeBalanceBefore = await sUSDProxy.balanceOf(FEE_ADDRESS);
+			const feeBalanceBefore = await hUSDProxy.balanceOf(FEE_ADDRESS);
 
 			// Do a single transfer of all our hUSD.
-			const transaction = await sUSDProxy.transfer(FEE_ADDRESS, amount, {
+			const transaction = await hUSDProxy.transfer(FEE_ADDRESS, amount, {
 				from: owner,
 			});
 
@@ -761,27 +761,27 @@ contract('Synth', async accounts => {
 			assert.eventEqual(
 				transaction,
 
-				// The original synth transfer
+				// The original tribe transfer
 				'Transfer',
 				{ from: owner, to: FEE_ADDRESS, value: amount }
 			);
 
 			const firstFeePeriod = await feePool.recentFeePeriods(0);
 			// FEE_ADDRESS balance of hUSD increased
-			assert.bnEqual(await sUSDProxy.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amount));
+			assert.bnEqual(await hUSDProxy.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amount));
 
 			// fees equal to amount are recorded in feesToDistribute
 			assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amount));
 		});
 
-		describe('when a non-USD synth exists', () => {
+		describe('when a non-USD tribe exists', () => {
 			let sEURImpl, sEURProxy;
 
 			beforeEach(async () => {
 				const sEUR = toBytes32('sEUR');
 
-				// create a new sEUR synth
-				({ Synth: sEURImpl, ProxyERC20Synth: sEURProxy } = await setupAllContracts({
+				// create a new sEUR tribe
+				({ Tribe: sEURImpl, ProxyERC20Tribe: sEURProxy } = await setupAllContracts({
 					accounts,
 					existing: {
 						ExchangeRates: exchangeRates,
@@ -793,7 +793,7 @@ contract('Synth', async accounts => {
 						FeePool: feePool,
 						Tribeone: tribeone,
 					},
-					contracts: [{ contract: 'Synth', properties: { currencyKey: sEUR } }],
+					contracts: [{ contract: 'Tribe', properties: { currencyKey: sEUR } }],
 				}));
 
 				// Send a price update to guarantee we're not stale.
@@ -801,23 +801,23 @@ contract('Synth', async accounts => {
 				await debtCache.takeDebtSnapshot();
 
 				// use implementation ABI through the proxy
-				sEURProxy = await Synth.at(sEURProxy.address);
+				sEURProxy = await Tribe.at(sEURProxy.address);
 			});
 
 			it('when transferring it to FEE_ADDRESS it should exchange into hUSD first before sending', async () => {
 				// allocate the user some sEUR
-				await issueSynthsToUser({
+				await issueTribesToUser({
 					owner,
 					issuer,
 					addressResolver,
-					synthContract: sEURImpl,
+					tribeContract: sEURImpl,
 					user: owner,
 					amount,
-					synth: sEUR,
+					tribe: sEUR,
 				});
 
 				// Get balanceOf FEE_ADDRESS
-				const feeBalanceBefore = await sUSDProxy.balanceOf(FEE_ADDRESS);
+				const feeBalanceBefore = await hUSDProxy.balanceOf(FEE_ADDRESS);
 
 				// balance of sEUR after exchange fees
 				const balanceOf = await sEURImpl.balanceOf(owner);
@@ -832,7 +832,7 @@ contract('Synth', async accounts => {
 				const firstFeePeriod = await feePool.recentFeePeriods(0);
 
 				// FEE_ADDRESS balance of hUSD increased by USD amount given from exchange
-				assert.bnEqual(await sUSDProxy.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amountInUSD));
+				assert.bnEqual(await hUSDProxy.balanceOf(FEE_ADDRESS), feeBalanceBefore.add(amountInUSD));
 
 				// fees equal to amountInUSD are recorded in feesToDistribute
 				assert.bnEqual(firstFeePeriod.feesToDistribute, feeBalanceBefore.add(amountInUSD));
@@ -840,20 +840,20 @@ contract('Synth', async accounts => {
 		});
 	});
 
-	describe('when transferring synths to ZERO_ADDRESS', async () => {
+	describe('when transferring tribes to ZERO_ADDRESS', async () => {
 		let amount;
 		beforeEach(async () => {
 			// Issue 10,000 hUSD.
 			amount = toUnit('1000');
 
-			await tribeone.issueSynths(amount, { from: owner });
+			await tribeone.issueTribes(amount, { from: owner });
 		});
-		it('should burn the synths and reduce totalSupply', async () => {
-			const balanceBefore = await sUSDProxy.balanceOf(owner);
-			const totalSupplyBefore = await sUSDProxy.totalSupply();
+		it('should burn the tribes and reduce totalSupply', async () => {
+			const balanceBefore = await hUSDProxy.balanceOf(owner);
+			const totalSupplyBefore = await hUSDProxy.totalSupply();
 
 			// Do a single transfer of all our hUSD to ZERO_ADDRESS.
-			const transaction = await sUSDProxy.transfer(ZERO_ADDRESS, amount, {
+			const transaction = await hUSDProxy.transfer(ZERO_ADDRESS, amount, {
 				from: owner,
 			});
 
@@ -867,10 +867,10 @@ contract('Synth', async accounts => {
 			);
 
 			// owner balance should be less amount burned
-			assert.bnEqual(await sUSDProxy.balanceOf(owner), balanceBefore.sub(amount));
+			assert.bnEqual(await hUSDProxy.balanceOf(owner), balanceBefore.sub(amount));
 
-			// total supply of synth reduced by amount
-			assert.bnEqual(await sUSDProxy.totalSupply(), totalSupplyBefore.sub(amount));
+			// total supply of tribe reduced by amount
+			assert.bnEqual(await hUSDProxy.totalSupply(), totalSupplyBefore.sub(amount));
 		});
 	});
 });

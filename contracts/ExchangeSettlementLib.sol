@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 import "./interfaces/IExchanger.sol";
 import "./interfaces/ICircuitBreaker.sol";
 import "./interfaces/IExchangeRates.sol";
@@ -57,12 +56,12 @@ library ExchangeSettlementLib {
             _refund(resolvedAddresses, from, currencyKey, refunded);
         }
 
-        // by checking a reclaim or refund we also check that the currency key is still a valid synth,
-        // as the deviation check will return 0 if the synth has been removed.
+        // by checking a reclaim or refund we also check that the currency key is still a valid tribe,
+        // as the deviation check will return 0 if the tribe has been removed.
         if (updateCache && (reclaimed > 0 || refunded > 0)) {
             bytes32[] memory key = new bytes32[](1);
             key[0] = currencyKey;
-            resolvedAddresses.debtCache.updateCachedSynthDebts(key);
+            resolvedAddresses.debtCache.updateCachedTribeDebts(key);
         }
 
         // emit settlement event for each settled exchange entry
@@ -110,7 +109,7 @@ library ExchangeSettlementLib {
         uint amount
     ) internal {
         // burn amount from user
-        resolvedAddresses.issuer.synths(currencyKey).burn(from, amount);
+        resolvedAddresses.issuer.tribes(currencyKey).burn(from, amount);
         ITribeoneInternal(address(resolvedAddresses.tribeone)).emitExchangeReclaim(from, currencyKey, amount);
     }
 
@@ -121,7 +120,7 @@ library ExchangeSettlementLib {
         uint amount
     ) internal {
         // issue amount to user
-        resolvedAddresses.issuer.synths(currencyKey).issue(from, amount);
+        resolvedAddresses.issuer.tribes(currencyKey).issue(from, amount);
         ITribeoneInternal(address(resolvedAddresses.tribeone)).emitExchangeRebate(from, currencyKey, amount);
     }
 
@@ -158,7 +157,7 @@ library ExchangeSettlementLib {
         return _settlementOwing(resolvedAddresses, account, currencyKey, waitingPeriod);
     }
 
-    // Internal function to aggregate each individual rebate and reclaim entry for a synth
+    // Internal function to aggregate each individual rebate and reclaim entry for a tribe
     function _settlementOwing(
         ResolvedAddresses memory resolvedAddresses,
         address account,

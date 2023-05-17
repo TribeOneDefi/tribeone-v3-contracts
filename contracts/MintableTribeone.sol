@@ -4,9 +4,9 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./BaseTribeone.sol";
 
-// https://docs.tribeone.io/contracts/source/contracts/mintabletribeone
+// https://docs.tribeone.io/contracts/source/contracts/mintabletribeetix
 contract MintableTribeone is BaseTribeone {
-    bytes32 private constant CONTRACT_TRIBEONE_BRIDGE = "TribeoneBridgeToBase";
+    bytes32 private constant CONTRACT_TRIBEONEETIX_BRIDGE = "TribeoneBridgeToBase";
 
     constructor(
         address payable _proxy,
@@ -24,7 +24,7 @@ contract MintableTribeone is BaseTribeone {
     }
 
     function onlyAllowFromBridge() internal view {
-        require(msg.sender == tribeoneBridge(), "Can only be invoked by bridge");
+        require(msg.sender == tribeetixBridge(), "Can only be invoked by bridge");
     }
 
     /* ========== MODIFIERS =================== */
@@ -38,12 +38,12 @@ contract MintableTribeone is BaseTribeone {
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseTribeone.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_TRIBEONE_BRIDGE;
+        newAddresses[0] = CONTRACT_TRIBEONEETIX_BRIDGE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function tribeoneBridge() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_TRIBEONE_BRIDGE);
+    function tribeetixBridge() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_TRIBEONEETIX_BRIDGE);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */

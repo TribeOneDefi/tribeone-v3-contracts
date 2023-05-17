@@ -65,8 +65,8 @@ module.exports = async ({
 				})
 		);
 
-		// SIP-165 For debt pool synthesis, also add the ext:addresses, use the single network version if they exist in deployments
-		for (const debtPoolContractName of ['AggregatorIssuedSynths', 'AggregatorDebtRatio']) {
+		// SIP-165 For debt pool tribeesis, also add the ext:addresses, use the single network version if they exist in deployments
+		for (const debtPoolContractName of ['AggregatorIssuedTribes', 'AggregatorDebtRatio']) {
 			const resolverName = toBytes32(`ext:${debtPoolContractName}`);
 			const currentAddress = await AddressResolver.getAddress(resolverName);
 			const contract = deployer.deployedContracts[`OneNet${debtPoolContractName}`];

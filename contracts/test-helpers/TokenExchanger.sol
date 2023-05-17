@@ -20,19 +20,19 @@ contract TokenExchanger is Owned {
         integrationProxy = _integrationProxy;
     }
 
-    function setTribeone(address _tribeone) external onlyOwner {
-        tribeone = _tribeone;
+    function setTribeone(address _tribeetix) external onlyOwner {
+        tribeone = _tribeetix;
     }
 
-    function checkBalance(address account) public view tribeoneProxyIsSet returns (uint) {
+    function checkBalance(address account) public view tribeetixProxyIsSet returns (uint) {
         return IERC20(integrationProxy).balanceOf(account);
     }
 
-    function checkAllowance(address tokenOwner, address spender) public view tribeoneProxyIsSet returns (uint) {
+    function checkAllowance(address tokenOwner, address spender) public view tribeetixProxyIsSet returns (uint) {
         return IERC20(integrationProxy).allowance(tokenOwner, spender);
     }
 
-    function checkBalanceHAKADirect(address account) public view tribeoneProxyIsSet returns (uint) {
+    function checkBalanceHAKADirect(address account) public view tribeetixProxyIsSet returns (uint) {
         return IERC20(tribeone).balanceOf(account);
     }
 
@@ -44,7 +44,7 @@ contract TokenExchanger is Owned {
         address fromAccount,
         address toAccount,
         uint amount
-    ) public tribeoneProxyIsSet returns (bool) {
+    ) public tribeetixProxyIsSet returns (bool) {
         // Call Immutable static call #1
         require(checkBalance(fromAccount) >= amount, "fromAccount does not have the required balance to spend");
 
@@ -58,7 +58,7 @@ contract TokenExchanger is Owned {
         return IERC20(integrationProxy).transferFrom(fromAccount, toAccount, amount);
     }
 
-    modifier tribeoneProxyIsSet {
+    modifier tribeetixProxyIsSet {
         require(integrationProxy != address(0), "Tribeone Integration proxy address not set");
         _;
     }

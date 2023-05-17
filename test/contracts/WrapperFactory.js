@@ -21,8 +21,8 @@ const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('WrapperFactory', async accounts => {
-	const synths = ['hUSD', 'sETH', 'ETH', 'HAKA'];
-	const [sETH, ETH] = ['sETH', 'ETH'].map(toBytes32);
+	const tribes = ['hUSD', 'hETH', 'ETH', 'HAKA'];
+	const [hETH, ETH] = ['hETH', 'ETH'].map(toBytes32);
 
 	const [, owner, , , account1] = accounts;
 
@@ -32,7 +32,7 @@ contract('WrapperFactory', async accounts => {
 		feePool,
 		exchangeRates,
 		FEE_ADDRESS,
-		sUSDSynth,
+		hUSDTribe,
 		wrapperFactory,
 		weth;
 
@@ -43,12 +43,12 @@ contract('WrapperFactory', async accounts => {
 			FeePool: feePool,
 			ExchangeRates: exchangeRates,
 			WrapperFactory: wrapperFactory,
-			SynthsUSD: sUSDSynth,
+			TribehUSD: hUSDTribe,
 			WETH: weth,
 			FlexibleStorage: flexibleStorage,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'Tribeone',
 				'AddressResolver',
@@ -69,8 +69,8 @@ contract('WrapperFactory', async accounts => {
 		FEE_ADDRESS = await feePool.FEE_ADDRESS();
 
 		// Depot requires ETH rates
-		await setupPriceAggregators(exchangeRates, owner, [sETH, ETH]);
-		await updateAggregatorRates(exchangeRates, null, [sETH, ETH], ['1500', '1500'].map(toUnit));
+		await setupPriceAggregators(exchangeRates, owner, [hETH, ETH]);
+		await updateAggregatorRates(exchangeRates, null, [hETH, ETH], ['1500', '1500'].map(toUnit));
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -130,7 +130,7 @@ contract('WrapperFactory', async accounts => {
 			let txn;
 
 			before(async () => {
-				txn = await wrapperFactory.createWrapper(weth.address, sETH, toBytes32('SynthsETH'), {
+				txn = await wrapperFactory.createWrapper(weth.address, hETH, toBytes32('TribehETH'), {
 					from: owner,
 				});
 			});
@@ -146,8 +146,8 @@ contract('WrapperFactory', async accounts => {
 			it('created wrapper has rebuilt cache', async () => {
 				const etherWrapper = await artifacts.require('Wrapper').at(createdWrapperAddress);
 
-				// call totalIssuedSynths because it depends on address for ExchangeRates
-				await etherWrapper.totalIssuedSynths();
+				// call totalIssuedTribes because it depends on address for ExchangeRates
+				await etherWrapper.totalIssuedTribes();
 			});
 
 			it('registers to isWrapper', async () => {
@@ -156,7 +156,7 @@ contract('WrapperFactory', async accounts => {
 		});
 	});
 
-	describe('totalIssuedSynths', async () => {});
+	describe('totalIssuedTribes', async () => {});
 
 	describe('distributeFees', async () => {
 		let tx;
@@ -165,7 +165,7 @@ contract('WrapperFactory', async accounts => {
 
 		before(async () => {
 			// deploy a wrapper
-			const txn = await wrapperFactory.createWrapper(weth.address, sETH, toBytes32('SynthsETH'), {
+			const txn = await wrapperFactory.createWrapper(weth.address, hETH, toBytes32('TribehETH'), {
 				from: owner,
 			});
 
@@ -190,7 +190,7 @@ contract('WrapperFactory', async accounts => {
 		it('issues hUSD to the feepool', async () => {
 			const logs = await getDecodedLogs({
 				hash: tx.tx,
-				contracts: [sUSDSynth],
+				contracts: [hUSDTribe],
 			});
 
 			// sanity
@@ -198,7 +198,7 @@ contract('WrapperFactory', async accounts => {
 
 			decodedEventEqual({
 				event: 'Transfer',
-				emittedFrom: await sUSDSynth.proxy(),
+				emittedFrom: await hUSDTribe.proxy(),
 				args: [wrapperFactory.address, FEE_ADDRESS, feesEscrowed],
 				log: logs
 					.reverse()

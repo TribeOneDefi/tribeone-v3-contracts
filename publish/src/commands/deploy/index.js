@@ -18,22 +18,22 @@ const {
 const { performTransactionalStep } = require('../../command-utils/transact');
 
 const {
-	constants: { BUILD_FOLDER, CONFIG_FILENAME, SYNTHS_FILENAME, DEPLOYMENT_FILENAME },
+	constants: { BUILD_FOLDER, CONFIG_FILENAME, TRIBEONES_FILENAME, DEPLOYMENT_FILENAME },
 } = require('../../../..');
 
-const addSynthsToProtocol = require('./add-synths-to-protocol');
+const addTribesToProtocol = require('./add-tribes-to-protocol');
 const configureLegacySettings = require('./configure-legacy-settings');
 const configureRewardEscrow = require('./configure-reward-escrow');
 const configureLoans = require('./configure-loans');
 const configureStandalonePriceFeeds = require('./configure-standalone-price-feeds');
 const configureOffchainPriceFeeds = require('./configure-offchain-price-feeds');
-const configureSynths = require('./configure-synths');
+const configureTribes = require('./configure-tribes');
 const configureFutures = require('./configure-futures');
 const configureSystemSettings = require('./configure-system-settings');
 const deployCore = require('./deploy-core');
 const deployDappUtils = require('./deploy-dapp-utils.js');
 const deployLoans = require('./deploy-loans');
-const deploySynths = require('./deploy-synths');
+const deployTribes = require('./deploy-tribes');
 const deployFutures = require('./deploy-futures');
 const {
 	deployPerpsV2Generics,
@@ -60,7 +60,7 @@ const DEFAULTS = {
 };
 
 const deploy = async ({
-	addNewSynths,
+	addNewTribes,
 	buildPath = DEFAULTS.buildPath,
 	concurrency,
 	deploymentPath,
@@ -98,7 +98,7 @@ const deploy = async ({
 		config,
 		params,
 		configFile,
-		synths,
+		tribes,
 		deployment,
 		deploymentFile,
 		ownerActions,
@@ -188,11 +188,6 @@ const deploy = async ({
 		privateKey = envPrivateKey;
 	}
 
-	if (!providerUrl) {
-		// providerUrl = 'https://goerli.infura.io/v3/e7631065f3c044f69188f39628368bd7';
-		providerUrl = 'https://goerli-rollup.arbitrum.io/rpc';
-	}
-
 	const nonceManager = new NonceManager({});
 
 	const deployer = new Deployer({
@@ -232,7 +227,7 @@ const deploy = async ({
 	} = await systemAndParameterCheck({
 		account,
 		buildPath,
-		addNewSynths,
+		addNewTribes,
 		concurrency,
 		config,
 		deployer,
@@ -246,18 +241,12 @@ const deploy = async ({
 		network,
 		skipFeedChecks,
 		feeds,
-		synths,
+		tribes,
 		providerUrl,
 		useFork,
 		useOvm,
 		yes,
 	});
-
-	
-	console.log(currentTribeoneSupply);
-	console.log(currentLastMintEvent);
-	console.log(currentWeekOfInflation);
-	console.log(systemSuspended);
 
 	console.log(
 		gray(`Starting deployment to ${network.toUpperCase()}${useFork ? ' (fork)' : ''}...`)
@@ -300,17 +289,17 @@ const deploy = async ({
 		useOvm,
 	});
 
-	const { synthsToAdd } = await deploySynths({
+	const { tribesToAdd } = await deployTribes({
 		account,
 		addressOf,
-		addNewSynths,
+		addNewTribes,
 		config,
 		deployer,
 		freshDeploy,
 		deploymentPath,
 		generateSolidity,
 		network,
-		synths,
+		tribes,
 		systemSuspended,
 		useFork,
 		yes,
@@ -463,17 +452,16 @@ const deploy = async ({
 		runStep,
 	});
 
-	// Configure all feeds as standalone in case they are being used as synth currency keys (through synth),
+	// Configure all feeds as standalone in case they are being used as tribe currency keys (through tribe),
 	// or directly (e.g. futures). Adding just one or the other may cause issues if e.g. initially futures
-	// market exists, but later a synth is added. Or if initially both exist, but later the spot synth
+	// market exists, but later a tribe is added. Or if initially both exist, but later the spot tribe
 	// is removed. The standalone feed should always be added and available.
-	// disabled by jin
-	// await configureStandalonePriceFeeds({
-	// 	deployer,
-	// 	runStep,
-	// 	feeds,
-	// 	useOvm,
-	// });
+	await configureStandalonePriceFeeds({
+		deployer,
+		runStep,
+		feeds,
+		useOvm,
+	});
 
 	if (includePerpsV2) {
 		await configureOffchainPriceFeeds({
@@ -484,58 +472,58 @@ const deploy = async ({
 		});
 	}
 
-	// await configureSynths({
-	// 	addressOf,
-	// 	explorerLinkPrefix,
-	// 	generateSolidity,
-	// 	feeds,
-	// 	deployer,
-	// 	network,
-	// 	runStep,
-	// 	synths,
-	// });
+	await configureTribes({
+		addressOf,
+		explorerLinkPrefix,
+		generateSolidity,
+		feeds,
+		deployer,
+		network,
+		runStep,
+		tribes,
+	});
 
-	// await addSynthsToProtocol({
-	// 	addressOf,
-	// 	deployer,
-	// 	runStep,
-	// 	synthsToAdd,
-	// });
+	await addTribesToProtocol({
+		addressOf,
+		deployer,
+		runStep,
+		tribesToAdd,
+	});
 
-	// await configureSystemSettings({
-	// 	addressOf,
-	// 	deployer,
-	// 	useOvm,
-	// 	generateSolidity,
-	// 	getDeployParameter,
-	// 	network,
-	// 	runStep,
-	// 	synths,
-	// });
+	await configureSystemSettings({
+		addressOf,
+		deployer,
+		useOvm,
+		generateSolidity,
+		getDeployParameter,
+		network,
+		runStep,
+		tribes,
+	});
 
-	// await configureLoans({
-	// 	addressOf,
-	// 	collateralManagerDefaults,
-	// 	deployer,
-	// 	getDeployParameter,
-	// 	runStep,
-	// });
+	await configureLoans({
+		addressOf,
+		collateralManagerDefaults,
+		deployer,
+		getDeployParameter,
+		runStep,
+	});
 
-	// if (includeFutures) {
-	// 	await configureFutures({
-	// 		addressOf,
-	// 		deployer,
-	// 		loadAndCheckRequiredSources,
-	// 		runStep,
-	// 		getDeployParameter,
-	// 		useOvm,
-	// 		freshDeploy,
-	// 		deploymentPath,
-	// 		network,
-	// 		generateSolidity,
-	// 		yes,
-	// 	});
-	// }
+	if (includeFutures) {
+		await configureFutures({
+			addressOf,
+			deployer,
+			loadAndCheckRequiredSources,
+			runStep,
+			getDeployParameter,
+			useOvm,
+			freshDeploy,
+			deploymentPath,
+			network,
+			generateSolidity,
+			yes,
+		});
+	}
 
 	// Generic Perps V2 configuration
 	if (includePerpsV2) {
@@ -579,8 +567,8 @@ module.exports = {
 			.command('deploy')
 			.description('Deploy compiled solidity files')
 			.option(
-				'-a, --add-new-synths',
-				`Whether or not any new synths in the ${SYNTHS_FILENAME} file should be deployed if there is no entry in the config file`,
+				'-a, --add-new-tribes',
+				`Whether or not any new tribes in the ${TRIBEONES_FILENAME} file should be deployed if there is no entry in the config file`,
 				true
 			)
 			.option(
@@ -590,7 +578,7 @@ module.exports = {
 			)
 			.option(
 				'-d, --deployment-path <value>',
-				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the synth list ${SYNTHS_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
+				`Path to a folder that has your input configuration file ${CONFIG_FILENAME}, the tribe list ${TRIBEONES_FILENAME} and where your ${DEPLOYMENT_FILENAME} files will go`
 			)
 			.option(
 				'-e, --concurrency <value>',

@@ -3,7 +3,7 @@
 const { gray } = require('chalk');
 
 const {
-	constants: { ZERO_ADDRESS, HAKA_ORIGIN_ADDRESS },
+	constants: { ZERO_ADDRESS },
 	defaults: { TEMP_OWNER_DEFAULT_DURATION },
 } = require('../../../..');
 
@@ -59,7 +59,7 @@ module.exports = async ({
 	console.log(gray(`\n------ DEPLOY SELF ORACLES ------\n`));
 
 	await deployer.deployContract({
-		name: 'OneNetAggregatorIssuedSynths',
+		name: 'OneNetAggregatorIssuedTribes',
 		args: [addressOf(readProxyForResolver)],
 	});
 
@@ -114,7 +114,6 @@ module.exports = async ({
 			account,
 			currentTribeoneSupply,
 			addressOf(readProxyForResolver),
-			HAKA_ORIGIN_ADDRESS
 		],
 	});
 
@@ -147,7 +146,7 @@ module.exports = async ({
 		deps: ['AddressResolver'],
 	});
 
-	const tribeoneEscrow = await deployer.deployContract({
+	const tribeetixEscrow = await deployer.deployContract({
 		name: 'TribeoneEscrow',
 		args: [account, ZERO_ADDRESS],
 	});
@@ -249,7 +248,7 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
-		name: 'VirtualSynthMastercopy',
+		name: 'VirtualTribeMastercopy',
 	});
 
 	await deployer.deployContract({
@@ -275,11 +274,11 @@ module.exports = async ({
 		args: [account, currentLastMintEvent, currentWeekOfInflation],
 	});
 
-	if (tribeoneEscrow) {
+	if (tribeetixEscrow) {
 		await deployer.deployContract({
 			name: 'EscrowChecker',
 			deps: ['TribeoneEscrow'],
-			args: [addressOf(tribeoneEscrow)],
+			args: [addressOf(tribeetixEscrow)],
 		});
 	}
 
@@ -326,7 +325,7 @@ module.exports = async ({
 	});
 
 	await deployer.deployContract({
-		name: 'SynthRedeemer',
+		name: 'TribeRedeemer',
 		deps: ['AddressResolver'],
 		args: [addressOf(readProxyForResolver)],
 	});

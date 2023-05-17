@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Internal References
 import "./interfaces/IAddressResolver.sol";
 
-
 // https://docs.tribeone.io/contracts/source/contracts/contractstorage
 contract ContractStorage {
     IAddressResolver public resolverProxy;

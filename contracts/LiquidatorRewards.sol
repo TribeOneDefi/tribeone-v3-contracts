@@ -42,10 +42,10 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_TRIBEONEDEBTSHARE = "TribeoneDebtShare";
+    bytes32 private constant CONTRACT_TRIBEONEETIXDEBTSHARE = "TribeoneDebtShare";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
-    bytes32 private constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 private constant CONTRACT_TRIBEONEETIX = "Tribeone";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -56,15 +56,15 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](4);
-        newAddresses[0] = CONTRACT_TRIBEONEDEBTSHARE;
+        newAddresses[0] = CONTRACT_TRIBEONEETIXDEBTSHARE;
         newAddresses[1] = CONTRACT_ISSUER;
         newAddresses[2] = CONTRACT_REWARDESCROW_V2;
-        newAddresses[3] = CONTRACT_TRIBEONE;
+        newAddresses[3] = CONTRACT_TRIBEONEETIX;
         return combineArrays(existingAddresses, newAddresses);
     }
 
-    function tribeoneDebtShare() internal view returns (ITribeoneDebtShare) {
-        return ITribeoneDebtShare(requireAndGetAddress(CONTRACT_TRIBEONEDEBTSHARE));
+    function tribeetixDebtShare() internal view returns (ITribeoneDebtShare) {
+        return ITribeoneDebtShare(requireAndGetAddress(CONTRACT_TRIBEONEETIXDEBTSHARE));
     }
 
     function issuer() internal view returns (IIssuer) {
@@ -76,13 +76,13 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
     }
 
     function tribeone() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONE));
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function earned(address account) public view returns (uint256) {
         AccountRewardsEntry memory entry = entries[account];
         return
-            tribeoneDebtShare()
+            tribeetixDebtShare()
                 .balanceOf(account)
                 .multiplyDecimal(accumulatedRewardsPerShare.sub(entry.entryAccumulatedRewards))
                 .add(entry.claimable);
@@ -118,7 +118,7 @@ contract LiquidatorRewards is ILiquidatorRewards, Owned, MixinSystemSettings, Re
 
     /// @notice This is called only after an account is liquidated and the HAKA rewards are sent to this contract.
     function notifyRewardAmount(uint256 reward) external onlyTribeone {
-        uint sharesSupply = tribeoneDebtShare().totalSupply();
+        uint sharesSupply = tribeetixDebtShare().totalSupply();
 
         if (sharesSupply > 0) {
             accumulatedRewardsPerShare = accumulatedRewardsPerShare.add(reward.divideDecimal(sharesSupply));

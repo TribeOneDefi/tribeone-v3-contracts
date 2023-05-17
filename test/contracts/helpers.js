@@ -158,7 +158,7 @@ module.exports = {
 	updateAggregatorRates,
 
 	async updateRatesWithDefaults({ exchangeRates, circuitBreaker, owner, debtCache }) {
-		const keys = ['HAKA', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH', 'ETH'].map(toBytes32);
+		const keys = ['HAKA', 'sAUD', 'sEUR', 'hBTC', 'iBTC', 'hETH', 'ETH'].map(toBytes32);
 		const rates = ['0.1', '0.5', '1.25', '5000', '4000', '172', '172'].map(toUnit);
 		// set up any missing aggregators
 		await setupMissingPriceAggregators(exchangeRates, owner, keys);
@@ -219,16 +219,16 @@ module.exports = {
 		}
 	},
 
-	// Helper function that can issue synths directly to a user without having to have them exchange anything
-	async issueSynthsToUser({ owner, issuer, addressResolver, synthContract, user, amount }) {
+	// Helper function that can issue tribes directly to a user without having to have them exchange anything
+	async issueTribesToUser({ owner, issuer, addressResolver, tribeContract, user, amount }) {
 		// First override the resolver to make it seem the owner is the Tribeone contract
 		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [owner], {
 			from: owner,
 		});
-		// now have the synth resync its cache
-		await synthContract.rebuildCache();
+		// now have the tribe resync its cache
+		await tribeContract.rebuildCache();
 
-		await synthContract.issue(user, amount, {
+		await tribeContract.issue(user, amount, {
 			from: owner,
 		});
 
@@ -236,15 +236,15 @@ module.exports = {
 		await addressResolver.importAddresses(['Issuer'].map(toBytes32), [issuer.address], {
 			from: owner,
 		});
-		await synthContract.rebuildCache();
+		await tribeContract.rebuildCache();
 	},
 
 	async setExchangeWaitingPeriod({ owner, systemSettings, secs }) {
 		await systemSettings.setWaitingPeriodSecs(secs.toString(), { from: owner });
 	},
 
-	async setExchangeFeeRateForSynths({ owner, systemSettings, synthKeys, exchangeFeeRates }) {
-		await systemSettings.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
+	async setExchangeFeeRateForTribes({ owner, systemSettings, tribeKeys, exchangeFeeRates }) {
+		await systemSettings.setExchangeFeeRateForTribes(tribeKeys, exchangeFeeRates, {
 			from: owner,
 		});
 	},
@@ -315,7 +315,7 @@ module.exports = {
 		owner,
 		systemStatus,
 		section,
-		synth = undefined,
+		tribe = undefined,
 		suspend = false,
 		reason = '0',
 	}) {
@@ -337,17 +337,17 @@ module.exports = {
 			} else {
 				await systemStatus.resumeExchange({ from: owner });
 			}
-		} else if (section === 'SynthExchange') {
+		} else if (section === 'TribeExchange') {
 			if (suspend) {
-				await systemStatus.suspendSynthExchange(synth, reason, { from: owner });
+				await systemStatus.suspendTribeExchange(tribe, reason, { from: owner });
 			} else {
-				await systemStatus.resumeSynthExchange(synth, { from: owner });
+				await systemStatus.resumeTribeExchange(tribe, { from: owner });
 			}
-		} else if (section === 'Synth') {
+		} else if (section === 'Tribe') {
 			if (suspend) {
-				await systemStatus.suspendSynth(synth, reason, { from: owner });
+				await systemStatus.suspendTribe(tribe, reason, { from: owner });
 			} else {
-				await systemStatus.resumeSynth(synth, { from: owner });
+				await systemStatus.resumeTribe(tribe, { from: owner });
 			}
 		} else {
 			throw Error(`Section: ${section} unsupported`);

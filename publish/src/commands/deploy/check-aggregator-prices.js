@@ -7,18 +7,18 @@ const { gray, yellow, red, cyan } = require('chalk');
 const { loadConnections } = require('../../util');
 const { toBytes32 } = require('../../../..');
 
-module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feeds }) => {
+module.exports = async ({ network, useOvm, providerUrl, tribes, oldExrates, feeds }) => {
 	const output = [];
 	const { etherscanUrl } = loadConnections({ network });
 
 	const provider = new ethers.providers.JsonRpcProvider(providerUrl);
 
-	const allFeeds = Object.values(feeds).concat(synths);
+	const allFeeds = Object.values(feeds).concat(tribes);
 
 	let abi;
 
 	for (const { name, asset, feed } of allFeeds) {
-		const currencyKey = name || asset; // either name of synth or asset for standalone
+		const currencyKey = name || asset; // either name of tribe or asset for standalone
 		if (feed) {
 			if (!ethers.utils.isAddress(feed)) {
 				throw Error(
@@ -27,7 +27,6 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 			}
 
 			if (!abi) {
-				continue;
 				if (useOvm) {
 					abi = require('@chainlink/contracts-0.0.10/abi/v0.5/AggregatorV2V3Interface.json')
 						.compilerOutput.abi;
@@ -64,7 +63,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 				output.push(
 					gray(
 						`- ${
-							name ? 'Synth ' : ''
+							name ? 'Tribe ' : ''
 						}${currencyKey} aggregated price: ${answer} (same as currently on-chain)`
 					)
 				);
@@ -75,7 +74,7 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 				output.push(
 					colorize(
 						`- ${
-							name ? 'Synth ' : ''
+							name ? 'Tribe ' : ''
 						}${currencyKey} aggregated price: ${answer} vs ${existing} (${diff} %)`
 					)
 				);
@@ -83,6 +82,5 @@ module.exports = async ({ network, useOvm, providerUrl, synths, oldExrates, feed
 		}
 	}
 
-	console.log(output);
 	return output;
 };

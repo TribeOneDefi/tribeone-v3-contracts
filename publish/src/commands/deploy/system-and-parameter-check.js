@@ -20,7 +20,7 @@ const {
 
 module.exports = async ({
 	account,
-	addNewSynths,
+	addNewTribes,
 	concurrency,
 	config,
 	deployer,
@@ -35,7 +35,7 @@ module.exports = async ({
 	providerUrl,
 	skipFeedChecks,
 	feeds,
-	synths,
+	tribes,
 	useFork,
 	useOvm,
 	yes,
@@ -51,14 +51,13 @@ module.exports = async ({
 
 	try {
 		const oldTribeone = deployer.getExistingContract({ contract: 'Tribeone' });
-
 		currentTribeoneSupply = await oldTribeone.totalSupply();
 
-		// if (config['SupplySchedule']) {
-		// 	const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
-		// 	currentWeekOfInflation = await oldSupplySchedule.weekCounter();
-		// 	currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
-		// }
+		if (config['SupplySchedule']) {
+			const oldSupplySchedule = deployer.getExistingContract({ contract: 'SupplySchedule' });
+			currentWeekOfInflation = await oldSupplySchedule.weekCounter();
+			currentLastMintEvent = await oldSupplySchedule.lastMintEvent();
+		}
 
 		// inflationSupplyToDate = total supply - 100m
 		inflationSupplyToDate = parseUnits(currentTribeoneSupply.toString(), 'wei').sub(
@@ -78,9 +77,7 @@ module.exports = async ({
 	}
 
 	try {
-		// oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
-		oldExrates = 1.0;
-
+		oldExrates = deployer.getExistingContract({ contract: 'ExchangeRates' });
 	} catch (err) {
 		if (freshDeploy) {
 			oldExrates = undefined; // unset to signify that a fresh one will be deployed
@@ -95,15 +92,12 @@ module.exports = async ({
 	}
 
 	try {
-		// const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
+		const oldSystemStatus = deployer.getExistingContract({ contract: 'SystemStatus' });
 
-		// const systemSuspensionStatus = await oldSystemStatus.systemSuspension();
+		const systemSuspensionStatus = await oldSystemStatus.systemSuspension();
 
-		// systemSuspended = systemSuspensionStatus.suspended;
-		// systemSuspendedReason = systemSuspensionStatus.reason;
-
-		systemSuspended = false;
-		systemSuspendedReason = "";
+		systemSuspended = systemSuspensionStatus.suspended;
+		systemSuspendedReason = systemSuspensionStatus.reason;
 	} catch (err) {
 		if (!freshDeploy) {
 			console.error(
@@ -121,8 +115,8 @@ module.exports = async ({
 		process.exit();
 	}
 
-	const newSynthsToAdd = synths
-		.filter(({ name }) => !config[`Synth${name}`])
+	const newTribesToAdd = tribes
+		.filter(({ name }) => !config[`Tribe${name}`])
 		.map(({ name }) => name);
 
 	let aggregatedPriceResults = 'N/A';
@@ -133,7 +127,7 @@ module.exports = async ({
 			network,
 			useOvm,
 			providerUrl,
-			synths,
+			tribes,
 			oldExrates,
 			feeds,
 		});
@@ -187,8 +181,8 @@ module.exports = async ({
 			(latestSolTimestamp > earliestCompiledTimestamp
 				? yellow(' ⚠⚠⚠ this is later than the last build! Is this intentional?')
 				: green(' ✅')),
-		'Add any new synths found?': addNewSynths
-			? green('✅ YES\n\t\t\t\t') + newSynthsToAdd.join(', ')
+		'Add any new tribes found?': addNewTribes
+			? green('✅ YES\n\t\t\t\t') + newTribesToAdd.join(', ')
 			: yellow('⚠ NO'),
 		'Deployer account:': account,
 		'Tribeone totalSupply': `${Math.round(formatUnits(currentTribeoneSupply) / 1e6)}m`,
@@ -210,7 +204,7 @@ module.exports = async ({
 			)
 				.filter(([, { deploy }]) => deploy)
 				.map(([contract]) => contract)
-				.join(', ')}` + `\nIt will also set proxy targets and add synths to Tribeone.\n`
+				.join(', ')}` + `\nIt will also set proxy targets and add tribes to Tribeone.\n`
 		) + gray('-'.repeat(50))
 	);
 

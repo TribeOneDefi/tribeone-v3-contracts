@@ -12,7 +12,7 @@ import "./SafeDecimalMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ITribeone.sol";
 
-// https://docs.tribeone.io/contracts/source/contracts/tribeoneescrow
+// https://docs.tribeone.io/contracts/source/contracts/tribeetixescrow
 contract TribeoneEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
     using SafeMath for uint;
 
@@ -37,15 +37,15 @@ contract TribeoneEscrow is Owned, LimitedSetup(8 weeks), IHasBalance {
 
     /* ========== CONSTRUCTOR ========== */
 
-    constructor(address _owner, ITribeone _tribeone) public Owned(_owner) {
-        tribeone = _tribeone;
+    constructor(address _owner, ITribeone _tribeetix) public Owned(_owner) {
+        tribeone = _tribeetix;
     }
 
     /* ========== SETTERS ========== */
 
-    function setTribeone(ITribeone _tribeone) external onlyOwner {
-        tribeone = _tribeone;
-        emit TribeoneUpdated(address(_tribeone));
+    function setTribeone(ITribeone _tribeetix) external onlyOwner {
+        tribeone = _tribeetix;
+        emit TribeoneUpdated(address(_tribeetix));
     }
 
     /* ========== VIEW FUNCTIONS ========== */

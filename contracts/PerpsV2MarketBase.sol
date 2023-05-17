@@ -24,9 +24,9 @@ import "./interfaces/IPerpsV2MarketState.sol";
 
 // Use internal interface (external functions not present in IFuturesMarketManager)
 interface IFuturesMarketManagerInternal {
-    function issueSUSD(address account, uint amount) external;
+    function issueHUSD(address account, uint amount) external;
 
-    function burnSUSD(address account, uint amount) external returns (uint postReclamationAmount);
+    function burnHUSD(address account, uint amount) external returns (uint postReclamationAmount);
 
     function payFee(uint amount) external;
 
@@ -598,8 +598,8 @@ contract PerpsV2MarketBase is Owned, MixinPerpsV2MarketSettings, IPerpsV2MarketB
      */
     function _assetPrice() internal view returns (uint price, bool invalid) {
         (price, invalid) = _exchangeRates().rateAndInvalid(_baseAsset());
-        // Ensure we catch uninitialised rates or suspended state / synth
-        invalid = invalid || price == 0 || _systemStatus().synthSuspended(_baseAsset());
+        // Ensure we catch uninitialised rates or suspended state / tribe
+        invalid = invalid || price == 0 || _systemStatus().tribeSuspended(_baseAsset());
         return (price, invalid);
     }
 

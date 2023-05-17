@@ -69,12 +69,12 @@ const actions = {
 			deploymentPath,
 		});
 
-		const anySynthOrHAKARateIsInvalid = await Tribeone.anySynthOrHAKARateIsInvalid(blockOptions);
+		const anyTribeOrHAKARateIsInvalid = await Tribeone.anyTribeOrHAKARateIsInvalid(blockOptions);
 		logItem(
-			'Tribeone.anySynthOrHAKARateIsInvalid',
-			anySynthOrHAKARateIsInvalid,
+			'Tribeone.anyTribeOrHAKARateIsInvalid',
+			anyTribeOrHAKARateIsInvalid,
 			1,
-			anySynthOrHAKARateIsInvalid ? bgRed : undefined
+			anyTribeOrHAKARateIsInvalid ? bgRed : undefined
 		);
 
 		logItem('Tribeone.totalSupply', (await Tribeone.totalSupply(blockOptions)).toString() / 1e18);

@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 pragma experimental ABIEncoderV2;
-import "./IVirtualSynth.sol";
+import "./IVirtualTribe.sol";
 
 // https://docs.tribeone.io/contracts/source/interfaces/iexchanger
 interface IExchanger {
@@ -34,7 +34,7 @@ interface IExchanger {
         uint refunded
     ) external view returns (uint amountAfterSettlement);
 
-    function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool);
+    function isTribeRateInvalid(bytes32 currencyKey) external view returns (bool);
 
     function maxSecsLeftInWaitingPeriod(address account, bytes32 currencyKey) external view returns (uint);
 
@@ -83,10 +83,10 @@ interface IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
-        bool virtualSynth,
+        bool virtualTribe,
         address rewardAddress,
         bytes32 trackingCode
-    ) external returns (uint amountReceived, IVirtualSynth vSynth);
+    ) external returns (uint amountReceived, IVirtualTribe vTribe);
 
     function exchangeAtomically(
         address from,
@@ -116,7 +116,7 @@ interface ITribeoneInternal {
         uint256 fee
     ) external;
 
-    function emitSynthExchange(
+    function emitTribeExchange(
         address account,
         bytes32 fromCurrencyKey,
         uint fromAmount,
@@ -125,7 +125,7 @@ interface ITribeoneInternal {
         address toAddress
     ) external;
 
-    function emitAtomicSynthExchange(
+    function emitAtomicTribeExchange(
         address account,
         bytes32 fromCurrencyKey,
         uint fromAmount,
@@ -148,7 +148,7 @@ interface ITribeoneInternal {
 }
 
 interface IExchangerInternalDebtCache {
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
+    function updateCachedTribeDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
 
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external;
+    function updateCachedTribeDebts(bytes32[] calldata currencyKeys) external;
 }

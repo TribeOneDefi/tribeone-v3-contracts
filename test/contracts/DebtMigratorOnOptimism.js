@@ -18,7 +18,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 		messenger,
 		resolver,
 		tribeone,
-		tribeoneDebtShare,
+		tribeetixDebtShare,
 		rewardEscrowV2;
 
 	const getDataOfEncodedFncCall = ({ c, fnc, args = [] }) =>
@@ -33,7 +33,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 			DebtMigratorOnOptimism: debtMigratorOnOptimism,
 			FlexibleStorage: flexibleStorage,
 			Tribeone: tribeone,
-			TribeoneDebtShare: tribeoneDebtShare,
+			TribeoneDebtShare: tribeetixDebtShare,
 			RewardEscrowV2: rewardEscrowV2,
 		} = await setupAllContracts({
 			accounts,
@@ -150,7 +150,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 		before('record balances', async () => {
 			liquidHAKABalanceBefore = await tribeone.balanceOf(user);
 			escrowedHAKABalanceBefore = await rewardEscrowV2.balanceOf(user);
-			debtShareBalanceBefore = await tribeoneDebtShare.balanceOf(user);
+			debtShareBalanceBefore = await tribeetixDebtShare.balanceOf(user);
 		});
 
 		it('succeeds', async () => {
@@ -183,7 +183,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 			// updates balances
 			const liquidHAKABalanceAfter = await tribeone.balanceOf(user);
 			const escrowedHAKABalanceAfter = await rewardEscrowV2.balanceOf(user);
-			const debtShareBalanceAfter = await tribeoneDebtShare.balanceOf(user);
+			const debtShareBalanceAfter = await tribeetixDebtShare.balanceOf(user);
 			assert.bnEqual(liquidHAKABalanceAfter, liquidHAKABalanceBefore.add(liquidHAKAAmount));
 			assert.bnEqual(debtShareBalanceAfter, debtShareBalanceBefore.add(debtShareAmount));
 			assert.bnEqual(escrowedHAKABalanceAfter, escrowedHAKABalanceBefore.add(escrowAmount));

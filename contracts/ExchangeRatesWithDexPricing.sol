@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./ExchangeRates.sol";
 import "./interfaces/IDexPriceAggregator.sol";
@@ -205,14 +204,14 @@ contract ExchangeRatesWithDexPricing is ExchangeRates {
         return (twapValueInEquivalent.mul(SafeDecimalMath.unit())).div(10**uint(destEquivalent.decimals()));
     }
 
-    function synthTooVolatileForAtomicExchange(bytes32 currencyKey) public view returns (bool) {
+    function tribeTooVolatileForAtomicExchange(bytes32 currencyKey) public view returns (bool) {
         IDirectIntegrationManager.ParameterIntegrationSettings memory settings =
             directIntegrationManager().getExchangeParameters(msg.sender, currencyKey);
 
-        return synthTooVolatileForAtomicExchange(settings);
+        return tribeTooVolatileForAtomicExchange(settings);
     }
 
-    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
+    function tribeTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory settings)
         public
         view
         returns (bool)

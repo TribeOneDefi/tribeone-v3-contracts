@@ -7,7 +7,7 @@ import "./MixinFuturesViews.sol";
 import "./../interfaces/IFuturesMarket.sol";
 
 /*
- * Synthetic Futures
+ * Tribeetic Futures
  * =================
  *
  * Futures markets allow users leveraged exposure to an asset, long or short.

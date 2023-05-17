@@ -62,7 +62,7 @@
 	"SystemStatus": {
 		"deploy": false
 	},
-	"SynthUtil": {
+	"TribeUtil": {
 		"deploy": false
 	},
 	"StakingRewardsiBTC": {
@@ -101,25 +101,25 @@
 	"DappMaintenance": {
 		"deploy": false
 	},
-	"SynthsUSD": {
+	"TribehUSD": {
 		"deploy": false
 	},
-	"SynthsEUR": {
+	"TribesEUR": {
 		"deploy": false
 	},
-	"SynthsJPY": {
+	"TribesJPY": {
 		"deploy": false
 	},
-	"SynthsAUD": {
+	"TribesAUD": {
 		"deploy": false
 	},
-	"SynthsGBP": {
+	"TribesGBP": {
 		"deploy": false
 	},
-	"SynthsCHF": {
+	"TribesCHF": {
 		"deploy": false
 	},
-	"SynthsBTC": {
+	"TribehBTC": {
 		"deploy": false
 	},
 	"ProxyFeePool": {
@@ -128,7 +128,7 @@
 	"ProxyTribeone": {
 		"deploy": false
 	},
-	"ProxysUSD": {
+	"ProxyhUSD": {
 		"deploy": false
 	},
 	"ProxysEUR": {
@@ -146,7 +146,7 @@
 	"ProxysCHF": {
 		"deploy": false
 	},
-	"ProxysBTC": {
+	"ProxyhBTC": {
 		"deploy": false
 	},
 	"SafeDecimalMath": {
@@ -158,7 +158,7 @@
 	"TokenStateTribeone": {
 		"deploy": false
 	},
-	"TokenStatesUSD": {
+	"TokenStatehUSD": {
 		"deploy": false
 	},
 	"TokenStatesEUR": {
@@ -176,16 +176,16 @@
 	"TokenStatesCHF": {
 		"deploy": false
 	},
-	"TokenStatesBTC": {
+	"TokenStatehBTC": {
 		"deploy": false
 	},
-	"TokenStatesETH": {
+	"TokenStatehETH": {
 		"deploy": false
 	},
-	"ProxysETH": {
+	"ProxyhETH": {
 		"deploy": false
 	},
-	"SynthsETH": {
+	"TribehETH": {
 		"deploy": false
 	},
 	"FlexibleStorage": {
@@ -227,10 +227,10 @@
 	"TribeoneBridgeToOptimism": {
 		"deploy": false
 	},
-	"ShortingRewardssBTC": {
+	"ShortingRewardshBTC": {
 		"deploy": false
 	},
-	"ShortingRewardssETH": {
+	"ShortingRewardshETH": {
 		"deploy": false
 	},
 	"TokenStatesKRW": {
@@ -239,10 +239,10 @@
 	"ProxysKRW": {
 		"deploy": false
 	},
-	"SynthsKRW": {
+	"TribesKRW": {
 		"deploy": false
 	},
-	"VirtualSynthMastercopy": {
+	"VirtualTribeMastercopy": {
 		"deploy": false
 	},
 	"TribeoneBridgeEscrow": {
@@ -260,16 +260,16 @@
 	"OwnerRelayOnEthereum": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
+	"TribeRedeemer": {
 		"deploy": false
 	},
-	"TokenStatesETHBTC": {
+	"TokenStatehETHBTC": {
 		"deploy": false
 	},
-	"ProxysETHBTC": {
+	"ProxyhETHBTC": {
 		"deploy": false
 	},
-	"SynthsETHBTC": {
+	"TribehETHBTC": {
 		"deploy": false
 	},
 	"SystemSettingsLib": {
@@ -287,7 +287,7 @@
 	"FuturesMarketManager": {
 		"deploy": false
 	},
-	"OneNetAggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedTribes": {
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {

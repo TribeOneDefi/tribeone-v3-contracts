@@ -127,7 +127,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
             require(_confirmationWindowOver(currentRoundId, order.targetRoundId), "cannot be cancelled by keeper yet");
 
             // send keeper fee to keeper
-            _manager().issueSUSD(msg.sender, order.keeperDeposit);
+            _manager().issueHUSD(msg.sender, order.keeperDeposit);
         }
 
         // pay the commitDeposit as fee to the FeePool
@@ -185,7 +185,7 @@ contract MixinFuturesNextPriceOrders is FuturesMarketBase {
         if (msg.sender == account) {
             toRefund += order.keeperDeposit;
         } else {
-            _manager().issueSUSD(msg.sender, order.keeperDeposit);
+            _manager().issueHUSD(msg.sender, order.keeperDeposit);
         }
 
         Position storage position = positions[account];

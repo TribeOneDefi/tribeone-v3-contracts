@@ -10,8 +10,8 @@ contract MockExchanger {
 
     ITribeone public tribeone;
 
-    constructor(ITribeone _tribeone) public {
-        tribeone = _tribeone;
+    constructor(ITribeone _tribeetix) public {
+        tribeone = _tribeetix;
     }
 
     // Mock settle function
@@ -24,11 +24,11 @@ contract MockExchanger {
         )
     {
         if (_mockReclaimAmount > 0) {
-            tribeone.synths(currencyKey).burn(from, _mockReclaimAmount);
+            tribeone.tribes(currencyKey).burn(from, _mockReclaimAmount);
         }
 
         if (_mockRefundAmount > 0) {
-            tribeone.synths(currencyKey).issue(from, _mockRefundAmount);
+            tribeone.tribes(currencyKey).issue(from, _mockRefundAmount);
         }
 
         _mockMaxSecsLeft = 0;

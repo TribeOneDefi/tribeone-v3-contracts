@@ -45,10 +45,10 @@ contract RewardEscrow is Owned, IRewardEscrow {
 
     constructor(
         address _owner,
-        ITribeone _tribeone,
+        ITribeone _tribeetix,
         IFeePool _feePool
     ) public Owned(_owner) {
-        tribeone = _tribeone;
+        tribeone = _tribeetix;
         feePool = _feePool;
     }
 
@@ -57,9 +57,9 @@ contract RewardEscrow is Owned, IRewardEscrow {
     /**
      * @notice set the tribeone contract address as we need to transfer HAKA when the user vests
      */
-    function setTribeone(ITribeone _tribeone) external onlyOwner {
-        tribeone = _tribeone;
-        emit TribeoneUpdated(address(_tribeone));
+    function setTribeone(ITribeone _tribeetix) external onlyOwner {
+        tribeone = _tribeetix;
+        emit TribeoneUpdated(address(_tribeetix));
     }
 
     /**

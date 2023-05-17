@@ -1,7 +1,7 @@
 [
 	{
-		"marketKey": "sBTC",
-		"asset": "sBTC",
+		"marketKey": "hBTC",
+		"asset": "hBTC",
 		"takerFee": "0.003",
 		"makerFee": "0.0025",
 		"takerFeeNextPrice": "0.002",
@@ -14,8 +14,8 @@
 		"paused": false
 	},
 	{
-		"marketKey": "sETH",
-		"asset": "sETH",
+		"marketKey": "hETH",
+		"asset": "hETH",
 		"takerFee": "0.0035",
 		"makerFee": "0.0030",
 		"takerFeeNextPrice": "0.002",

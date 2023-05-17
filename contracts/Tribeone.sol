@@ -10,20 +10,12 @@ import "./interfaces/IRewardEscrowV2.sol";
 import "./interfaces/ISupplySchedule.sol";
 
 // https://docs.tribeone.io/contracts/source/contracts/tribeone
-
-/**
-    * @dev This contract extends the functionality of the Tribeone ERC20 token contract to include
-    a staking and delegation mechanism. Tribeone token holders can use their tokens to
-    participate in the network and earn rewards (in the form of additional TRIBE tokens) for doing so.
- */
 contract Tribeone is BaseTribeone {
     bytes32 public constant CONTRACT_NAME = "Tribeone";
 
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
     bytes32 private constant CONTRACT_REWARD_ESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
-
-    address private hakaToken;
 
     // ========== CONSTRUCTOR ==========
 
@@ -32,11 +24,8 @@ contract Tribeone is BaseTribeone {
         TokenState _tokenState,
         address _owner,
         uint _totalSupply,
-        address _resolver,
-        address _hakaToken
-    ) public BaseTribeone(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
-        hakaToken = _hakaToken;
-    }
+        address _resolver
+    ) public BaseTribeone(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseTribeone.resolverAddressesRequired();
@@ -67,7 +56,7 @@ contract Tribeone is BaseTribeone {
         external
         exchangeActive(sourceCurrencyKey, destinationCurrencyKey)
         optionalProxy
-        returns (uint amountReceived, IVirtualSynth vSynth)
+        returns (uint amountReceived, IVirtualTribe vTribe)
     {
         return
             exchanger().exchange(
@@ -126,9 +115,15 @@ contract Tribeone is BaseTribeone {
             );
     }
 
-    function settle(
-        bytes32 currencyKey
-    ) external optionalProxy returns (uint reclaimed, uint refunded, uint numEntriesSettled) {
+    function settle(bytes32 currencyKey)
+        external
+        optionalProxy
+        returns (
+            uint reclaimed,
+            uint refunded,
+            uint numEntriesSettled
+        )
+    {
         return exchanger().settle(messageSender, currencyKey);
     }
 
@@ -184,7 +179,7 @@ contract Tribeone is BaseTribeone {
 
     // ========== EVENTS ==========
 
-    event AtomicSynthExchange(
+    event AtomicTribeExchange(
         address indexed account,
         bytes32 fromCurrencyKey,
         uint256 fromAmount,
@@ -192,10 +187,10 @@ contract Tribeone is BaseTribeone {
         uint256 toAmount,
         address toAddress
     );
-    bytes32 internal constant ATOMIC_SYNTH_EXCHANGE_SIG =
-        keccak256("AtomicSynthExchange(address,bytes32,uint256,bytes32,uint256,address)");
+    bytes32 internal constant ATOMIC_TRIBEONE_EXCHANGE_SIG =
+        keccak256("AtomicTribeExchange(address,bytes32,uint256,bytes32,uint256,address)");
 
-    function emitAtomicSynthExchange(
+    function emitAtomicTribeExchange(
         address account,
         bytes32 fromCurrencyKey,
         uint256 fromAmount,
@@ -206,40 +201,10 @@ contract Tribeone is BaseTribeone {
         proxy._emit(
             abi.encode(fromCurrencyKey, fromAmount, toCurrencyKey, toAmount, toAddress),
             2,
-            ATOMIC_SYNTH_EXCHANGE_SIG,
+            ATOMIC_TRIBEONE_EXCHANGE_SIG,
             addressToBytes32(account),
             0,
             0
         );
-    }
-
-    function wrap(uint256 amount) public {
-        require(amount > 0, "Amount must be greater than 0");
-        require(IERC20(hakaToken).transferFrom(msg.sender, address(this), amount), "Transfer failed");
-        _mint(msg.sender, amount);
-    }
-
-    function unwrap(uint256 amount) public {
-        require(amount > 0, "Amount must be greater than 0");
-        _burn(msg.sender, amount);
-        require(IERC20(hakaToken).transfer(msg.sender, amount), "Transfer failed");
-    }
-
-    function _mint(address to, uint256 amount) private {
-        // This line of code calls the `setBalanceOf` function on the `tokenState` object to update the balance of
-        // the specified address (`to`) with the added `amount` of tokens
-        tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(amount));
-        emitTransfer(address(0), to, amount);
-
-        // Increase total supply by minted amount
-        totalSupply = totalSupply.add(amount);
-    }
-
-    function _burn(address from, uint256 amount) private {
-        tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(amount));
-        emitTransfer(from, address(0), amount);
-
-        // Increase total supply by minted amount
-        totalSupply = totalSupply.sub(amount);
     }
 }

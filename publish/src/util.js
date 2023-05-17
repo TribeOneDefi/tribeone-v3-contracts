@@ -16,7 +16,7 @@ const {
 		PARAMS_FILENAME,
 		DEPLOYMENT_FILENAME,
 		OWNER_ACTIONS_FILENAME,
-		SYNTHS_FILENAME,
+		TRIBEONES_FILENAME,
 		STAKING_REWARDS_FILENAME,
 		SHORTING_REWARDS_FILENAME,
 		VERSIONS_FILENAME,
@@ -30,7 +30,7 @@ const {
 
 const {
 	getPathToNetwork,
-	getSynths,
+	getTribes,
 	getStakingRewards,
 	getVersions,
 	getFeeds,
@@ -75,9 +75,9 @@ const ensureDeploymentPath = deploymentPath => {
 
 // Load up all contracts in the flagged source, get their deployed addresses (if any) and compiled sources
 const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) => {
-	console.log(gray(`Loading the list of synths for ${network.toUpperCase()}...`));
-	const synthsFile = path.join(deploymentPath, SYNTHS_FILENAME);
-	const synths = getSynths({ network, deploymentPath });
+	console.log(gray(`Loading the list of tribes for ${network.toUpperCase()}...`));
+	const tribesFile = path.join(deploymentPath, TRIBEONES_FILENAME);
+	const tribes = getTribes({ network, deploymentPath });
 
 	console.log(gray(`Loading the list of staking rewards to deploy on ${network.toUpperCase()}...`));
 	const stakingRewardsFile = path.join(deploymentPath, STAKING_REWARDS_FILENAME);
@@ -138,8 +138,8 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 		config,
 		params,
 		configFile,
-		synths,
-		synthsFile,
+		tribes,
+		tribesFile,
 		stakingRewards,
 		stakingRewardsFile,
 		futuresMarkets,
@@ -162,7 +162,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 };
 
 const getExplorerLinkPrefix = ({ network, useOvm }) => {
-	return `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
+	return network == 'goerli-arbitrum' ? 'https://goerli.arbiscan.io' : `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
 		useOvm ? 'explorer.optimism' : 'etherscan'
 	}.io`;
 };
@@ -183,6 +183,8 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 		} else {
 			if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
 				providerUrl = process.env.PROVIDER_URL_MAINNET;
+			} else if (network === 'goerli-arbitrum') {
+				providerUrl = process.env.PROVIDER_URL;
 			} else {
 				providerUrl = process.env.PROVIDER_URL.replace('network', network);
 			}
@@ -192,7 +194,7 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl = network == 'goerli-arbitrum' ? 'https://api-goerli.arbiscan.io/' : `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+	const etherscanUrl = network == 'goerli-arbitrum' ? 'https://api-goerli.arbiscan.io/api' : `https://api${network !== 'mainnet' ? `-${network}` : ''}${
 		useOvm ? '-optimistic' : ''
 	}.etherscan.io/api`;
 

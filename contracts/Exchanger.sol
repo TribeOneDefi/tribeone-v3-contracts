@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
@@ -16,7 +15,7 @@ import "./interfaces/ICircuitBreaker.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IDelegateApprovals.sol";
 import "./interfaces/ITradingRewards.sol";
-import "./interfaces/IVirtualSynth.sol";
+import "./interfaces/IVirtualTribe.sol";
 
 import "./ExchangeSettlementLib.sol";
 
@@ -36,7 +35,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
     bytes32 private constant CONTRACT_EXCHANGESTATE = "ExchangeState";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
-    bytes32 private constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 private constant CONTRACT_TRIBEONEETIX = "Tribeone";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_TRADING_REWARDS = "TradingRewards";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
@@ -55,7 +54,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         newAddresses[0] = CONTRACT_SYSTEMSTATUS;
         newAddresses[1] = CONTRACT_EXCHANGESTATE;
         newAddresses[2] = CONTRACT_EXRATES;
-        newAddresses[3] = CONTRACT_TRIBEONE;
+        newAddresses[3] = CONTRACT_TRIBEONEETIX;
         newAddresses[4] = CONTRACT_FEEPOOL;
         newAddresses[5] = CONTRACT_TRADING_REWARDS;
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
@@ -83,7 +82,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function tribeone() internal view returns (ITribeone) {
-        return ITribeone(requireAndGetAddress(CONTRACT_TRIBEONE));
+        return ITribeone(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function feePool() internal view returns (IFeePool) {
@@ -183,8 +182,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     ) public view returns (uint amountAfterSettlement) {
         amountAfterSettlement = amount;
 
-        // balance of a synth will show an amount after settlement
-        uint balanceOfSourceAfterSettlement = IERC20(address(issuer().synths(currencyKey))).balanceOf(from);
+        // balance of a tribe will show an amount after settlement
+        uint balanceOfSourceAfterSettlement = IERC20(address(issuer().tribes(currencyKey))).balanceOf(from);
 
         // when there isn't enough supply (either due to reclamation settlement or because the number is too high)
         if (amountAfterSettlement > balanceOfSourceAfterSettlement) {
@@ -197,7 +196,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         }
     }
 
-    function isSynthRateInvalid(bytes32 currencyKey) external view returns (bool) {
+    function isTribeRateInvalid(bytes32 currencyKey) external view returns (bool) {
         (, bool invalid) = exchangeRates().rateAndInvalid(currencyKey);
         return invalid;
     }
@@ -210,10 +209,10 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         bytes32 destinationCurrencyKey,
         address destinationAddress,
-        bool virtualSynth,
+        bool virtualTribe,
         address rewardAddress,
         bytes32 trackingCode
-    ) external onlyTribeoneorSynth returns (uint amountReceived, IVirtualSynth vSynth) {
+    ) external onlyTribeoneorTribe returns (uint amountReceived, IVirtualTribe vTribe) {
         uint fee;
         if (from != exchangeForAddress) {
             require(delegateApprovals().canExchangeFor(exchangeForAddress, from), "Not approved to act on behalf");
@@ -224,13 +223,13 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
             _exchangeSettings(from, destinationCurrencyKey);
 
-        (amountReceived, fee, vSynth) = _exchange(
+        (amountReceived, fee, vTribe) = _exchange(
             exchangeForAddress,
             sourceSettings,
             sourceAmount,
             destinationSettings,
             destinationAddress,
-            virtualSynth
+            virtualTribe
         );
 
         _processTradingRewards(fee, rewardAddress);
@@ -268,8 +267,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
     }
 
     function _updateHAKAIssuedDebtOnExchange(bytes32[2] memory currencyKeys, uint[2] memory currencyRates) internal {
-        bool includesSUSD = currencyKeys[0] == hUSD || currencyKeys[1] == hUSD;
-        uint numKeys = includesSUSD ? 2 : 3;
+        bool includesHUSD = currencyKeys[0] == hUSD || currencyKeys[1] == hUSD;
+        uint numKeys = includesHUSD ? 2 : 3;
 
         bytes32[] memory keys = new bytes32[](numKeys);
         keys[0] = currencyKeys[0];
@@ -279,14 +278,14 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         rates[0] = currencyRates[0];
         rates[1] = currencyRates[1];
 
-        if (!includesSUSD) {
+        if (!includesHUSD) {
             keys[2] = hUSD; // And we'll also update hUSD to account for any fees if it wasn't one of the exchanged currencies
             rates[2] = SafeDecimalMath.unit();
         }
 
         // Note that exchanges can't invalidate the debt cache, since if a rate is invalid,
         // the exchange will have failed already.
-        debtCache().updateCachedSynthDebtsWithRates(keys, rates);
+        debtCache().updateCachedTribeDebtsWithRates(keys, rates);
     }
 
     function _settleAndCalcSourceAmountRemaining(
@@ -318,17 +317,17 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint sourceAmount,
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings,
         address destinationAddress,
-        bool virtualSynth
+        bool virtualTribe
     )
         internal
         returns (
             uint amountReceived,
             uint fee,
-            IVirtualSynth vSynth
+            IVirtualTribe vTribe
         )
     {
         if (!_ensureCanExchange(sourceSettings.currencyKey, destinationSettings.currencyKey, sourceAmount)) {
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, IVirtualTribe(0));
         }
 
         // Using struct to resolve stack too deep error
@@ -347,7 +346,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         // If, after settlement the user has no balance left (highly unlikely), then return to prevent
         // emitting events of 0 and don't revert so as to ensure the settlement queue is emptied
         if (entry.sourceAmountAfterSettlement == 0) {
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, IVirtualTribe(0));
         }
 
         (entry.destinationAmount, entry.sourceRate, entry.destinationRate) = addrs
@@ -379,7 +378,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         if (tooVolatile) {
             // do not exchange if rates are too volatile, this to prevent charging
             // dynamic fees that are over the max value
-            return (0, 0, IVirtualSynth(0));
+            return (0, 0, IVirtualTribe(0));
         }
 
         amountReceived = ExchangeSettlementLib._deductFeesFromAmount(entry.destinationAmount, entry.exchangeFeeRate);
@@ -388,19 +387,19 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
         // Note: We don't need to check their balance as the _convert() below will do a safe subtraction which requires
         // the subtraction to not overflow, which would happen if their balance is not sufficient.
-        vSynth = _convert(
+        vTribe = _convert(
             sourceSettings.currencyKey,
             from,
             entry.sourceAmountAfterSettlement,
             destinationSettings.currencyKey,
             amountReceived,
             destinationAddress,
-            virtualSynth
+            virtualTribe
         );
 
-        // When using a virtual synth, it becomes the destinationAddress for event and settlement tracking
-        if (vSynth != IVirtualSynth(0)) {
-            destinationAddress = address(vSynth);
+        // When using a virtual tribe, it becomes the destinationAddress for event and settlement tracking
+        if (vTribe != IVirtualTribe(0)) {
+            destinationAddress = address(vTribe);
         }
 
         // Remit the fee if required
@@ -409,8 +408,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             // Note: `fee` is being reused to avoid stack too deep errors.
             fee = addrs.exchangeRates.effectiveValue(destinationSettings.currencyKey, fee, hUSD);
 
-            // Remit the fee in sUSDs
-            issuer().synths(hUSD).issue(feePool().FEE_ADDRESS(), fee);
+            // Remit the fee in hUSDs
+            issuer().tribes(hUSD).issue(feePool().FEE_ADDRESS(), fee);
 
             // Tell the fee pool about this
             feePool().recordFeePaid(fee);
@@ -426,8 +425,8 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             [entry.sourceRate, entry.destinationRate]
         );
 
-        // Let the DApps know there was a Synth exchange
-        ITribeoneInternal(address(tribeone())).emitSynthExchange(
+        // Let the DApps know there was a Tribe exchange
+        ITribeoneInternal(address(tribeone())).emitTribeExchange(
             from,
             sourceSettings.currencyKey,
             entry.sourceAmountAfterSettlement,
@@ -458,29 +457,29 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         uint amountReceived,
         address recipient,
-        bool virtualSynth
-    ) internal returns (IVirtualSynth vSynth) {
+        bool virtualTribe
+    ) internal returns (IVirtualTribe vTribe) {
         // Burn the source amount
-        issuer().synths(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
+        issuer().tribes(sourceCurrencyKey).burn(from, sourceAmountAfterSettlement);
 
-        // Issue their new synths
-        ISynth dest = issuer().synths(destinationCurrencyKey);
+        // Issue their new tribes
+        ITribe dest = issuer().tribes(destinationCurrencyKey);
 
-        if (virtualSynth) {
-            Proxyable synth = Proxyable(address(dest));
-            vSynth = _createVirtualSynth(IERC20(address(synth.proxy())), recipient, amountReceived, destinationCurrencyKey);
-            dest.issue(address(vSynth), amountReceived);
+        if (virtualTribe) {
+            Proxyable tribe = Proxyable(address(dest));
+            vTribe = _createVirtualTribe(IERC20(address(tribe.proxy())), recipient, amountReceived, destinationCurrencyKey);
+            dest.issue(address(vTribe), amountReceived);
         } else {
             dest.issue(recipient, amountReceived);
         }
     }
 
-    function _createVirtualSynth(
+    function _createVirtualTribe(
         IERC20,
         address,
         uint,
         bytes32
-    ) internal returns (IVirtualSynth) {
+    ) internal returns (IVirtualTribe) {
         _notImplemented();
     }
 
@@ -493,7 +492,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
             uint numEntriesSettled
         )
     {
-        systemStatus().requireSynthActive(currencyKey);
+        systemStatus().requireTribeActive(currencyKey);
         return ExchangeSettlementLib.internalSettle(resolvedAddresses(), from, currencyKey, true, getWaitingPeriodSecs());
     }
 
@@ -515,7 +514,7 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         bytes32 destinationCurrencyKey,
         uint sourceAmount
     ) internal returns (bool) {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same tribe");
         require(sourceAmount > 0, "Zero amount");
 
         (, bool srcBroken, bool srcStaleOrInvalid) =
@@ -538,16 +537,16 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         uint roundIdForSrc,
         uint roundIdForDest
     ) internal view {
-        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same synth");
+        require(sourceCurrencyKey != destinationCurrencyKey, "Can't be same tribe");
 
-        bytes32[] memory synthKeys = new bytes32[](2);
-        synthKeys[0] = sourceCurrencyKey;
-        synthKeys[1] = destinationCurrencyKey;
+        bytes32[] memory tribeKeys = new bytes32[](2);
+        tribeKeys[0] = sourceCurrencyKey;
+        tribeKeys[1] = destinationCurrencyKey;
 
         uint[] memory roundIds = new uint[](2);
         roundIds[0] = roundIdForSrc;
         roundIds[1] = roundIdForDest;
-        require(!exchangeRates().anyRateIsInvalidAtRound(synthKeys, roundIds), "src/dest rate stale or flagged");
+        require(!exchangeRates().anyRateIsInvalidAtRound(tribeKeys, roundIds), "src/dest rate stale or flagged");
     }
 
     /* ========== Exchange Related Fees ========== */
@@ -762,20 +761,20 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
         IDirectIntegrationManager.ParameterIntegrationSettings memory destinationSettings =
             _exchangeSettings(msg.sender, destinationCurrencyKey);
 
-        require(sourceCurrencyKey == hUSD || !exchangeRates().rateIsInvalid(sourceCurrencyKey), "src synth rate invalid");
+        require(sourceCurrencyKey == hUSD || !exchangeRates().rateIsInvalid(sourceCurrencyKey), "src tribe rate invalid");
 
         require(
             destinationCurrencyKey == hUSD || !exchangeRates().rateIsInvalid(destinationCurrencyKey),
-            "dest synth rate invalid"
+            "dest tribe rate invalid"
         );
 
         // The checks are added for consistency with the checks performed in _exchange()
         // The reverts (instead of no-op returns) are used order to prevent incorrect usage in calling contracts
         // (The no-op in _exchange() is in order to trigger system suspension if needed)
 
-        // check synths active
-        systemStatus().requireSynthActive(sourceCurrencyKey);
-        systemStatus().requireSynthActive(destinationCurrencyKey);
+        // check tribes active
+        systemStatus().requireTribeActive(sourceCurrencyKey);
+        systemStatus().requireTribeActive(destinationCurrencyKey);
 
         bool tooVolatile;
         (exchangeFeeRate, tooVolatile) = _feeRateForExchange(sourceSettings, destinationSettings);
@@ -796,11 +795,11 @@ contract Exchanger is Owned, MixinSystemSettings, IExchanger {
 
     // ========== MODIFIERS ==========
 
-    modifier onlyTribeoneorSynth() {
-        ITribeone _tribeone = tribeone();
+    modifier onlyTribeoneorTribe() {
+        ITribeone _tribeetix = tribeone();
         require(
-            msg.sender == address(_tribeone) || _tribeone.synthsByAddress(msg.sender) != bytes32(0),
-            "Exchanger: Only tribeone or a synth contract can perform this action"
+            msg.sender == address(_tribeetix) || _tribeetix.tribesByAddress(msg.sender) != bytes32(0),
+            "Exchanger: Only tribeone or a tribe contract can perform this action"
         );
         _;
     }

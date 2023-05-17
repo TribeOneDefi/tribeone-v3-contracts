@@ -15,7 +15,7 @@ const {
 } = require('../../../..');
 
 // Known limitations of this Solidity migration generator
-// 1. 	Multidimensional arrays for inputs like CollateralManager.addShortableSynths
+// 1. 	Multidimensional arrays for inputs like CollateralManager.addShortableTribes
 // 		are not currently supported.
 // 2.	Enum inputs like SystemSettings.setCrossDomainMessageGasLimit are not supported
 // 3. 	Large upgrades will cause Solidity "Stack Too Deep" errors.
@@ -211,7 +211,7 @@ contract Migration_${releaseName}${stepName} is BaseMigration {
 	address public constant OWNER = ${ownerAddress};
 
 	// ----------------------------
-	// EXISTING TRIBEONE CONTRACTS
+	// EXISTING TRIBEONEETIX CONTRACTS
 	// ----------------------------
 
 	${contractsAddedToSolidity

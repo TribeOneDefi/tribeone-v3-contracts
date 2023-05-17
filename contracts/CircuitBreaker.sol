@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
@@ -11,7 +10,7 @@ import "./interfaces/ICircuitBreaker.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./Proxyable.sol";
@@ -20,9 +19,9 @@ import "./Proxyable.sol";
 import "@chainlink/contracts-0.0.10/src/v0.5/interfaces/AggregatorV2V3Interface.sol";
 
 /**
- * Compares current exchange rate to previous, and suspends a synth if the
+ * Compares current exchange rate to previous, and suspends a tribe if the
  * difference is outside of deviation bounds.
- * Stores last "good" rate for each synth on each invocation.
+ * Stores last "good" rate for each tribe on each invocation.
  * Inteded use is to use in combination with ExchangeRates on mutative exchange-like
  * methods.
  * Suspend functionality is public, resume functionality is controlled by owner.
@@ -94,7 +93,7 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
      * Checks rate deviation from previous and its "invalid" oracle state (stale rate, of flagged by oracle).
      * If its valid, set the `circuitBoken` flag and return false. Continue storing price updates as normal.
      * Also, checks that system is not suspended currently, if it is - doesn't perform any checks, and
-     * returns last rate and the current broken state, to prevent synths suspensions during maintenance.
+     * returns last rate and the current broken state, to prevent tribes suspensions during maintenance.
      */
     function probeCircuitBreaker(address oracleAddress, uint value) external onlyProbers returns (bool circuitBroken) {
         require(oracleAddress != address(0), "Oracle address is 0");
@@ -120,7 +119,7 @@ contract CircuitBreaker is Owned, MixinSystemSettings, ICircuitBreaker {
     /**
      * SIP-139
      * resets the stored value for _lastValue for multiple currencies to the latest rate
-     * can be used to enable synths after a broken circuit happenned
+     * can be used to enable tribes after a broken circuit happenned
      * doesn't check deviations here, so believes that owner knows better
      * emits LastRateOverridden
      */

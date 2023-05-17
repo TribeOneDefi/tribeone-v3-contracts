@@ -6,7 +6,6 @@ pragma experimental ABIEncoderV2;
 import "./Owned.sol";
 import "./State.sol";
 
-
 // Libraries
 import "./SafeDecimalMath.sol";
 
@@ -27,8 +26,8 @@ contract CollateralManagerState is Owned, State {
     mapping(bytes32 => uint[]) public shortRates;
     mapping(bytes32 => uint) public shortRatesLastUpdated;
 
-    // The total amount of long and short for a synth,
-    mapping(bytes32 => Balance) public totalIssuedSynths;
+    // The total amount of long and short for a tribe,
+    mapping(bytes32 => Balance) public totalIssuedTribes;
 
     constructor(address _owner, address _associatedContract) public Owned(_owner) State(_associatedContract) {
         borrowRates.push(0);
@@ -40,28 +39,28 @@ contract CollateralManagerState is Owned, State {
         return totalLoans;
     }
 
-    function long(bytes32 synth) external view onlyAssociatedContract returns (uint) {
-        return totalIssuedSynths[synth].long;
+    function long(bytes32 tribe) external view onlyAssociatedContract returns (uint) {
+        return totalIssuedTribes[tribe].long;
     }
 
-    function short(bytes32 synth) external view onlyAssociatedContract returns (uint) {
-        return totalIssuedSynths[synth].short;
+    function short(bytes32 tribe) external view onlyAssociatedContract returns (uint) {
+        return totalIssuedTribes[tribe].short;
     }
 
-    function incrementLongs(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].long = totalIssuedSynths[synth].long.add(amount);
+    function incrementLongs(bytes32 tribe, uint256 amount) external onlyAssociatedContract {
+        totalIssuedTribes[tribe].long = totalIssuedTribes[tribe].long.add(amount);
     }
 
-    function decrementLongs(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].long = totalIssuedSynths[synth].long.sub(amount);
+    function decrementLongs(bytes32 tribe, uint256 amount) external onlyAssociatedContract {
+        totalIssuedTribes[tribe].long = totalIssuedTribes[tribe].long.sub(amount);
     }
 
-    function incrementShorts(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].short = totalIssuedSynths[synth].short.add(amount);
+    function incrementShorts(bytes32 tribe, uint256 amount) external onlyAssociatedContract {
+        totalIssuedTribes[tribe].short = totalIssuedTribes[tribe].short.add(amount);
     }
 
-    function decrementShorts(bytes32 synth, uint256 amount) external onlyAssociatedContract {
-        totalIssuedSynths[synth].short = totalIssuedSynths[synth].short.sub(amount);
+    function decrementShorts(bytes32 tribe, uint256 amount) external onlyAssociatedContract {
+        totalIssuedTribes[tribe].short = totalIssuedTribes[tribe].short.sub(amount);
     }
 
     // Borrow rates, one array here for all currencies.

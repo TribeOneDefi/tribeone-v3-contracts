@@ -13,7 +13,7 @@ const commands = {
 };
 
 async function deployInstance({
-	addNewSynths,
+	addNewTribes,
 	buildPath,
 	signer,
 	freshDeploy,
@@ -26,7 +26,7 @@ async function deployInstance({
 	provider,
 }) {
 	await commands.deploy({
-		addNewSynths,
+		addNewTribes,
 		buildPath,
 		concurrency: 1,
 		freshDeploy: freshDeploy,
@@ -75,7 +75,7 @@ async function deploy(runtime, networkVariant) {
 	}
 
 	await deployInstance({
-		addNewSynths: true,
+		addNewTribes: true,
 		buildPath,
 		useOvm,
 		network,

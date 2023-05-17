@@ -247,10 +247,10 @@ contract FuturesMarketSettings is Owned, MixinFuturesMarketSettings, IFuturesMar
         setSkewScaleUSD(_marketKey, _skewScaleUSD);
     }
 
-    function setMinKeeperFee(uint _sUSD) external onlyOwner {
-        require(_sUSD <= _minInitialMargin(), "min margin < liquidation fee");
-        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE, _sUSD);
-        emit MinKeeperFeeUpdated(_sUSD);
+    function setMinKeeperFee(uint _hUSD) external onlyOwner {
+        require(_hUSD <= _minInitialMargin(), "min margin < liquidation fee");
+        _flexibleStorage().setUIntValue(SETTING_CONTRACT_NAME, SETTING_MIN_KEEPER_FEE, _hUSD);
+        emit MinKeeperFeeUpdated(_hUSD);
     }
 
     function setLiquidationFeeRatio(uint _ratio) external onlyOwner {

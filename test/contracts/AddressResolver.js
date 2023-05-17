@@ -140,7 +140,7 @@ contract('AddressResolver', accounts => {
 		});
 	});
 
-	describe('getSynth()', () => {
+	describe('getTribe()', () => {
 		describe('when a mock for Issuer is added', () => {
 			let mock;
 			beforeEach(async () => {
@@ -150,36 +150,36 @@ contract('AddressResolver', accounts => {
 				// add it to the resolver
 				await resolver.importAddresses([toBytes32('Issuer')], [mock.address], { from: owner });
 
-				// now instruct the mock Issuer that synths(any) must return "account4"
+				// now instruct the mock Issuer that tribes(any) must return "account4"
 				await mockGenericContractFnc({
 					instance: mock,
 					mock: 'Issuer',
-					fncName: 'synths',
+					fncName: 'tribes',
 					returns: [account4],
 				});
 			});
 
-			it('when getSynth() is invoked', async () => {
-				const synth = await resolver.getSynth(toBytes32('hUSD'));
-				assert.equal(synth, account4);
+			it('when getTribe() is invoked', async () => {
+				const tribe = await resolver.getTribe(toBytes32('hUSD'));
+				assert.equal(tribe, account4);
 			});
 		});
-		describe('when a Tribeone is created with a few added synths', () => {
-			let sETHContract;
-			let sUSDContract;
+		describe('when a Tribeone is created with a few added tribes', () => {
+			let hETHContract;
+			let hUSDContract;
 			beforeEach(async () => {
-				({ SynthsETH: sETHContract, SynthsUSD: sUSDContract } = await setupAllContracts({
+				({ TribehETH: hETHContract, TribehUSD: hUSDContract } = await setupAllContracts({
 					accounts,
 					existing: {
 						AddressResolver: resolver,
 					},
-					synths: ['hUSD', 'sETH', 'sEUR', 'sAUD'],
+					tribes: ['hUSD', 'hETH', 'sEUR', 'sAUD'],
 					contracts: ['Tribeone'],
 				}));
 			});
-			it('when getSynth() is invoked with these synth keys, they are returned correctly', async () => {
-				assert.equal(await resolver.getSynth(toBytes32('hUSD')), sUSDContract.address);
-				assert.equal(await resolver.getSynth(toBytes32('sETH')), sETHContract.address);
+			it('when getTribe() is invoked with these tribe keys, they are returned correctly', async () => {
+				assert.equal(await resolver.getTribe(toBytes32('hUSD')), hUSDContract.address);
+				assert.equal(await resolver.getTribe(toBytes32('hETH')), hETHContract.address);
 			});
 		});
 	});

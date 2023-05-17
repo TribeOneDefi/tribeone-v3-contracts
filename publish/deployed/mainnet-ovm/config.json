@@ -65,13 +65,13 @@
 	"SystemStatus": {
 		"deploy": false
 	},
-	"SynthUtil": {
+	"TribeUtil": {
 		"deploy": false
 	},
 	"DappMaintenance": {
 		"deploy": false
 	},
-	"SynthsUSD": {
+	"TribehUSD": {
 		"deploy": false
 	},
 	"ProxyFeePool": {
@@ -80,7 +80,7 @@
 	"ProxyTribeone": {
 		"deploy": false
 	},
-	"ProxysUSD": {
+	"ProxyhUSD": {
 		"deploy": false
 	},
 	"SafeDecimalMath": {
@@ -92,7 +92,7 @@
 	"TokenStateTribeone": {
 		"deploy": false
 	},
-	"TokenStatesUSD": {
+	"TokenStatehUSD": {
 		"deploy": false
 	},
 	"CollateralManager": {
@@ -104,22 +104,22 @@
 	"EtherWrapper": {
 		"deploy": false
 	},
-	"TokenStatesETH": {
+	"TokenStatehETH": {
 		"deploy": false
 	},
-	"ProxysETH": {
+	"ProxyhETH": {
 		"deploy": false
 	},
-	"SynthsETH": {
+	"TribehETH": {
 		"deploy": false
 	},
-	"TokenStatesBTC": {
+	"TokenStatehBTC": {
 		"deploy": false
 	},
-	"ProxysBTC": {
+	"ProxyhBTC": {
 		"deploy": false
 	},
-	"SynthsBTC": {
+	"TribehBTC": {
 		"deploy": false
 	},
 	"CollateralManagerState": {
@@ -131,7 +131,7 @@
 	"CollateralUtil": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
+	"TribeRedeemer": {
 		"deploy": false
 	},
 	"WrapperFactory": {
@@ -143,7 +143,7 @@
 	"CollateralEth": {
 		"deploy": false
 	},
-	"StakingRewardssUSDDAIUniswapV3": {
+	"StakingRewardshUSDDAIUniswapV3": {
 		"deploy": false
 	},
 	"StakingRewardsHAKAWETHUniswapV3": {
@@ -161,7 +161,7 @@
 	"ProxysEUR": {
 		"deploy": false
 	},
-	"SynthsEUR": {
+	"TribesEUR": {
 		"deploy": false
 	},
 	"ExchangeCircuitBreaker": {
@@ -179,7 +179,7 @@
 	"FuturesMarketData": {
 		"deploy": false
 	},
-	"OneNetAggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedTribes": {
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {
@@ -230,7 +230,7 @@
 	"ProxysINR": {
 		"deploy": false
 	},
-	"SynthsINR": {
+	"TribesINR": {
 		"deploy": false
 	},
 	"Liquidator": {
@@ -287,7 +287,7 @@
 	"PerpsV2MarketETHPERP": {
 		"deploy": false
 	},
-	"PerpsV2MarketViewsETHPERP": {
+	"PerpsV2MarketViewhETHPERP": {
 		"deploy": false
 	},
 	"PerpsV2DelayedOrderETHPERP": {
@@ -305,7 +305,7 @@
 	"PerpsV2MarketBTCPERP": {
 		"deploy": false
 	},
-	"PerpsV2MarketViewsBTCPERP": {
+	"PerpsV2MarketViewhBTCPERP": {
 		"deploy": false
 	},
 	"PerpsV2DelayedOrderBTCPERP": {

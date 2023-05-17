@@ -19,7 +19,7 @@ module.exports = async ({
 	getDeployParameter,
 	network,
 	runStep,
-	synths,
+	tribes,
 }) => {
 	const { CollateralShort, SystemSettings, ExchangeRates } = deployer.deployedContracts;
 
@@ -47,39 +47,39 @@ module.exports = async ({
 		);
 	}
 
-	let synthRates = [];
-	// Now ensure all the fee rates are set for various synths (this must be done after the AddressResolver
+	let tribeRates = [];
+	// Now ensure all the fee rates are set for various tribes (this must be done after the AddressResolver
 	// has populated all references).
-	// Note: this populates rates for new synths regardless of the addNewSynths flag
-	synthRates = await Promise.all(
-		synths.map(({ name }) =>
+	// Note: this populates rates for new tribes regardless of the addNewTribes flag
+	tribeRates = await Promise.all(
+		tribes.map(({ name }) =>
 			(previousSystemSettings || SystemSettings).exchangeFeeRate(toBytes32(name))
 		)
 	);
 
 	const exchangeFeeRates = await getDeployParameter('EXCHANGE_FEE_RATES');
 
-	// update all synths with 0 current rate, except hUSD
-	const synthsRatesToUpdate = synths
-		.map((synth, i) =>
+	// update all tribes with 0 current rate, except hUSD
+	const tribesRatesToUpdate = tribes
+		.map((tribe, i) =>
 			Object.assign(
 				{
-					currentRate: parseUnits((synthRates[i] || '').toString() || '0').toString(),
-					targetRate: exchangeFeeRates[synth.category],
+					currentRate: parseUnits((tribeRates[i] || '').toString() || '0').toString(),
+					targetRate: exchangeFeeRates[tribe.category],
 				},
-				synth
+				tribe
 			)
 		)
 		.filter(({ currentRate }) => currentRate === '0')
 		.filter(({ name }) => name !== 'hUSD'); // SCCP-190: hUSD rate is 0 despite it being in forex category
 
-	console.log(gray(`Found ${synthsRatesToUpdate.length} synths needs exchange rate pricing`));
+	console.log(gray(`Found ${tribesRatesToUpdate.length} tribes needs exchange rate pricing`));
 
-	if (synthsRatesToUpdate.length) {
+	if (tribesRatesToUpdate.length) {
 		console.log(
 			gray(
 				'Setting the following:',
-				synthsRatesToUpdate
+				tribesRatesToUpdate
 					.map(
 						({ name, targetRate, currentRate }) =>
 							`\t${name} from ${currentRate * 100}% to ${formatUnits(targetRate) * 100}%`
@@ -89,16 +89,16 @@ module.exports = async ({
 		);
 
 		await runStep({
-			gasLimit: Math.max(methodCallGasLimit, 150e3 * synthsRatesToUpdate.length), // higher gas required, 150k per synth is sufficient (in OVM)
+			gasLimit: Math.max(methodCallGasLimit, 150e3 * tribesRatesToUpdate.length), // higher gas required, 150k per tribe is sufficient (in OVM)
 			contract: 'SystemSettings',
 			target: SystemSettings,
 			readTarget: previousSystemSettings,
-			write: 'setExchangeFeeRateForSynths',
+			write: 'setExchangeFeeRateForTribes',
 			writeArg: [
-				synthsRatesToUpdate.map(({ name }) => toBytes32(name)),
-				synthsRatesToUpdate.map(({ targetRate }) => targetRate),
+				tribesRatesToUpdate.map(({ name }) => toBytes32(name)),
+				tribesRatesToUpdate.map(({ targetRate }) => targetRate),
 			],
-			comment: 'Set the exchange rates for various synths',
+			comment: 'Set the exchange rates for various tribes',
 		});
 	}
 
@@ -214,15 +214,15 @@ module.exports = async ({
 		comment: 'Set the penalty amount a liquidator receives from a liquidated Collateral loan',
 	});
 
-	const hakaLiquidationPenalty = await getDeployParameter('HAKA_LIQUIDATION_PENALTY');
+	const snxLiquidationPenalty = await getDeployParameter('HAKA_LIQUIDATION_PENALTY');
 	await runStep({
 		contract: 'SystemSettings',
 		target: SystemSettings,
-		read: 'hakaLiquidationPenalty',
+		read: 'snxLiquidationPenalty',
 		readTarget: previousSystemSettings,
-		expected: allowZeroOrUpdateIfNonZero(hakaLiquidationPenalty),
-		write: 'setHakaLiquidationPenalty',
-		writeArg: hakaLiquidationPenalty,
+		expected: allowZeroOrUpdateIfNonZero(snxLiquidationPenalty),
+		write: 'setSnxLiquidationPenalty',
+		writeArg: snxLiquidationPenalty,
 		comment: 'Set the penalty amount of HAKA from a liquidated account',
 	});
 
@@ -436,7 +436,7 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(etherWrapperMintFeeRate),
 		write: 'setEtherWrapperMintFeeRate',
 		writeArg: etherWrapperMintFeeRate,
-		comment: 'Set the fee rate for minting sETH from ETH in the EtherWrapper (SIP-112)',
+		comment: 'Set the fee rate for minting hETH from ETH in the EtherWrapper (SIP-112)',
 	});
 
 	// Disable checking this as now the current value is set to 0
@@ -449,7 +449,7 @@ module.exports = async ({
 		expected: allowZeroOrUpdateIfNonZero(etherWrapperBurnFeeRate),
 		write: 'setEtherWrapperBurnFeeRate',
 		writeArg: etherWrapperBurnFeeRate,
-		comment: 'Set the fee rate for burning sETH for ETH in the EtherWrapper (SIP-112)',
+		comment: 'Set the fee rate for burning hETH for ETH in the EtherWrapper (SIP-112)',
 	});
 
 	// SIP-184 Exchange Dynamic Fee Rate
@@ -543,7 +543,7 @@ module.exports = async ({
 				write: 'setAtomicEquivalentForDexPricing',
 				writeArg: [toBytes32(currencyKey), equivalent],
 				comment:
-					'SIP-120 Set the equivalent token - used in uniswap pools - corresponding to this synth',
+					'SIP-120 Set the equivalent token - used in uniswap pools - corresponding to this tribe',
 			});
 		}
 	}
@@ -560,7 +560,7 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicExchangeFeeRate',
 				writeArg: [toBytes32(currencyKey), rate],
-				comment: 'SIP-120 Set the exchange fee rate for swapping atomically into this synth',
+				comment: 'SIP-120 Set the exchange fee rate for swapping atomically into this tribe',
 			});
 		}
 	}
@@ -579,7 +579,7 @@ module.exports = async ({
 				expected: input => input !== 0, // only change if zero
 				write: 'setAtomicVolatilityConsiderationWindow',
 				writeArg: [toBytes32(currencyKey), seconds],
-				comment: 'SIP-120 Set the atomic volatility window for this synth (in seconds)',
+				comment: 'SIP-120 Set the atomic volatility window for this tribe (in seconds)',
 			});
 		}
 	}
@@ -599,7 +599,7 @@ module.exports = async ({
 				write: 'setAtomicVolatilityUpdateThreshold',
 				writeArg: [toBytes32(currencyKey), threshold],
 				comment:
-					'SIP-120 Set the atomic volatility count for this synth during the volatility window',
+					'SIP-120 Set the atomic volatility count for this tribe during the volatility window',
 			});
 		}
 	}

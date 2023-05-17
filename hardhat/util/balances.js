@@ -31,12 +31,12 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 	} else if (symbol === 'WETH') {
 		await _getWETH({ ctx, user, amount });
 	} else if (symbol === 'hUSD') {
-		await _getsUSD({ ctx, user, amount });
+		await _gethUSD({ ctx, user, amount });
 	} else if (symbol === 'ETH') {
 		await _getETHFromOtherUsers({ ctx, user, amount });
 	} else {
 		throw new Error(
-			`Symbol ${symbol} not yet supported. TODO: Support via exchanging hUSD to other Synths.`
+			`Symbol ${symbol} not yet supported. TODO: Support via exchanging hUSD to other Tribes.`
 		);
 	}
 }
@@ -128,25 +128,25 @@ async function _getHAKAForOwnerOnL2ByHackMinting({ ctx, amount }) {
 	await tx.wait();
 }
 
-async function _getsUSD({ ctx, user, amount }) {
-	let { Tribeone, SynthsUSD } = ctx.contracts;
+async function _gethUSD({ ctx, user, amount }) {
+	let { Tribeone, TribehUSD } = ctx.contracts;
 
 	let tx;
 
-	const requiredHAKA = await _getHAKAAmountRequiredForsUSDAmount({ ctx, amount });
+	const requiredHAKA = await _getHAKAAmountRequiredForhUSDAmount({ ctx, amount });
 	// TODO: mul(12) is a temp workaround for "Amount too large" error.
 	await ensureBalance({ ctx, symbol: 'HAKA', user: ctx.users.owner, balance: requiredHAKA.mul(12) });
 
 	Tribeone = Tribeone.connect(ctx.users.owner);
-	tx = await Tribeone.issueSynths(amount);
+	tx = await Tribeone.issueTribes(amount);
 	await tx.wait();
 
-	SynthsUSD = SynthsUSD.connect(ctx.users.owner);
-	tx = await SynthsUSD.transfer(user.address, amount);
+	TribehUSD = TribehUSD.connect(ctx.users.owner);
+	tx = await TribehUSD.transfer(user.address, amount);
 	await tx.wait();
 }
 
-async function _getHAKAAmountRequiredForsUSDAmount({ ctx, amount }) {
+async function _getHAKAAmountRequiredForhUSDAmount({ ctx, amount }) {
 	const { Exchanger, SystemSettings } = ctx.contracts;
 
 	const ratio = await SystemSettings.issuanceRatio();
@@ -167,7 +167,7 @@ function _getTokenFromSymbol({ ctx, symbol }) {
 	} else if (symbol === 'WETH') {
 		return ctx.contracts.WETH;
 	} else {
-		return ctx.contracts[`Synth${symbol}`];
+		return ctx.contracts[`Tribe${symbol}`];
 	}
 }
 

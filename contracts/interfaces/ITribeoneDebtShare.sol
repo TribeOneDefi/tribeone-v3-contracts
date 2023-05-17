@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.tribeone.io/contracts/source/interfaces/itribeonedebtshare
+// https://docs.tribeone.io/contracts/source/interfaces/itribeetixdebtshare
 interface ITribeoneDebtShare {
     // Views
 

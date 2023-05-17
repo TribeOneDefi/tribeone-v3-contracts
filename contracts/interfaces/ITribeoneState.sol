@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-// https://docs.tribeone.io/contracts/source/interfaces/itribeonestate
+// https://docs.tribeone.io/contracts/source/interfaces/itribeetixstate
 interface ITribeoneState {
     // Views
     function debtLedger(uint index) external view returns (uint);

@@ -34,7 +34,7 @@ module.exports = {
 			{
 				version: '0.5.16',
 			},
-		]
+		],
 	},
 	paths: {
 		sources: './contracts',
@@ -81,19 +81,14 @@ module.exports = {
 			chainId: 5,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
-		bsc_testnet: {
-			url: process.env.PROVIDER_URL,
-			chainId: 97,
-			accounts: process.env.PRIVATE_KEY,
+		'goerli-arbitrum': {
+			url: process.env.PROVIDER_URL || 'https://goerli-rollup.arbitrum.io/rpc',
+			chainId: 421613,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		'goerli-ovm': {
 			url: process.env.OVM_GOERLI_PROVIDER_URL || 'https://goerli.optimism.io/',
 			chainId: 420,
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-		},
-		'goerli-arbitrum': {
-			url: "https://goerli-rollup.arbitrum.io/rpc",
-			chainId: 421613,
 			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
 		},
 		rinkeby: {

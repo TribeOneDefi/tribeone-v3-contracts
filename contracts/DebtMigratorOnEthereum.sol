@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./BaseDebtMigrator.sol";
 
@@ -18,8 +17,8 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
     bytes32 private constant CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM = "ovm:DebtMigratorOnOptimism";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
-    bytes32 private constant CONTRACT_TRIBEONE_BRIDGE_TO_OPTIMISM = "TribeoneBridgeToOptimism";
-    bytes32 private constant CONTRACT_TRIBEONE_DEBT_SHARE = "TribeoneDebtShare";
+    bytes32 private constant CONTRACT_TRIBEONEETIX_BRIDGE_TO_OPTIMISM = "TribeoneBridgeToOptimism";
+    bytes32 private constant CONTRACT_TRIBEONEETIX_DEBT_SHARE = "TribeoneDebtShare";
 
     function CONTRACT_NAME() public pure returns (bytes32) {
         return "DebtMigratorOnEthereum";
@@ -45,12 +44,12 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         return ILiquidatorRewards(requireAndGetAddress(CONTRACT_LIQUIDATOR_REWARDS));
     }
 
-    function _tribeoneBridgeToOptimism() internal view returns (ITribeoneBridgeToOptimism) {
-        return ITribeoneBridgeToOptimism(requireAndGetAddress(CONTRACT_TRIBEONE_BRIDGE_TO_OPTIMISM));
+    function _tribeetixBridgeToOptimism() internal view returns (ITribeoneBridgeToOptimism) {
+        return ITribeoneBridgeToOptimism(requireAndGetAddress(CONTRACT_TRIBEONEETIX_BRIDGE_TO_OPTIMISM));
     }
 
-    function _tribeoneDebtShare() internal view returns (ITribeoneDebtShare) {
-        return ITribeoneDebtShare(requireAndGetAddress(CONTRACT_TRIBEONE_DEBT_SHARE));
+    function _tribeetixDebtShare() internal view returns (ITribeoneDebtShare) {
+        return ITribeoneDebtShare(requireAndGetAddress(CONTRACT_TRIBEONEETIX_DEBT_SHARE));
     }
 
     function _initiatingActive() internal view {
@@ -72,8 +71,8 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         newAddresses[0] = CONTRACT_OVM_DEBT_MIGRATOR_ON_OPTIMISM;
         newAddresses[1] = CONTRACT_LIQUIDATOR;
         newAddresses[2] = CONTRACT_LIQUIDATOR_REWARDS;
-        newAddresses[3] = CONTRACT_TRIBEONE_BRIDGE_TO_OPTIMISM;
-        newAddresses[4] = CONTRACT_TRIBEONE_DEBT_SHARE;
+        newAddresses[3] = CONTRACT_TRIBEONEETIX_BRIDGE_TO_OPTIMISM;
+        newAddresses[4] = CONTRACT_TRIBEONEETIX_DEBT_SHARE;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -93,7 +92,7 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
         _liquidatorRewards().getReward(_account);
 
         // First, remove all debt shares on L1
-        ITribeoneDebtShare sds = _tribeoneDebtShare();
+        ITribeoneDebtShare sds = _tribeetixDebtShare();
         uint totalDebtShares = sds.balanceOf(_account);
         require(totalDebtShares > 0, "No debt to migrate");
 
@@ -103,7 +102,7 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
 
         // Deposit all of the liquid & revoked escrowed HAKA to the migrator on L2
         (uint totalEscrowRevoked, uint totalLiquidBalance) =
-            ITribeone(requireAndGetAddress(CONTRACT_TRIBEONE)).migrateAccountBalances(_account);
+            ITribeone(requireAndGetAddress(CONTRACT_TRIBEONEETIX)).migrateAccountBalances(_account);
         uint totalAmountToDeposit = totalLiquidBalance.add(totalEscrowRevoked);
 
         require(totalAmountToDeposit > 0, "Cannot migrate zero balances");
@@ -112,12 +111,12 @@ contract DebtMigratorOnEthereum is BaseDebtMigrator {
             "Debt Migrator On Optimism not set"
         );
 
-        _tribeoneERC20().approve(address(_tribeoneBridgeToOptimism()), totalAmountToDeposit);
-        _tribeoneBridgeToOptimism().depositTo(_debtMigratorOnOptimism(), totalAmountToDeposit);
+        _tribeetixERC20().approve(address(_tribeetixBridgeToOptimism()), totalAmountToDeposit);
+        _tribeetixBridgeToOptimism().depositTo(_debtMigratorOnOptimism(), totalAmountToDeposit);
 
         // Require all zeroed balances
-        require(_tribeoneDebtShare().balanceOf(_account) == 0, "Debt share balance is not zero");
-        require(_tribeoneERC20().balanceOf(_account) == 0, "HAKA balance is not zero");
+        require(_tribeetixDebtShare().balanceOf(_account) == 0, "Debt share balance is not zero");
+        require(_tribeetixERC20().balanceOf(_account) == 0, "HAKA balance is not zero");
         require(_rewardEscrowV2().balanceOf(_account) == 0, "Escrow balanace is not zero");
         require(_liquidatorRewards().earned(_account) == 0, "Earned balance is not zero");
 

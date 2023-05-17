@@ -14,5 +14,5 @@ interface ITribeoneBridgeToBase {
     // invoked by the xDomain messenger on L2
     function finalizeRewardDeposit(address from, uint amount) external;
 
-    function finalizeFeePeriodClose(uint hakaBackedDebt, uint debtSharesSupply) external;
+    function finalizeFeePeriodClose(uint snxBackedDebt, uint debtSharesSupply) external;
 }

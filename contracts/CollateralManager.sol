@@ -1,12 +1,10 @@
 pragma solidity ^0.5.16;
 
-
 // Inheritance
 import "./Owned.sol";
 import "./Pausable.sol";
 import "./MixinResolver.sol";
 import "./interfaces/ICollateralManager.sol";
-
 
 // Libraries
 import "./AddressSetLib.sol";
@@ -18,7 +16,7 @@ import "./CollateralManagerState.sol";
 import "./interfaces/IIssuer.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IERC20.sol";
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 
 contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver {
     /* ========== LIBRARIES ========== */
@@ -35,7 +33,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     // Flexible storage names
     bytes32 public constant CONTRACT_NAME = "CollateralManager";
-    bytes32 internal constant COLLATERAL_SYNTHS = "collateralSynth";
+    bytes32 internal constant COLLATERAL_TRIBEONES = "collateralTribe";
 
     /* ========== STATE VARIABLES ========== */
 
@@ -48,21 +46,21 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     // The set of all available currency keys.
     Bytes32SetLib.Bytes32Set internal _currencyKeys;
 
-    // The set of all synths issuable by the various collateral contracts
-    Bytes32SetLib.Bytes32Set internal _synths;
+    // The set of all tribes issuable by the various collateral contracts
+    Bytes32SetLib.Bytes32Set internal _tribes;
 
-    // Map from currency key to synth contract name.
-    mapping(bytes32 => bytes32) public synthsByKey;
+    // Map from currency key to tribe contract name.
+    mapping(bytes32 => bytes32) public tribesByKey;
 
-    // The set of all synths that are shortable.
-    Bytes32SetLib.Bytes32Set internal _shortableSynths;
+    // The set of all tribes that are shortable.
+    Bytes32SetLib.Bytes32Set internal _shortableTribes;
 
-    mapping(bytes32 => bytes32) public shortableSynthsByKey;
+    mapping(bytes32 => bytes32) public shortableTribesByKey;
 
     // The factor that will scale the utilisation ratio.
     uint public utilisationMultiplier = 1e18;
 
-    // The maximum amount of debt in hUSD that can be issued by non haka collateral.
+    // The maximum amount of debt in hUSD that can be issued by non snx collateral.
     uint public maxDebt;
 
     // The rate that determines the skew limit maximum.
@@ -110,28 +108,28 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         staticAddresses[1] = CONTRACT_EXRATES;
 
         bytes32[] memory shortAddresses;
-        uint length = _shortableSynths.elements.length;
+        uint length = _shortableTribes.elements.length;
 
         if (length > 0) {
             shortAddresses = new bytes32[](length);
 
             for (uint i = 0; i < length; i++) {
-                shortAddresses[i] = _shortableSynths.elements[i];
+                shortAddresses[i] = _shortableTribes.elements[i];
             }
         }
 
-        bytes32[] memory synthAddresses = combineArrays(shortAddresses, _synths.elements);
+        bytes32[] memory tribeAddresses = combineArrays(shortAddresses, _tribes.elements);
 
-        if (synthAddresses.length > 0) {
-            addresses = combineArrays(synthAddresses, staticAddresses);
+        if (tribeAddresses.length > 0) {
+            addresses = combineArrays(tribeAddresses, staticAddresses);
         } else {
             addresses = staticAddresses;
         }
     }
 
-    // helper function to check whether synth "by key" is a collateral issued by multi-collateral
-    function isSynthManaged(bytes32 currencyKey) external view returns (bool) {
-        return synthsByKey[currencyKey] != bytes32(0);
+    // helper function to check whether tribe "by key" is a collateral issued by multi-collateral
+    function isTribeManaged(bytes32 currencyKey) external view returns (bool) {
+        return tribesByKey[currencyKey] != bytes32(0);
     }
 
     /* ---------- Related Contracts ---------- */
@@ -144,8 +142,8 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return IExchangeRates(requireAndGetAddress(CONTRACT_EXRATES));
     }
 
-    function _synth(bytes32 synthName) internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(synthName));
+    function _tribe(bytes32 tribeName) internal view returns (ITribe) {
+        return ITribe(requireAndGetAddress(tribeName));
     }
 
     /* ---------- Manager Information ---------- */
@@ -165,26 +163,26 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
 
     /* ---------- State Information ---------- */
 
-    function long(bytes32 synth) external view returns (uint amount) {
-        return state.long(synth);
+    function long(bytes32 tribe) external view returns (uint amount) {
+        return state.long(tribe);
     }
 
-    function short(bytes32 synth) external view returns (uint amount) {
-        return state.short(synth);
+    function short(bytes32 tribe) external view returns (uint amount) {
+        return state.short(tribe);
     }
 
-    function totalLong() public view returns (uint susdValue, bool anyRateIsInvalid) {
-        bytes32[] memory synths = _currencyKeys.elements;
+    function totalLong() public view returns (uint husdValue, bool anyRateIsInvalid) {
+        bytes32[] memory tribes = _currencyKeys.elements;
 
-        if (synths.length > 0) {
-            for (uint i = 0; i < synths.length; i++) {
-                bytes32 synth = synths[i];
-                if (synth == hUSD) {
-                    susdValue = susdValue.add(state.long(synth));
+        if (tribes.length > 0) {
+            for (uint i = 0; i < tribes.length; i++) {
+                bytes32 tribe = tribes[i];
+                if (tribe == hUSD) {
+                    husdValue = husdValue.add(state.long(tribe));
                 } else {
-                    (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
-                    uint amount = state.long(synth).multiplyDecimal(rate);
-                    susdValue = susdValue.add(amount);
+                    (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(tribe);
+                    uint amount = state.long(tribe).multiplyDecimal(rate);
+                    husdValue = husdValue.add(amount);
                     if (invalid) {
                         anyRateIsInvalid = true;
                     }
@@ -193,15 +191,15 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
-    function totalShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
-        bytes32[] memory synths = _shortableSynths.elements;
+    function totalShort() public view returns (uint husdValue, bool anyRateIsInvalid) {
+        bytes32[] memory tribes = _shortableTribes.elements;
 
-        if (synths.length > 0) {
-            for (uint i = 0; i < synths.length; i++) {
-                bytes32 synth = _synth(synths[i]).currencyKey();
-                (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(synth);
-                uint amount = state.short(synth).multiplyDecimal(rate);
-                susdValue = susdValue.add(amount);
+        if (tribes.length > 0) {
+            for (uint i = 0; i < tribes.length; i++) {
+                bytes32 tribe = _tribe(tribes[i]).currencyKey();
+                (uint rate, bool invalid) = _exchangeRates().rateAndInvalid(tribe);
+                uint amount = state.short(tribe).multiplyDecimal(rate);
+                husdValue = husdValue.add(amount);
                 if (invalid) {
                     anyRateIsInvalid = true;
                 }
@@ -209,7 +207,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
-    function totalLongAndShort() public view returns (uint susdValue, bool anyRateIsInvalid) {
+    function totalLongAndShort() public view returns (uint husdValue, bool anyRateIsInvalid) {
         bytes32[] memory currencyKeys = _currencyKeys.elements;
 
         if (currencyKeys.length > 0) {
@@ -217,7 +215,7 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
             for (uint i = 0; i < rates.length; i++) {
                 uint longAmount = state.long(currencyKeys[i]).multiplyDecimal(rates[i]);
                 uint shortAmount = state.short(currencyKeys[i]).multiplyDecimal(rates[i]);
-                susdValue = susdValue.add(longAmount).add(shortAmount);
+                husdValue = husdValue.add(longAmount).add(shortAmount);
                 if (invalid) {
                     anyRateIsInvalid = true;
                 }
@@ -226,17 +224,17 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     }
 
     function getBorrowRate() public view returns (uint borrowRate, bool anyRateIsInvalid) {
-        // get the haka backed debt.
-        uint hakaDebt = _issuer().totalIssuedSynths(hUSD, true);
+        // get the snx backed debt.
+        uint snxDebt = _issuer().totalIssuedTribes(hUSD, true);
 
-        // now get the non haka backed debt.
-        (uint nonHakaDebt, bool ratesInvalid) = totalLong();
+        // now get the non snx backed debt.
+        (uint nonSnxDebt, bool ratesInvalid) = totalLong();
 
         // the total.
-        uint totalDebt = hakaDebt.add(nonHakaDebt);
+        uint totalDebt = snxDebt.add(nonSnxDebt);
 
         // now work out the utilisation ratio, and divide through to get a per second value.
-        uint utilisation = nonHakaDebt.divideDecimal(totalDebt).divideDecimal(SECONDS_IN_A_YEAR);
+        uint utilisation = nonSnxDebt.divideDecimal(totalDebt).divideDecimal(SECONDS_IN_A_YEAR);
 
         // scale it by the utilisation multiplier.
         uint scaledUtilisation = utilisation.multiplyDecimal(utilisationMultiplier);
@@ -247,12 +245,12 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         anyRateIsInvalid = ratesInvalid;
     }
 
-    function getShortRate(bytes32 synthKey) public view returns (uint shortRate, bool rateIsInvalid) {
-        rateIsInvalid = _exchangeRates().rateIsInvalid(synthKey);
+    function getShortRate(bytes32 tribeKey) public view returns (uint shortRate, bool rateIsInvalid) {
+        rateIsInvalid = _exchangeRates().rateIsInvalid(tribeKey);
 
         // Get the long and short supply.
-        uint longSupply = IERC20(address(_synth(shortableSynthsByKey[synthKey]))).totalSupply();
-        uint shortSupply = state.short(synthKey);
+        uint longSupply = IERC20(address(_tribe(shortableTribesByKey[tribeKey]))).totalSupply();
+        uint shortSupply = state.short(tribeKey);
 
         // In this case, the market is skewed long so its free to short.
         if (longSupply > shortSupply) {
@@ -363,36 +361,36 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         }
     }
 
-    function addSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
-        require(synthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+    function addTribes(bytes32[] calldata tribeNamesInResolver, bytes32[] calldata tribeKeys) external onlyOwner {
+        require(tribeNamesInResolver.length == tribeKeys.length, "Input array length mismatch");
 
-        for (uint i = 0; i < synthNamesInResolver.length; i++) {
-            if (!_synths.contains(synthNamesInResolver[i])) {
-                bytes32 synthName = synthNamesInResolver[i];
-                _synths.add(synthName);
-                _currencyKeys.add(synthKeys[i]);
-                synthsByKey[synthKeys[i]] = synthName;
-                emit SynthAdded(synthName);
+        for (uint i = 0; i < tribeNamesInResolver.length; i++) {
+            if (!_tribes.contains(tribeNamesInResolver[i])) {
+                bytes32 tribeName = tribeNamesInResolver[i];
+                _tribes.add(tribeName);
+                _currencyKeys.add(tribeKeys[i]);
+                tribesByKey[tribeKeys[i]] = tribeName;
+                emit TribeAdded(tribeName);
             }
         }
 
         rebuildCache();
     }
 
-    function areSynthsAndCurrenciesSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+    function areTribesAndCurrenciesSet(bytes32[] calldata requiredTribeNamesInResolver, bytes32[] calldata tribeKeys)
         external
         view
         returns (bool)
     {
-        if (_synths.elements.length != requiredSynthNamesInResolver.length) {
+        if (_tribes.elements.length != requiredTribeNamesInResolver.length) {
             return false;
         }
 
-        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
-            if (!_synths.contains(requiredSynthNamesInResolver[i])) {
+        for (uint i = 0; i < requiredTribeNamesInResolver.length; i++) {
+            if (!_tribes.contains(requiredTribeNamesInResolver[i])) {
                 return false;
             }
-            if (synthsByKey[synthKeys[i]] != requiredSynthNamesInResolver[i]) {
+            if (tribesByKey[tribeKeys[i]] != requiredTribeNamesInResolver[i]) {
                 return false;
             }
         }
@@ -400,60 +398,60 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return true;
     }
 
-    function removeSynths(bytes32[] calldata synthNamesInResolver, bytes32[] calldata synthKeys) external onlyOwner {
-        require(synthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+    function removeTribes(bytes32[] calldata tribeNamesInResolver, bytes32[] calldata tribeKeys) external onlyOwner {
+        require(tribeNamesInResolver.length == tribeKeys.length, "Input array length mismatch");
 
-        for (uint i = 0; i < synthNamesInResolver.length; i++) {
-            if (_synths.contains(synthNamesInResolver[i])) {
+        for (uint i = 0; i < tribeNamesInResolver.length; i++) {
+            if (_tribes.contains(tribeNamesInResolver[i])) {
                 // Remove it from the the address set lib.
-                _synths.remove(synthNamesInResolver[i]);
-                _currencyKeys.remove(synthKeys[i]);
-                delete synthsByKey[synthKeys[i]];
+                _tribes.remove(tribeNamesInResolver[i]);
+                _currencyKeys.remove(tribeKeys[i]);
+                delete tribesByKey[tribeKeys[i]];
 
-                emit SynthRemoved(synthNamesInResolver[i]);
+                emit TribeRemoved(tribeNamesInResolver[i]);
             }
         }
     }
 
-    function addShortableSynths(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+    function addShortableTribes(bytes32[] calldata requiredTribeNamesInResolver, bytes32[] calldata tribeKeys)
         external
         onlyOwner
     {
-        require(requiredSynthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+        require(requiredTribeNamesInResolver.length == tribeKeys.length, "Input array length mismatch");
 
-        for (uint i = 0; i < requiredSynthNamesInResolver.length; i++) {
-            bytes32 synth = requiredSynthNamesInResolver[i];
+        for (uint i = 0; i < requiredTribeNamesInResolver.length; i++) {
+            bytes32 tribe = requiredTribeNamesInResolver[i];
 
-            if (!_shortableSynths.contains(synth)) {
+            if (!_shortableTribes.contains(tribe)) {
                 // Add it to the address set lib.
-                _shortableSynths.add(synth);
+                _shortableTribes.add(tribe);
 
-                shortableSynthsByKey[synthKeys[i]] = synth;
+                shortableTribesByKey[tribeKeys[i]] = tribe;
 
-                emit ShortableSynthAdded(synth);
+                emit ShortableTribeAdded(tribe);
 
-                // now the associated synth key to the CollateralManagerState
-                state.addShortCurrency(synthKeys[i]);
+                // now the associated tribe key to the CollateralManagerState
+                state.addShortCurrency(tribeKeys[i]);
             }
         }
 
         rebuildCache();
     }
 
-    function areShortableSynthsSet(bytes32[] calldata requiredSynthNamesInResolver, bytes32[] calldata synthKeys)
+    function areShortableTribesSet(bytes32[] calldata requiredTribeNamesInResolver, bytes32[] calldata tribeKeys)
         external
         view
         returns (bool)
     {
-        require(requiredSynthNamesInResolver.length == synthKeys.length, "Input array length mismatch");
+        require(requiredTribeNamesInResolver.length == tribeKeys.length, "Input array length mismatch");
 
-        if (_shortableSynths.elements.length != requiredSynthNamesInResolver.length) {
+        if (_shortableTribes.elements.length != requiredTribeNamesInResolver.length) {
             return false;
         }
 
         // now check everything added to external state contract
-        for (uint i = 0; i < synthKeys.length; i++) {
-            if (state.getShortRatesLength(synthKeys[i]) == 0) {
+        for (uint i = 0; i < tribeKeys.length; i++) {
+            if (state.getShortRatesLength(tribeKeys[i]) == 0) {
                 return false;
             }
         }
@@ -461,19 +459,19 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         return true;
     }
 
-    function removeShortableSynths(bytes32[] calldata synths) external onlyOwner {
-        for (uint i = 0; i < synths.length; i++) {
-            if (_shortableSynths.contains(synths[i])) {
+    function removeShortableTribes(bytes32[] calldata tribes) external onlyOwner {
+        for (uint i = 0; i < tribes.length; i++) {
+            if (_shortableTribes.contains(tribes[i])) {
                 // Remove it from the the address set lib.
-                _shortableSynths.remove(synths[i]);
+                _shortableTribes.remove(tribes[i]);
 
-                bytes32 synthKey = _synth(synths[i]).currencyKey();
+                bytes32 tribeKey = _tribe(tribes[i]).currencyKey();
 
-                delete shortableSynthsByKey[synthKey];
+                delete shortableTribesByKey[tribeKey];
 
-                state.removeShortCurrency(synthKey);
+                state.removeShortCurrency(tribeKey);
 
-                emit ShortableSynthRemoved(synths[i]);
+                emit ShortableTribeRemoved(tribes[i]);
             }
         }
     }
@@ -496,20 +494,20 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
         state.updateShortRates(currency, rate);
     }
 
-    function incrementLongs(bytes32 synth, uint amount) external onlyCollateral {
-        state.incrementLongs(synth, amount);
+    function incrementLongs(bytes32 tribe, uint amount) external onlyCollateral {
+        state.incrementLongs(tribe, amount);
     }
 
-    function decrementLongs(bytes32 synth, uint amount) external onlyCollateral {
-        state.decrementLongs(synth, amount);
+    function decrementLongs(bytes32 tribe, uint amount) external onlyCollateral {
+        state.decrementLongs(tribe, amount);
     }
 
-    function incrementShorts(bytes32 synth, uint amount) external onlyCollateral {
-        state.incrementShorts(synth, amount);
+    function incrementShorts(bytes32 tribe, uint amount) external onlyCollateral {
+        state.incrementShorts(tribe, amount);
     }
 
-    function decrementShorts(bytes32 synth, uint amount) external onlyCollateral {
-        state.decrementShorts(synth, amount);
+    function decrementShorts(bytes32 tribe, uint amount) external onlyCollateral {
+        state.decrementShorts(tribe, amount);
     }
 
     function accrueInterest(
@@ -561,9 +559,9 @@ contract CollateralManager is ICollateralManager, Owned, Pausable, MixinResolver
     event CollateralAdded(address collateral);
     event CollateralRemoved(address collateral);
 
-    event SynthAdded(bytes32 synth);
-    event SynthRemoved(bytes32 synth);
+    event TribeAdded(bytes32 tribe);
+    event TribeRemoved(bytes32 tribe);
 
-    event ShortableSynthAdded(bytes32 synth);
-    event ShortableSynthRemoved(bytes32 synth);
+    event ShortableTribeAdded(bytes32 tribe);
+    event ShortableTribeRemoved(bytes32 tribe);
 }

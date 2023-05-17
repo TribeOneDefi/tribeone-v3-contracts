@@ -77,9 +77,9 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 	before('stake some HAKA', async () => {
 		Tribeone = Tribeone.connect(user);
 
-		const tx = await Tribeone.issueSynths(amountToIssue);
+		const tx = await Tribeone.issueTribes(amountToIssue);
 		const { gasUsed } = await tx.wait();
-		console.log(`debtMigration: issueSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+		console.log(`debtMigration: issueTribes() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 	});
 
 	before('record balances on L1', async () => {

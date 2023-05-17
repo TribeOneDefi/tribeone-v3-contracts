@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
@@ -31,7 +30,7 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
 
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
-    bytes32 internal constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 internal constant CONTRACT_TRIBEONEETIX = "Tribeone";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
 
     bytes32 private constant DEBT_TRANSFER_NAMESPACE = "DebtTransfer";
@@ -59,8 +58,8 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
         return IRewardEscrowV2(requireAndGetAddress(CONTRACT_REWARDESCROW));
     }
 
-    function _tribeoneERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONE));
+    function _tribeetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
@@ -69,7 +68,7 @@ contract BaseDebtMigrator is Owned, MixinSystemSettings {
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
         newAddresses[1] = CONTRACT_REWARDESCROW;
         newAddresses[2] = CONTRACT_ISSUER;
-        newAddresses[3] = CONTRACT_TRIBEONE;
+        newAddresses[3] = CONTRACT_TRIBEONEETIX;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 

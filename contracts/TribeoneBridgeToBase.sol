@@ -11,7 +11,7 @@ import "@eth-optimism/contracts/iOVM/bridge/tokens/iOVM_L1TokenGateway.sol";
 
 contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM_L2DepositedToken {
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_BASE_TRIBEONEBRIDGETOOPTIMISM = "base:TribeoneBridgeToOptimism";
+    bytes32 private constant CONTRACT_BASE_TRIBEONEETIXBRIDGETOOPTIMISM = "base:TribeoneBridgeToOptimism";
 
     function CONTRACT_NAME() public pure returns (bytes32) {
         return "TribeoneBridgeToBase";
@@ -23,12 +23,12 @@ contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM
 
     // ========== INTERNALS ============
 
-    function tribeoneBridgeToOptimism() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_BASE_TRIBEONEBRIDGETOOPTIMISM);
+    function tribeetixBridgeToOptimism() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_BASE_TRIBEONEETIXBRIDGETOOPTIMISM);
     }
 
     function counterpart() internal view returns (address) {
-        return tribeoneBridgeToOptimism();
+        return tribeetixBridgeToOptimism();
     }
 
     // ========== VIEWS ==========
@@ -36,7 +36,7 @@ contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseTribeoneBridge.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_BASE_TRIBEONEBRIDGETOOPTIMISM;
+        newAddresses[0] = CONTRACT_BASE_TRIBEONEETIXBRIDGETOOPTIMISM;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -63,7 +63,7 @@ contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
-            tribeoneBridgeToOptimism(),
+            tribeetixBridgeToOptimism(),
             messageData,
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
@@ -103,11 +103,11 @@ contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM
     }
 
     // invoked by Messenger on L2
-    function finalizeFeePeriodClose(uint256 hakaBackedAmount, uint256 totalDebtShares) external onlyCounterpart {
+    function finalizeFeePeriodClose(uint256 snxBackedAmount, uint256 totalDebtShares) external onlyCounterpart {
         // now tell Tribeone to mint these tokens, deposited in L1, into reward escrow on L2
-        feePool().closeSecondary(hakaBackedAmount, totalDebtShares);
+        feePool().closeSecondary(snxBackedAmount, totalDebtShares);
 
-        emit FeePeriodCloseFinalized(hakaBackedAmount, totalDebtShares);
+        emit FeePeriodCloseFinalized(snxBackedAmount, totalDebtShares);
     }
 
     // ========== EVENTS ==========
@@ -118,5 +118,5 @@ contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM
     );
 
     event RewardDepositFinalized(address from, uint256 amount);
-    event FeePeriodCloseFinalized(uint hakaBackedAmount, uint totalDebtShares);
+    event FeePeriodCloseFinalized(uint snxBackedAmount, uint totalDebtShares);
 }

@@ -18,7 +18,7 @@ contract('PerpsV2MarketData', accounts => {
 		legacyFuturesMarket,
 		perpsV2Market,
 		perpsV2MarketHelper,
-		sethMarket,
+		hethMarket,
 		futuresMarketManager,
 		perpsV2MarketSettings,
 		perpsV2MarketData,
@@ -30,8 +30,8 @@ contract('PerpsV2MarketData', accounts => {
 		baseAsset;
 
 	const keySuffix = '-perp';
-	const newMarketKey = toBytes32('sETH' + keySuffix);
-	const newAssetKey = toBytes32('sETH');
+	const newMarketKey = toBytes32('hETH' + keySuffix);
+	const newAssetKey = toBytes32('hETH');
 	const offchainPrefix = 'oc';
 
 	const owner = accounts[1];
@@ -61,16 +61,16 @@ contract('PerpsV2MarketData', accounts => {
 			PerpsV2MarketData: perpsV2MarketData,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'sETH', 'sLINK'],
+			tribes: ['hUSD', 'hBTC', 'hETH', 'sLINK'],
 			contracts: [
 				'FuturesMarketManager',
 				'PerpsV2MarketSettings',
 				'PerpsV2MarketStateBTC',
-				'PerpsV2MarketViewsBTC',
+				'PerpsV2MarketViewhBTC',
 				'TestablePerpsV2MarketBTC',
 				'PerpsV2MarketBTC',
 				'PerpsV2MarketData',
@@ -90,7 +90,7 @@ contract('PerpsV2MarketData', accounts => {
 		perpsV2Market = await PerpsV2Market.at(perpsV2Market.address);
 
 		// Add a couple of additional markets.
-		for (const symbol of ['sETH', 'sLINK']) {
+		for (const symbol of ['hETH', 'sLINK']) {
 			let filteredFunctions;
 
 			const assetKey = toBytes32(symbol);
@@ -286,18 +286,18 @@ contract('PerpsV2MarketData', accounts => {
 		await perpsV2Market.transferMargin(toUnit('4000'), { from: trader3 });
 		await perpsV2Market.modifyPosition(toUnit('1.25'), desiredFillPrice, { from: trader3 });
 
-		sethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
+		hethMarket = await PerpsV2Market.at(await futuresMarketManager.marketForKey(newMarketKey));
 
 		// 4
 		desiredFillPrice = (
 			await perpsV2MarketHelper.fillPriceWithMeta(
 				toUnit('4'),
 				priceImpactDelta,
-				(await sethMarket.assetPrice())[0]
+				(await hethMarket.assetPrice())[0]
 			)
 		)[1];
-		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.modifyPosition(toUnit('4'), desiredFillPrice, { from: trader3 });
+		await hethMarket.transferMargin(toUnit('3000'), { from: trader3 });
+		await hethMarket.modifyPosition(toUnit('4'), desiredFillPrice, { from: trader3 });
 		await setPrice(newAssetKey, toUnit('999'));
 	});
 
@@ -398,7 +398,7 @@ contract('PerpsV2MarketData', accounts => {
 
 		it('By market key', async () => {
 			const details = await perpsV2MarketData.positionDetails(perpsV2Market.address, trader3);
-			const details2 = await perpsV2MarketData.positionDetails(sethMarket.address, trader3);
+			const details2 = await perpsV2MarketData.positionDetails(hethMarket.address, trader3);
 			const detailsByAsset = await perpsV2MarketData.positionDetailsForMarketKey(
 				marketKey,
 				trader3
@@ -415,29 +415,29 @@ contract('PerpsV2MarketData', accounts => {
 
 	describe('Market summaries', () => {
 		it('For markets', async () => {
-			const sETHSummary = (await perpsV2MarketData.marketSummariesForKeys([newMarketKey]))[0];
+			const hETHSummary = (await perpsV2MarketData.marketSummariesForKeys([newMarketKey]))[0];
 
-			const params = await perpsV2MarketData.parameters(newMarketKey); // sETH
+			const params = await perpsV2MarketData.parameters(newMarketKey); // hETH
 
-			assert.equal(sETHSummary.market, sethMarket.address);
-			assert.equal(sETHSummary.asset, newAssetKey);
-			assert.equal(sETHSummary.maxLeverage, params.maxLeverage);
-			const price = await sethMarket.assetPrice();
-			assert.equal(sETHSummary.price, price.price);
-			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
-			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
-			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
-			assert.equal(sETHSummary.currentFundingVelocity, await sethMarket.currentFundingVelocity());
-			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
-			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
-			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
+			assert.equal(hETHSummary.market, hethMarket.address);
+			assert.equal(hETHSummary.asset, newAssetKey);
+			assert.equal(hETHSummary.maxLeverage, params.maxLeverage);
+			const price = await hethMarket.assetPrice();
+			assert.equal(hETHSummary.price, price.price);
+			assert.equal(hETHSummary.marketSize, await hethMarket.marketSize());
+			assert.equal(hETHSummary.marketSkew, await hethMarket.marketSkew());
+			assert.equal(hETHSummary.currentFundingRate, await hethMarket.currentFundingRate());
+			assert.equal(hETHSummary.currentFundingVelocity, await hethMarket.currentFundingVelocity());
+			assert.equal(hETHSummary.feeRates.takerFee, params.takerFee);
+			assert.equal(hETHSummary.feeRates.makerFee, params.makerFee);
+			assert.equal(hETHSummary.feeRates.takerFeeDelayedOrder, params.takerFeeDelayedOrder);
+			assert.equal(hETHSummary.feeRates.makerFeeDelayedOrder, params.makerFeeDelayedOrder);
 			assert.equal(
-				sETHSummary.feeRates.takerFeeOffchainDelayedOrder,
+				hETHSummary.feeRates.takerFeeOffchainDelayedOrder,
 				params.takerFeeOffchainDelayedOrder
 			);
 			assert.equal(
-				sETHSummary.feeRates.makerFeeOffchainDelayedOrder,
+				hETHSummary.feeRates.makerFeeOffchainDelayedOrder,
 				params.makerFeeOffchainDelayedOrder
 			);
 		});
@@ -462,10 +462,10 @@ contract('PerpsV2MarketData', accounts => {
 		it('For market keys', async () => {
 			const summaries = await perpsV2MarketData.marketSummaries([
 				perpsV2Market.address,
-				sethMarket.address,
+				hethMarket.address,
 			]);
 			const summariesForAsset = await perpsV2MarketData.marketSummariesForKeys(
-				['sBTC', 'sETH' + keySuffix].map(toBytes32)
+				['hBTC', 'hETH' + keySuffix].map(toBytes32)
 			);
 			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForAsset));
 		});
@@ -473,60 +473,60 @@ contract('PerpsV2MarketData', accounts => {
 		it('All summaries', async () => {
 			const summaries = await perpsV2MarketData.allMarketSummaries();
 
-			const sBTCSummary = summaries.find(summary => summary.key === toBytes32('sBTC'));
-			const sETHSummary = summaries.find(summary => summary.key === toBytes32('sETH' + keySuffix));
+			const hBTCSummary = summaries.find(summary => summary.key === toBytes32('hBTC'));
+			const hETHSummary = summaries.find(summary => summary.key === toBytes32('hETH' + keySuffix));
 			const sLINKSummary = summaries.find(
 				summary => summary.key === toBytes32('sLINK' + keySuffix)
 			);
 
 			const fmParams = await perpsV2MarketData.parameters(marketKey);
 
-			assert.equal(sBTCSummary.market, perpsV2Market.address);
-			assert.equal(sBTCSummary.asset, baseAsset);
-			assert.equal(sBTCSummary.maxLeverage, fmParams.maxLeverage);
+			assert.equal(hBTCSummary.market, perpsV2Market.address);
+			assert.equal(hBTCSummary.asset, baseAsset);
+			assert.equal(hBTCSummary.maxLeverage, fmParams.maxLeverage);
 			let price = await perpsV2Market.assetPrice();
-			assert.equal(sBTCSummary.price, price.price);
-			assert.equal(sBTCSummary.marketSize, await perpsV2Market.marketSize());
-			assert.equal(sBTCSummary.marketSkew, await perpsV2Market.marketSkew());
-			assert.equal(sBTCSummary.currentFundingRate, await perpsV2Market.currentFundingRate());
+			assert.equal(hBTCSummary.price, price.price);
+			assert.equal(hBTCSummary.marketSize, await perpsV2Market.marketSize());
+			assert.equal(hBTCSummary.marketSkew, await perpsV2Market.marketSkew());
+			assert.equal(hBTCSummary.currentFundingRate, await perpsV2Market.currentFundingRate());
 			assert.equal(
-				sBTCSummary.currentFundingVelocity,
+				hBTCSummary.currentFundingVelocity,
 				await perpsV2Market.currentFundingVelocity()
 			);
-			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
-			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
-			assert.equal(sBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
-			assert.equal(sBTCSummary.feeRates.makerFeeDelayedOrder, fmParams.makerFeeDelayedOrder);
+			assert.equal(hBTCSummary.feeRates.takerFee, fmParams.takerFee);
+			assert.equal(hBTCSummary.feeRates.makerFee, fmParams.makerFee);
+			assert.equal(hBTCSummary.feeRates.takerFeeDelayedOrder, fmParams.takerFeeDelayedOrder);
+			assert.equal(hBTCSummary.feeRates.makerFeeDelayedOrder, fmParams.makerFeeDelayedOrder);
 			assert.equal(
-				sBTCSummary.feeRates.takerFeeOffchainDelayedOrder,
+				hBTCSummary.feeRates.takerFeeOffchainDelayedOrder,
 				fmParams.takerFeeOffchainDelayedOrder
 			);
 			assert.equal(
-				sBTCSummary.feeRates.makerFeeOffchainDelayedOrder,
+				hBTCSummary.feeRates.makerFeeOffchainDelayedOrder,
 				fmParams.makerFeeOffchainDelayedOrder
 			);
 
-			const sETHParams = await perpsV2MarketData.parameters(newMarketKey); // sETH
+			const hETHParams = await perpsV2MarketData.parameters(newMarketKey); // hETH
 
-			assert.equal(sETHSummary.market, sethMarket.address);
-			assert.equal(sETHSummary.asset, newAssetKey);
-			assert.equal(sETHSummary.maxLeverage, sETHParams.maxLeverage);
-			price = await sethMarket.assetPrice();
-			assert.equal(sETHSummary.price, price.price);
-			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
-			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
-			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
-			assert.equal(sETHSummary.feeRates.takerFee, sETHParams.takerFee);
-			assert.equal(sETHSummary.feeRates.makerFee, sETHParams.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeDelayedOrder, sETHParams.takerFeeDelayedOrder);
-			assert.equal(sETHSummary.feeRates.makerFeeDelayedOrder, sETHParams.makerFeeDelayedOrder);
+			assert.equal(hETHSummary.market, hethMarket.address);
+			assert.equal(hETHSummary.asset, newAssetKey);
+			assert.equal(hETHSummary.maxLeverage, hETHParams.maxLeverage);
+			price = await hethMarket.assetPrice();
+			assert.equal(hETHSummary.price, price.price);
+			assert.equal(hETHSummary.marketSize, await hethMarket.marketSize());
+			assert.equal(hETHSummary.marketSkew, await hethMarket.marketSkew());
+			assert.equal(hETHSummary.currentFundingRate, await hethMarket.currentFundingRate());
+			assert.equal(hETHSummary.feeRates.takerFee, hETHParams.takerFee);
+			assert.equal(hETHSummary.feeRates.makerFee, hETHParams.makerFee);
+			assert.equal(hETHSummary.feeRates.takerFeeDelayedOrder, hETHParams.takerFeeDelayedOrder);
+			assert.equal(hETHSummary.feeRates.makerFeeDelayedOrder, hETHParams.makerFeeDelayedOrder);
 			assert.equal(
-				sETHSummary.feeRates.takerFeeOffchainDelayedOrder,
-				sETHParams.takerFeeOffchainDelayedOrder
+				hETHSummary.feeRates.takerFeeOffchainDelayedOrder,
+				hETHParams.takerFeeOffchainDelayedOrder
 			);
 			assert.equal(
-				sETHSummary.feeRates.makerFeeOffchainDelayedOrder,
-				sETHParams.makerFeeOffchainDelayedOrder
+				hETHSummary.feeRates.makerFeeOffchainDelayedOrder,
+				hETHParams.makerFeeOffchainDelayedOrder
 			);
 
 			assert.equal(
@@ -551,13 +551,13 @@ contract('PerpsV2MarketData', accounts => {
 		it('All proxied market summaries', async () => {
 			const summaries = await perpsV2MarketData.allProxiedMarketSummaries();
 
-			const sBTCSummary = summaries.find(summary => summary.asset === toBytes32('sBTC'));
-			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
+			const hBTCSummary = summaries.find(summary => summary.asset === toBytes32('hBTC'));
+			const hETHSummary = summaries.find(summary => summary.asset === toBytes32('hETH'));
 			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
 
 			// A simplified version of allMarketSummaries test. All markets are considered proxied here.
-			assert.equal(sBTCSummary.market, perpsV2Market.address);
-			assert.equal(sETHSummary.market, sethMarket.address);
+			assert.equal(hBTCSummary.market, perpsV2Market.address);
+			assert.equal(hETHSummary.market, hethMarket.address);
 			assert.equal(
 				sLINKSummary.market,
 				await futuresMarketManager.marketForKey(toBytes32('sLINK' + keySuffix))

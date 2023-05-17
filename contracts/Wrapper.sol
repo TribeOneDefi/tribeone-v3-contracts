@@ -4,7 +4,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IWrapper.sol";
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 import "./interfaces/IERC20.sol";
 
 // Internal references
@@ -29,7 +29,7 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     bytes32 internal constant hUSD = "hUSD";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
-    bytes32 private constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_TRIBEONE_HUSD = "TribehUSD";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
@@ -40,21 +40,21 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     // NOTE: these values should ideally be `immutable` instead of public
     IERC20 public token;
     bytes32 public currencyKey;
-    bytes32 public synthContractName;
+    bytes32 public tribeContractName;
 
-    uint public targetSynthIssued;
+    uint public targetTribeIssued;
 
     constructor(
         address _owner,
         address _resolver,
         IERC20 _token,
         bytes32 _currencyKey,
-        bytes32 _synthContractName
+        bytes32 _tribeContractName
     ) public Owned(_owner) MixinSystemSettings(_resolver) {
         token = _token;
         currencyKey = _currencyKey;
-        synthContractName = _synthContractName;
-        targetSynthIssued = 0;
+        tribeContractName = _tribeContractName;
+        targetTribeIssued = 0;
         token.approve(address(this), uint256(-1));
     }
 
@@ -62,8 +62,8 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](6);
-        newAddresses[0] = CONTRACT_SYNTH_SUSD;
-        newAddresses[1] = synthContractName;
+        newAddresses[0] = CONTRACT_TRIBEONE_HUSD;
+        newAddresses[1] = tribeContractName;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_DEBTCACHE;
         newAddresses[4] = CONTRACT_SYSTEMSTATUS;
@@ -73,12 +73,12 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     }
 
     /* ========== INTERNAL VIEWS ========== */
-    function synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTH_SUSD));
+    function tribehUSD() internal view returns (ITribe) {
+        return ITribe(requireAndGetAddress(CONTRACT_TRIBEONE_HUSD));
     }
 
-    function synth() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(synthContractName));
+    function tribe() internal view returns (ITribe) {
+        return ITribe(requireAndGetAddress(tribeContractName));
     }
 
     function exchangeRates() internal view returns (IExchangeRates) {
@@ -111,9 +111,9 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         return maxToken.sub(balance);
     }
 
-    function totalIssuedSynths() public view returns (uint) {
-        // synths issued by this contract is always exactly equal to the balance of reserves
-        return exchangeRates().effectiveValue(currencyKey, targetSynthIssued, hUSD);
+    function totalIssuedTribes() public view returns (uint) {
+        // tribes issued by this contract is always exactly equal to the balance of reserves
+        return exchangeRates().effectiveValue(currencyKey, targetTribeIssued, hUSD);
     }
 
     function getReserves() public view returns (uint) {
@@ -179,26 +179,26 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
         emit Minted(msg.sender, mintAmount, negative ? 0 : feeAmountTarget, actualAmountIn);
     }
 
-    // Burns `amountIn` synth for `amountIn - fees` amount of token.
+    // Burns `amountIn` tribe for `amountIn - fees` amount of token.
     // `amountIn` is inclusive of fees, calculable via `calculateBurnFee`.
     function burn(uint amountIn) external notPaused issuanceActive {
-        require(amountIn <= IERC20(address(synth())).balanceOf(msg.sender), "Balance is too low");
+        require(amountIn <= IERC20(address(tribe())).balanceOf(msg.sender), "Balance is too low");
         require(!exchangeRates().rateIsInvalid(currencyKey), "Currency rate is invalid");
-        require(totalIssuedSynths() > 0, "Contract cannot burn for token, token balance is zero");
+        require(totalIssuedTribes() > 0, "Contract cannot burn for token, token balance is zero");
 
-        (uint burnFee, bool negative) = calculateBurnFee(targetSynthIssued);
+        (uint burnFee, bool negative) = calculateBurnFee(targetTribeIssued);
 
         uint burnAmount;
         uint amountOut;
         if (negative) {
-            burnAmount = targetSynthIssued < amountIn ? targetSynthIssued.sub(burnFee) : amountIn;
+            burnAmount = targetTribeIssued < amountIn ? targetTribeIssued.sub(burnFee) : amountIn;
 
             amountOut = burnAmount.multiplyDecimal(
                 // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
                 uint(int(SafeDecimalMath.unit()) - burnFeeRate())
             );
         } else {
-            burnAmount = targetSynthIssued.add(burnFee) < amountIn ? targetSynthIssued.add(burnFee) : amountIn;
+            burnAmount = targetTribeIssued.add(burnFee) < amountIn ? targetTribeIssued.add(burnFee) : amountIn;
             amountOut = burnAmount.divideDecimal(
                 // -1e18 <= burnFeeRate <= 1e18 so this operation is safe
                 uint(int(SafeDecimalMath.unit()) + burnFeeRate())
@@ -231,47 +231,47 @@ contract Wrapper is Owned, Pausable, MixinResolver, MixinSystemSettings, IWrappe
     function _mint(uint amount) internal {
         uint reserves = getReserves();
 
-        uint excessAmount = reserves > targetSynthIssued.add(amount) ? reserves.sub(targetSynthIssued.add(amount)) : 0;
+        uint excessAmount = reserves > targetTribeIssued.add(amount) ? reserves.sub(targetTribeIssued.add(amount)) : 0;
         uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, hUSD);
 
         // Mint `amount` to user.
-        synth().issue(msg.sender, amount);
+        tribe().issue(msg.sender, amount);
 
         // Escrow fee.
         if (excessAmountUsd > 0) {
-            synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
+            tribehUSD().issue(address(wrapperFactory()), excessAmountUsd);
         }
 
-        // in the case of a negative fee extra synths will be issued, billed to the haka stakers
-        _setTargetSynthIssued(reserves);
+        // in the case of a negative fee extra tribes will be issued, billed to the snx stakers
+        _setTargetTribeIssued(reserves);
     }
 
     function _burn(uint amount) internal {
         uint reserves = getReserves();
 
-        // this is logically equivalent to getReserves() - (targetSynthIssued - amount), without going negative
-        uint excessAmount = reserves.add(amount) > targetSynthIssued ? reserves.add(amount).sub(targetSynthIssued) : 0;
+        // this is logically equivalent to getReserves() - (targetTribeIssued - amount), without going negative
+        uint excessAmount = reserves.add(amount) > targetTribeIssued ? reserves.add(amount).sub(targetTribeIssued) : 0;
 
         uint excessAmountUsd = exchangeRates().effectiveValue(currencyKey, excessAmount, hUSD);
 
         // Burn `amount` of currencyKey from user.
-        synth().burn(msg.sender, amount);
+        tribe().burn(msg.sender, amount);
 
         // We use burn/issue instead of burning the principal and transferring the fee.
         // This saves an approval and is cheaper.
         // Escrow fee.
         if (excessAmountUsd > 0) {
-            synthsUSD().issue(address(wrapperFactory()), excessAmountUsd);
+            tribehUSD().issue(address(wrapperFactory()), excessAmountUsd);
         }
 
-        // in the case of a negative fee fewer synths will be burned, billed to the haka stakers
-        _setTargetSynthIssued(reserves);
+        // in the case of a negative fee fewer tribes will be burned, billed to the snx stakers
+        _setTargetTribeIssued(reserves);
     }
 
-    function _setTargetSynthIssued(uint _targetSynthIssued) internal {
-        debtCache().recordExcludedDebtChange(currencyKey, int256(_targetSynthIssued) - int256(targetSynthIssued));
+    function _setTargetTribeIssued(uint _targetTribeIssued) internal {
+        debtCache().recordExcludedDebtChange(currencyKey, int256(_targetTribeIssued) - int256(targetTribeIssued));
 
-        targetSynthIssued = _targetSynthIssued;
+        targetTribeIssued = _targetTribeIssued;
     }
 
     function _safeTransferFrom(

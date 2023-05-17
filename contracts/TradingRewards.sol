@@ -41,7 +41,7 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
-    bytes32 private constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 private constant CONTRACT_TRIBEONEETIX = "Tribeone";
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -60,11 +60,11 @@ contract TradingRewards is ITradingRewards, ReentrancyGuard, Owned, Pausable, Mi
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](2);
         addresses[0] = CONTRACT_EXCHANGER;
-        addresses[1] = CONTRACT_TRIBEONE;
+        addresses[1] = CONTRACT_TRIBEONEETIX;
     }
 
     function tribeone() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONE));
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function exchanger() internal view returns (IExchanger) {

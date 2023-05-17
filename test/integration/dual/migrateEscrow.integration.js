@@ -13,7 +13,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 	let Tribeone, RewardEscrowV2;
 
 	let initialParametersL1, initialParametersL2;
-	const hakaAmount = ethers.utils.parseEther('100');
+	const snxAmount = ethers.utils.parseEther('100');
 
 	before('record initial escrow state', async () => {
 		initialParametersL1 = await retrieveEscrowParameters({ ctx: ctx.l1 });
@@ -28,7 +28,7 @@ describe('migrateEscrow() integration tests (L1, L2)', () => {
 			token: Tribeone,
 			owner: user,
 			beneficiary: RewardEscrowV2,
-			amount: hakaAmount,
+			amount: snxAmount,
 		});
 	});
 

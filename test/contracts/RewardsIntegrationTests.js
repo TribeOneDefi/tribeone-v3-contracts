@@ -9,7 +9,7 @@ const { toBytes32 } = require('../..');
 const { fastForward, toUnit, multiplyDecimal } = require('../utils')();
 
 const {
-	setExchangeFeeRateForSynths,
+	setExchangeFeeRateForTribes,
 	setupPriceAggregators,
 	updateRatesWithDefaults,
 	updateAggregatorRates,
@@ -53,18 +53,18 @@ contract('Rewards Integration Tests', accounts => {
 	// };
 
 	// CURRENCIES
-	const [hUSD, sAUD, sEUR, sBTC, HAKA, iBTC, sETH, ETH] = [
+	const [hUSD, sAUD, sEUR, hBTC, HAKA, iBTC, hETH, ETH] = [
 		'hUSD',
 		'sAUD',
 		'sEUR',
-		'sBTC',
+		'hBTC',
 		'HAKA',
 		'iBTC',
-		'sETH',
+		'hETH',
 		'ETH',
 	].map(toBytes32);
 
-	const synthKeys = [hUSD, sAUD, sEUR, sBTC, iBTC, sETH, ETH];
+	const tribeKeys = [hUSD, sAUD, sEUR, hBTC, iBTC, hETH, ETH];
 
 	const initialInflationAmount = toUnit(800000);
 
@@ -128,7 +128,7 @@ contract('Rewards Integration Tests', accounts => {
 	// VARIABLES
 	let feePool,
 		tribeone,
-		tribeoneProxy,
+		tribeetixProxy,
 		exchangeRates,
 		exchanger,
 		debtCache,
@@ -136,7 +136,7 @@ contract('Rewards Integration Tests', accounts => {
 		systemSettings,
 		rewardEscrow,
 		periodOneMintableSupplyMinusMinterReward,
-		sUSDContract,
+		hUSDContract,
 		MINTER_HAKA_REWARD;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
@@ -153,15 +153,15 @@ contract('Rewards Integration Tests', accounts => {
 			RewardEscrowV2: rewardEscrow,
 			SupplySchedule: supplySchedule,
 			Tribeone: tribeone,
-			ProxyERC20Tribeone: tribeoneProxy,
-			SynthsUSD: sUSDContract,
+			ProxyERC20Tribeone: tribeetixProxy,
+			TribehUSD: hUSDContract,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sAUD', 'sEUR', 'sBTC', 'iBTC', 'sETH'],
+			tribes: ['hUSD', 'sAUD', 'sEUR', 'hBTC', 'iBTC', 'hETH'],
 			contracts: [
 				'AddressResolver',
-				'Exchanger', // necessary for burnSynths to check settlement of hUSD
+				'Exchanger', // necessary for burnTribes to check settlement of hUSD
 				'ExchangeRates',
 				'FeePool',
 				'FeePoolEternalStorage', // necessary to claimFees()
@@ -177,17 +177,17 @@ contract('Rewards Integration Tests', accounts => {
 		}));
 
 		// use implementation ABI on the proxy address to simplify calling
-		tribeone = await artifacts.require('Tribeone').at(tribeoneProxy.address);
+		tribeone = await artifacts.require('Tribeone').at(tribeetixProxy.address);
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sBTC, iBTC, sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, hBTC, iBTC, hETH, ETH]);
 
 		MINTER_HAKA_REWARD = await supplySchedule.minterReward();
 
-		await setExchangeFeeRateForSynths({
+		await setExchangeFeeRateForTribes({
 			owner,
 			systemSettings,
-			synthKeys,
-			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+			tribeKeys,
+			exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 		});
 	});
 
@@ -200,8 +200,8 @@ contract('Rewards Integration Tests', accounts => {
 		await fastForwardAndUpdateRates(WEEK + DAY);
 
 		// Assign 1/3 of total HAKA to 3 accounts
-		const hakaTotalSupply = await tribeone.totalSupply();
-		const thirdOfHAKA = third(hakaTotalSupply);
+		const snxTotalSupply = await tribeone.totalSupply();
+		const thirdOfHAKA = third(snxTotalSupply);
 
 		await tribeone.transfer(account1, thirdOfHAKA, { from: owner });
 		await tribeone.transfer(account2, thirdOfHAKA, { from: owner });
@@ -230,9 +230,9 @@ contract('Rewards Integration Tests', accounts => {
 			FEE_PERIOD_LENGTH = (await feePool.FEE_PERIOD_LENGTH()).toNumber();
 			CLAIMABLE_PERIODS = FEE_PERIOD_LENGTH - 1;
 
-			await tribeone.issueMaxSynths({ from: account1 });
-			await tribeone.issueMaxSynths({ from: account2 });
-			await tribeone.issueMaxSynths({ from: account3 });
+			await tribeone.issueMaxTribes({ from: account1 });
+			await tribeone.issueMaxTribes({ from: account2 });
+			await tribeone.issueMaxTribes({ from: account3 });
 		});
 
 		it('should allocate the 3 accounts a third of the rewards for 1 period', async () => {
@@ -489,11 +489,11 @@ contract('Rewards Integration Tests', accounts => {
 
 			// Account 1 leaves the system in week 2
 			const burnableTotal = await tribeone.debtBalanceOf(account1, hUSD);
-			await tribeone.burnSynths(burnableTotal, { from: account1 });
+			await tribeone.burnTribes(burnableTotal, { from: account1 });
 			// await logFeesByPeriod(account1);
 
 			// Account 1 comes back into the system
-			await tribeone.issueMaxSynths({ from: account1 });
+			await tribeone.issueMaxTribes({ from: account1 });
 
 			// Only Account 1 claims rewards
 			const rewardsAmount = third(periodOneMintableSupplyMinusMinterReward);
@@ -541,7 +541,7 @@ contract('Rewards Integration Tests', accounts => {
 
 			// Account 1 leaves the system
 			const burnableTotal = await tribeone.debtBalanceOf(account1, hUSD);
-			await tribeone.burnSynths(burnableTotal, { from: account1 });
+			await tribeone.burnTribes(burnableTotal, { from: account1 });
 
 			// FastForward into the second mintable week
 			await fastForwardAndUpdateRates(WEEK + MINUTE);
@@ -558,7 +558,7 @@ contract('Rewards Integration Tests', accounts => {
 			fastForwardAndCloseFeePeriod();
 
 			// Account1 Reenters in current unclosed period so no rewards yet
-			// await tribeone.issueMaxSynths({ from: account1 });
+			// await tribeone.issueMaxTribes({ from: account1 });
 
 			// Accounts 2 & 3 now have 33% of period 1 and 50% of period 2
 			// console.log('33% of p1', third(periodOneMintableSupplyMinusMinterReward).toString());
@@ -598,12 +598,12 @@ contract('Rewards Integration Tests', accounts => {
 
 	describe('Exchange Rate Shift tests', async () => {
 		it('should assign accounts (1,2,3) to have (40%,40%,20%) of the debt/rewards', async () => {
-			// Account 1&2 issue 10K USD and exchange in sBTC each, holding 50% of the total debt.
-			await tribeone.issueSynths(tenK, { from: account1 });
-			await tribeone.issueSynths(tenK, { from: account2 });
+			// Account 1&2 issue 10K USD and exchange in hBTC each, holding 50% of the total debt.
+			await tribeone.issueTribes(tenK, { from: account1 });
+			await tribeone.issueTribes(tenK, { from: account2 });
 
-			await tribeone.exchange(hUSD, tenK, sBTC, { from: account1 });
-			await tribeone.exchange(hUSD, tenK, sBTC, { from: account2 });
+			await tribeone.exchange(hUSD, tenK, hBTC, { from: account1 });
+			await tribeone.exchange(hUSD, tenK, hBTC, { from: account2 });
 
 			await fastForwardAndCloseFeePeriod();
 			// //////////////////////////////////////////////
@@ -640,14 +640,14 @@ contract('Rewards Integration Tests', accounts => {
 				gweiTolerance
 			);
 
-			// Increase sBTC price by 100%
-			await updateAggregatorRates(exchangeRates, null, [sBTC], ['10000'].map(toUnit));
+			// Increase hBTC price by 100%
+			await updateAggregatorRates(exchangeRates, null, [hBTC], ['10000'].map(toUnit));
 			await debtCache.takeDebtSnapshot();
 
 			// Account 3 (enters the system and) mints 10K hUSD (minus half of an exchange fee - to balance the fact
-			// that the other two holders have doubled their sBTC holdings) and should have 20% of the debt not 33.33%
+			// that the other two holders have doubled their hBTC holdings) and should have 20% of the debt not 33.33%
 			const potentialFee = exchangeFeeIncurred(toUnit('20000'));
-			await tribeone.issueSynths(tenK.sub(half(potentialFee)), { from: account3 });
+			await tribeone.issueTribes(tenK.sub(half(potentialFee)), { from: account3 });
 
 			// Get the HAKA mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -661,9 +661,9 @@ contract('Rewards Integration Tests', accounts => {
 			// disable dynamic fee here otherwise it will flag rates as too volatile
 			await systemSettings.setExchangeDynamicFeeRounds('0', { from: owner });
 
-			const { amountReceived } = await exchanger.getAmountsForExchange(tenK, hUSD, sBTC);
-			await tribeone.exchange(sBTC, amountReceived, hUSD, { from: account1 });
-			await tribeone.exchange(sBTC, amountReceived, hUSD, { from: account2 });
+			const { amountReceived } = await exchanger.getAmountsForExchange(tenK, hUSD, hBTC);
+			await tribeone.exchange(hBTC, amountReceived, hUSD, { from: account1 });
+			await tribeone.exchange(hBTC, amountReceived, hUSD, { from: account2 });
 
 			// Close so we can claim
 			await fastForwardAndCloseFeePeriod();
@@ -737,17 +737,17 @@ contract('Rewards Integration Tests', accounts => {
 			// Commenting out this logic for now (v2.14.x) - needs to be relooked at -JJ
 
 			// // now in p3 Acc1 burns all and leaves (-40%) and Acc2 has 67% and Acc3 33% rewards allocated as such
-			// // Account 1 exchanges all sBTC back to hUSD
-			// const acc1sBTCBalance = await sBTCContract.balanceOf(account1, { from: account1 });
-			// await tribeone.exchange(sBTC, acc1sBTCBalance, hUSD, { from: account1 });
-			// const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1sBTCBalance);
+			// // Account 1 exchanges all hBTC back to hUSD
+			// const acc1hBTCBalance = await hBTCContract.balanceOf(account1, { from: account1 });
+			// await tribeone.exchange(hBTC, acc1hBTCBalance, hUSD, { from: account1 });
+			// const amountAfterExchange = await feePool.amountReceivedFromExchange(acc1hBTCBalance);
 			// const amountAfterExchangeInUSD = await exchangeRates.effectiveValue(
-			// 	sBTC,
+			// 	hBTC,
 			// 	amountAfterExchange,
 			// 	hUSD
 			// );
 
-			// await tribeone.burnSynths(amountAfterExchangeInUSD, { from: account1 });
+			// await tribeone.burnTribes(amountAfterExchangeInUSD, { from: account1 });
 
 			// // Get the HAKA mintableSupply for week 3
 			// // const periodThreeMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -793,7 +793,7 @@ contract('Rewards Integration Tests', accounts => {
 			// assert.bnClose(account3Escrow2[1], oneFifth(periodThreeMintableSupply), 15);
 
 			// // Acc1 mints 20K (40%) close p (40,40,20)');
-			// await tribeone.issueSynths(twentyK, { from: account1 });
+			// await tribeone.issueTribes(twentyK, { from: account1 });
 
 			// // Get the HAKA mintableSupply for week 4
 			// const periodFourMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -831,14 +831,14 @@ contract('Rewards Integration Tests', accounts => {
 
 	describe('3 Accounts issue 10K hUSD each in week 1', async () => {
 		beforeEach(async () => {
-			await tribeone.issueSynths(tenK, { from: account1 });
-			await tribeone.issueSynths(tenK, { from: account2 });
-			await tribeone.issueSynths(tenK, { from: account3 });
+			await tribeone.issueTribes(tenK, { from: account1 });
+			await tribeone.issueTribes(tenK, { from: account2 });
+			await tribeone.issueTribes(tenK, { from: account3 });
 		});
 
 		it('Acc1 issues and burns multiple times and should have accounts 1,2,3 rewards 50%,25%,25%', async () => {
 			// Acc 1 Issues 20K hUSD
-			await tribeone.issueSynths(tenK, { from: account1 });
+			await tribeone.issueTribes(tenK, { from: account1 });
 
 			// Close week 2
 			await fastForwardAndCloseFeePeriod();
@@ -884,11 +884,11 @@ contract('Rewards Integration Tests', accounts => {
 			);
 
 			// Acc1 Burns all
-			await tribeone.burnSynths(twentyK, { from: account1 });
+			await tribeone.burnTribes(twentyK, { from: account1 });
 			// Acc 1 Issues 10K hUSD
-			await tribeone.issueSynths(tenK, { from: account1 });
+			await tribeone.issueTribes(tenK, { from: account1 });
 			// Acc 1 Issues 10K hUSD again
-			await tribeone.issueSynths(tenK, { from: account1 });
+			await tribeone.issueTribes(tenK, { from: account1 });
 
 			// Get the HAKA mintableSupply for week 2
 			const periodTwoMintableSupply = (await supplySchedule.mintableSupply()).sub(
@@ -932,10 +932,10 @@ contract('Rewards Integration Tests', accounts => {
 
 	describe('Collateralisation Ratio Penalties', async () => {
 		beforeEach(async () => {
-			// console.log('3 accounts issueMaxSynths in p1');
-			await tribeone.issueMaxSynths({ from: account1 });
-			await tribeone.issueMaxSynths({ from: account2 });
-			await tribeone.issueMaxSynths({ from: account3 });
+			// console.log('3 accounts issueMaxTribes in p1');
+			await tribeone.issueMaxTribes({ from: account1 });
+			await tribeone.issueMaxTribes({ from: account2 });
+			await tribeone.issueMaxTribes({ from: account3 });
 
 			// We should have zero rewards available because the period is still open.
 			const rewardsBefore = await feePool.feesAvailable(account1);
@@ -963,8 +963,8 @@ contract('Rewards Integration Tests', accounts => {
 			// we will be able to claim fees
 			assert.equal(await feePool.isFeesClaimable(account1), true);
 
-			const hakaRewards = await feePool.feesAvailable(account1);
-			assert.bnClose(hakaRewards[1], third(periodOneMintableSupplyMinusMinterReward), gweiTolerance);
+			const snxRewards = await feePool.feesAvailable(account1);
+			assert.bnClose(snxRewards[1], third(periodOneMintableSupplyMinusMinterReward), gweiTolerance);
 
 			// And if we claim them
 			await feePool.claimFees({ from: account1 });
@@ -992,8 +992,8 @@ contract('Rewards Integration Tests', accounts => {
 	describe('When user is the last to call claimFees()', () => {
 		beforeEach(async () => {
 			const oneThousand = toUnit('10000');
-			await tribeone.issueSynths(oneThousand, { from: account2 });
-			await tribeone.issueSynths(oneThousand, { from: account1 });
+			await tribeone.issueTribes(oneThousand, { from: account2 });
+			await tribeone.issueTribes(oneThousand, { from: account1 });
 
 			await tribeone.exchange(hUSD, oneThousand, sAUD, { from: account2 });
 			await tribeone.exchange(hUSD, oneThousand, sAUD, { from: account1 });
@@ -1004,18 +1004,18 @@ contract('Rewards Integration Tests', accounts => {
 		it('then account gets remainder of fees/rewards available after wei rounding', async () => {
 			// Assert that we have correct values in the fee pool
 			const feesAvailableUSD = await feePool.feesAvailable(account2);
-			const oldsUSDBalance = await sUSDContract.balanceOf(account2);
+			const oldhUSDBalance = await hUSDContract.balanceOf(account2);
 
 			// Now we should be able to claim them.
 			const claimFeesTx = await feePool.claimFees({ from: account2 });
 			assert.eventEqual(claimFeesTx, 'FeesClaimed', {
-				sUSDAmount: feesAvailableUSD[0],
-				hakaRewards: feesAvailableUSD[1],
+				hUSDAmount: feesAvailableUSD[0],
+				snxRewards: feesAvailableUSD[1],
 			});
 
-			const newUSDBalance = await sUSDContract.balanceOf(account2);
+			const newUSDBalance = await hUSDContract.balanceOf(account2);
 			// hUSD balance remains unchanged since the fees are burned.
-			assert.bnEqual(newUSDBalance, oldsUSDBalance);
+			assert.bnEqual(newUSDBalance, oldhUSDBalance);
 
 			const period = await feePool.recentFeePeriods(1);
 			period.index = 1;
@@ -1041,8 +1041,8 @@ contract('Rewards Integration Tests', accounts => {
 			// however only   721,053.846153846153846153 Claimable after rounding to 18 decimals
 			const transaction = await feePool.claimFees({ from: account1 });
 			assert.eventEqual(transaction, 'FeesClaimed', {
-				sUSDAmount: feesAvailableUSDAcc1[0],
-				hakaRewards: feesAvailableUSDAcc1[1],
+				hUSDAmount: feesAvailableUSDAcc1[0],
+				snxRewards: feesAvailableUSDAcc1[1],
 			});
 		});
 	});

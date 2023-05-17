@@ -6,7 +6,7 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
 const TokenState = artifacts.require('TokenState');
 const Proxy = artifacts.require('Proxy');
-const PurgeableSynth = artifacts.require('PurgeableSynth');
+const PurgeableTribe = artifacts.require('PurgeableTribe');
 
 const { fastForward, toUnit } = require('../utils')();
 const {
@@ -15,8 +15,8 @@ const {
 } = require('../..');
 
 const {
-	setExchangeFeeRateForSynths,
-	issueSynthsToUser,
+	setExchangeFeeRateForTribes,
+	issueTribesToUser,
 	onlyGivenAddressCanInvoke,
 	ensureOnlyExpectedMutativeFunctions,
 	setStatus,
@@ -26,15 +26,15 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
-contract('PurgeableSynth', accounts => {
+contract('PurgeableTribe', accounts => {
 	const [hUSD, HAKA, sAUD, iETH] = ['hUSD', 'HAKA', 'sAUD', 'iETH'].map(toBytes32);
-	const synthKeys = [hUSD, sAUD, iETH];
+	const tribeKeys = [hUSD, sAUD, iETH];
 	const [deployerAccount, owner, , , account1, account2] = accounts;
 
 	let exchangeRates,
 		exchanger,
 		systemSettings,
-		sUSDContract,
+		hUSDContract,
 		sAUDContract,
 		iETHContract,
 		systemStatus,
@@ -43,21 +43,21 @@ contract('PurgeableSynth', accounts => {
 		issuer;
 
 	before(async () => {
-		PurgeableSynth.link(await artifacts.require('SafeDecimalMath').new());
+		PurgeableTribe.link(await artifacts.require('SafeDecimalMath').new());
 
 		({
 			AddressResolver: addressResolver,
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			SynthsUSD: sUSDContract,
-			SynthsAUD: sAUDContract,
+			TribehUSD: hUSDContract,
+			TribesAUD: sAUDContract,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			DebtCache: debtCache,
 			Issuer: issuer,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sAUD'],
+			tribes: ['hUSD', 'sAUD'],
 			contracts: [
 				'ExchangeRates',
 				'Exchanger',
@@ -79,17 +79,17 @@ contract('PurgeableSynth', accounts => {
 	beforeEach(async () => {
 		// set a 0.3% exchange fee rate
 		const exchangeFeeRate = toUnit('0.003');
-		await setExchangeFeeRateForSynths({
+		await setExchangeFeeRateForTribes({
 			owner,
 			systemSettings,
-			synthKeys,
-			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+			tribeKeys,
+			exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 		});
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
+	const deployTribe = async ({ currencyKey, proxy, tokenState }) => {
 		tokenState =
 			tokenState ||
 			(await TokenState.new(owner, ZERO_ADDRESS, {
@@ -98,10 +98,10 @@ contract('PurgeableSynth', accounts => {
 
 		proxy = proxy || (await Proxy.new(owner, { from: deployerAccount }));
 
-		const synth = await PurgeableSynth.new(
+		const tribe = await PurgeableTribe.new(
 			proxy.address,
 			tokenState.address,
-			`Synth ${currencyKey}`,
+			`Tribe ${currencyKey}`,
 			currencyKey,
 			owner,
 			toBytes32(currencyKey),
@@ -111,27 +111,27 @@ contract('PurgeableSynth', accounts => {
 				from: deployerAccount,
 			}
 		);
-		return { synth, tokenState, proxy };
+		return { tribe, tokenState, proxy };
 	};
 
-	describe('when a Purgeable synth is added and connected to Tribeone', () => {
+	describe('when a Purgeable tribe is added and connected to Tribeone', () => {
 		beforeEach(async () => {
-			// Create iETH as a PurgeableSynth as we do not create any PurgeableSynth
+			// Create iETH as a PurgeableTribe as we do not create any PurgeableTribe
 			// in the migration script
-			const { synth, tokenState, proxy } = await deploySynth({
+			const { tribe, tokenState, proxy } = await deployTribe({
 				currencyKey: 'iETH',
 			});
-			await tokenState.setAssociatedContract(synth.address, { from: owner });
-			await proxy.setTarget(synth.address, { from: owner });
-			await issuer.addSynth(synth.address, { from: owner });
+			await tokenState.setAssociatedContract(tribe.address, { from: owner });
+			await proxy.setTarget(tribe.address, { from: owner });
+			await issuer.addTribe(tribe.address, { from: owner });
 
-			iETHContract = synth;
+			iETHContract = tribe;
 		});
 
 		it('ensure only known functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
 				abi: iETHContract.abi,
-				ignoreParents: ['Synth'],
+				ignoreParents: ['Tribe'],
 				expected: ['purge'],
 			});
 		});
@@ -162,7 +162,7 @@ contract('PurgeableSynth', accounts => {
 			});
 		});
 
-		describe("when there's a price for the purgeable synth", () => {
+		describe("when there's a price for the purgeable tribe", () => {
 			beforeEach(async () => {
 				await updateAggregatorRates(
 					exchangeRates,
@@ -173,23 +173,23 @@ contract('PurgeableSynth', accounts => {
 				await debtCache.takeDebtSnapshot();
 			});
 
-			describe('and a user holds 100K USD worth of purgeable synth iETH', () => {
+			describe('and a user holds 100K USD worth of purgeable tribe iETH', () => {
 				let amountToExchange;
-				let usersUSDBalance;
+				let userhUSDBalance;
 				let balanceBeforePurge;
 				beforeEach(async () => {
 					// issue the user 100K USD worth of iETH
 					amountToExchange = toUnit(1e5);
 					const iETHAmount = await exchangeRates.effectiveValue(hUSD, amountToExchange, iETH);
-					await issueSynthsToUser({
+					await issueTribesToUser({
 						owner,
 						issuer,
 						addressResolver,
-						synthContract: iETHContract,
+						tribeContract: iETHContract,
 						user: account1,
 						amount: iETHAmount,
 					});
-					usersUSDBalance = await sUSDContract.balanceOf(account1);
+					userhUSDBalance = await hUSDContract.balanceOf(account1);
 					balanceBeforePurge = await iETHContract.balanceOf(account1);
 				});
 
@@ -202,7 +202,7 @@ contract('PurgeableSynth', accounts => {
 						assert.equal(await iETHContract.balanceOf(account1), '0');
 					});
 				});
-				describe('when the synth is stale', () => {
+				describe('when the tribe is stale', () => {
 					beforeEach(async () => {
 						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 					});
@@ -223,7 +223,7 @@ contract('PurgeableSynth', accounts => {
 						});
 					});
 				});
-				describe('when purge is called for the synth', () => {
+				describe('when purge is called for the tribe', () => {
 					let txn;
 					beforeEach(async () => {
 						txn = await iETHContract.purge([account1], { from: owner });
@@ -237,7 +237,7 @@ contract('PurgeableSynth', accounts => {
 						);
 					});
 					it('and they have the value added back to hUSD (with fees taken out)', async () => {
-						const userBalance = await sUSDContract.balanceOf(account1);
+						const userBalance = await hUSDContract.balanceOf(account1);
 
 						const {
 							amountReceived,
@@ -247,11 +247,11 @@ contract('PurgeableSynth', accounts => {
 
 						assert.bnEqual(
 							userBalance,
-							amountReceived.add(usersUSDBalance),
+							amountReceived.add(userhUSDBalance),
 							'User must be credited back in hUSD from the purge'
 						);
 					});
-					it('then the synth has totalSupply back at 0', async () => {
+					it('then the tribe has totalSupply back at 0', async () => {
 						const iETHTotalSupply = await iETHContract.totalSupply();
 						assert.bnEqual(iETHTotalSupply, toUnit(0), 'Total supply must be 0 after the purge');
 					});
@@ -294,17 +294,17 @@ contract('PurgeableSynth', accounts => {
 					});
 				});
 
-				describe('when the user holds 5000 USD worth of the purgeable synth iETH', () => {
+				describe('when the user holds 5000 USD worth of the purgeable tribe iETH', () => {
 					beforeEach(async () => {
 						// Note: 5000 is chosen to be large enough to accommodate exchange fees which
-						// ultimately limit the total supply of that synth
+						// ultimately limit the total supply of that tribe
 						const amountToExchange = toUnit(5000);
 						const iETHAmount = await exchangeRates.effectiveValue(hUSD, amountToExchange, iETH);
-						await issueSynthsToUser({
+						await issueTribesToUser({
 							owner,
 							issuer,
 							addressResolver,
-							synthContract: iETHContract,
+							tribeContract: iETHContract,
 							user: account2,
 							amount: iETHAmount,
 						});
@@ -324,58 +324,58 @@ contract('PurgeableSynth', accounts => {
 		});
 	});
 
-	describe('Replacing an existing Synth with a Purgeable one to purge and remove it', () => {
+	describe('Replacing an existing Tribe with a Purgeable one to purge and remove it', () => {
 		describe('when sAUD has a price', () => {
 			beforeEach(async () => {
 				await updateAggregatorRates(exchangeRates, null, [sAUD], ['0.776845993'].map(toUnit));
 				await debtCache.takeDebtSnapshot();
 			});
 			describe('when a user holds some sAUD', () => {
-				let userBalanceOfOldSynth;
-				let usersUSDBalance;
+				let userBalanceOfOldTribe;
+				let userhUSDBalance;
 				beforeEach(async () => {
 					const amountToExchange = toUnit('100');
 
-					// as sAUD is MockSynth, we can invoke this directly
+					// as sAUD is MockTribe, we can invoke this directly
 					await sAUDContract.issue(account1, amountToExchange);
 
-					usersUSDBalance = await sUSDContract.balanceOf(account1);
-					this.oldSynth = sAUDContract;
-					userBalanceOfOldSynth = await this.oldSynth.balanceOf(account1);
+					userhUSDBalance = await hUSDContract.balanceOf(account1);
+					this.oldTribe = sAUDContract;
+					userBalanceOfOldTribe = await this.oldTribe.balanceOf(account1);
 					assert.equal(
-						userBalanceOfOldSynth.gt(toUnit('0')),
+						userBalanceOfOldTribe.gt(toUnit('0')),
 						true,
 						'The sAUD balance is greater than zero after exchange'
 					);
 				});
 
-				describe('when the sAUD synth has its totalSupply set to 0 by the owner', () => {
+				describe('when the sAUD tribe has its totalSupply set to 0 by the owner', () => {
 					beforeEach(async () => {
-						this.totalSupply = await this.oldSynth.totalSupply();
-						this.oldTokenState = await TokenState.at(await this.oldSynth.tokenState());
-						this.oldProxy = await Proxy.at(await this.oldSynth.proxy());
-						await this.oldSynth.setTotalSupply(toUnit('0'), { from: owner });
+						this.totalSupply = await this.oldTribe.totalSupply();
+						this.oldTokenState = await TokenState.at(await this.oldTribe.tokenState());
+						this.oldProxy = await Proxy.at(await this.oldTribe.proxy());
+						await this.oldTribe.setTotalSupply(toUnit('0'), { from: owner });
 					});
-					describe('and the old sAUD synth is removed from Tribeone', () => {
+					describe('and the old sAUD tribe is removed from Tribeone', () => {
 						beforeEach(async () => {
-							await issuer.removeSynth(sAUD, { from: owner });
+							await issuer.removeTribe(sAUD, { from: owner });
 						});
-						describe('when a Purgeable synth is added to replace the existing sAUD', () => {
+						describe('when a Purgeable tribe is added to replace the existing sAUD', () => {
 							beforeEach(async () => {
-								const { synth } = await deploySynth({
+								const { tribe } = await deployTribe({
 									currencyKey: 'sAUD',
 									proxy: this.oldProxy,
 									tokenState: this.oldTokenState,
 								});
-								this.replacement = synth;
+								this.replacement = tribe;
 							});
 							describe('and it is added to Tribeone', () => {
 								beforeEach(async () => {
-									await issuer.addSynth(this.replacement.address, { from: owner });
+									await issuer.addTribe(this.replacement.address, { from: owner });
 									await this.replacement.rebuildCache();
 								});
 
-								describe('and the old sAUD TokenState and Proxy is connected to the replacement synth', () => {
+								describe('and the old sAUD TokenState and Proxy is connected to the replacement tribe', () => {
 									beforeEach(async () => {
 										await this.oldTokenState.setAssociatedContract(this.replacement.address, {
 											from: owner,
@@ -388,7 +388,7 @@ contract('PurgeableSynth', accounts => {
 										const balance = await this.replacement.balanceOf(account1);
 										assert.bnEqual(
 											balance,
-											userBalanceOfOldSynth,
+											userBalanceOfOldTribe,
 											'The balance after connecting TokenState must not have changed'
 										);
 									});
@@ -403,17 +403,17 @@ contract('PurgeableSynth', accounts => {
 											assert.bnEqual(balance, toUnit('0'), 'The balance after purge must be 0');
 										});
 										it('and their balance must have gone back into hUSD', async () => {
-											const balance = await sUSDContract.balanceOf(account1);
+											const balance = await hUSDContract.balanceOf(account1);
 
 											const { amountReceived } = await exchanger.getAmountsForExchange(
-												userBalanceOfOldSynth,
+												userBalanceOfOldTribe,
 												sAUD,
 												hUSD
 											);
 
 											assert.bnEqual(
 												balance,
-												amountReceived.add(usersUSDBalance),
+												amountReceived.add(userhUSDBalance),
 												'The hUSD balance after purge must return to the initial amount, less fees'
 											);
 										});
@@ -422,25 +422,25 @@ contract('PurgeableSynth', accounts => {
 
 											assert.eventEqual(purgedEvent, 'Purged', {
 												account: account1,
-												value: userBalanceOfOldSynth,
+												value: userBalanceOfOldTribe,
 											});
 										});
-										describe('when the purged synth is removed from the system', () => {
+										describe('when the purged tribe is removed from the system', () => {
 											beforeEach(async () => {
-												await issuer.removeSynth(sAUD, { from: owner });
+												await issuer.removeTribe(sAUD, { from: owner });
 											});
 											it('then the balance remains in USD (and no errors occur)', async () => {
-												const balance = await sUSDContract.balanceOf(account1);
+												const balance = await hUSDContract.balanceOf(account1);
 
 												const { amountReceived } = await exchanger.getAmountsForExchange(
-													userBalanceOfOldSynth,
+													userBalanceOfOldTribe,
 													sAUD,
 													hUSD
 												);
 
 												assert.bnEqual(
 													balance,
-													amountReceived.add(usersUSDBalance),
+													amountReceived.add(userhUSDBalance),
 													'The hUSD balance after purge must return to the initial amount, less fees'
 												);
 											});

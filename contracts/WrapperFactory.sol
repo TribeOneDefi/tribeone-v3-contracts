@@ -17,7 +17,7 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
     bytes32 public constant CONTRACT_NAME = "WrapperFactory";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
-    bytes32 internal constant CONTRACT_SYNTH_SUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_TRIBEONE_HUSD = "TribehUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
 
     uint internal constant WRAPPER_VERSION = 1;
@@ -27,14 +27,14 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
-        addresses[0] = CONTRACT_SYNTH_SUSD;
+        addresses[0] = CONTRACT_TRIBEONE_HUSD;
         addresses[1] = CONTRACT_FLEXIBLESTORAGE;
         addresses[2] = CONTRACT_FEEPOOL;
     }
 
     /* ========== INTERNAL VIEWS ========== */
-    function synthsUSD() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTH_SUSD));
+    function tribehUSD() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONE_HUSD));
     }
 
     function flexibleStorage() internal view returns (IFlexibleStorage) {
@@ -47,13 +47,13 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
 
     // ========== VIEWS ==========
     // Returns the version of a wrapper created by this wrapper factory
-    // Used by MultiCollateralSynth to know if it should trust the wrapper contract
+    // Used by MultiCollateralTribe to know if it should trust the wrapper contract
     function isWrapper(address possibleWrapper) external view returns (bool) {
         return flexibleStorage().getUIntValue(CONTRACT_NAME, bytes32(uint(address(possibleWrapper)))) > 0;
     }
 
     function feesEscrowed() public view returns (uint) {
-        return synthsUSD().balanceOf(address(this));
+        return tribehUSD().balanceOf(address(this));
     }
 
     // ========== RESTRICTED ==========
@@ -69,15 +69,15 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
     function createWrapper(
         IERC20 token,
         bytes32 currencyKey,
-        bytes32 synthContractName
+        bytes32 tribeContractName
     ) external onlyOwner returns (address) {
         // Create the wrapper instance
-        Wrapper wrapper = new Wrapper(owner, address(resolver), token, currencyKey, synthContractName);
+        Wrapper wrapper = new Wrapper(owner, address(resolver), token, currencyKey, tribeContractName);
 
         // Rebuild caches immediately since it will almost certainly need to be done
         wrapper.rebuildCache();
 
-        // Register it so that MultiCollateralSynth knows to trust it
+        // Register it so that MultiCollateralTribe knows to trust it
         flexibleStorage().setUIntValue(CONTRACT_NAME, bytes32(uint(address(wrapper))), WRAPPER_VERSION);
 
         emit WrapperCreated(address(token), currencyKey, address(wrapper));
@@ -87,11 +87,11 @@ contract WrapperFactory is Owned, MixinResolver, IWrapperFactory {
 
     function distributeFees() external {
         // Normalize fee to hUSD
-        uint amountSUSD = feesEscrowed();
+        uint amountHUSD = feesEscrowed();
 
-        if (amountSUSD > 0) {
+        if (amountHUSD > 0) {
             // Transfer hUSD to the fee pool
-            bool success = synthsUSD().transfer(feePool().FEE_ADDRESS(), amountSUSD);
+            bool success = tribehUSD().transfer(feePool().FEE_ADDRESS(), amountHUSD);
             require(success, "Transfer did not succeed");
         }
     }

@@ -34,8 +34,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 
 	const marketKeySuffix = '-perp';
 
-	const marketKey = toBytes32('sBTC' + marketKeySuffix);
-	const baseAsset = toBytes32('sBTC');
+	const marketKey = toBytes32('hBTC' + marketKeySuffix);
+	const baseAsset = toBytes32('hBTC');
 	const takerFeeOffchainDelayedOrder = toUnit('0.00005');
 	const makerFeeOffchainDelayedOrder = toUnit('0.00001');
 	const initialPrice = toUnit('100');
@@ -46,8 +46,8 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 	const offchainDelayedOrderMaxAge = 60;
 
 	const feeds = [
-		{ assetId: baseAsset, feedId: toBytes32('feed-sBTC') },
-		{ assetId: toBytes32('sETH'), feedId: toBytes32('feed-sETH') },
+		{ assetId: baseAsset, feedId: toBytes32('feed-hBTC') },
+		{ assetId: toBytes32('hETH'), feedId: toBytes32('feed-hETH') },
 	];
 
 	const defaultFeedId = feeds[0].feedId;
@@ -111,13 +111,13 @@ contract('PerpsV2Market PerpsV2MarketOffchainOrders', accounts => {
 			PerpsV2ExchangeRate: perpsV2ExchangeRate,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			SystemSettings: systemSettings,
 			SystemStatus: systemStatus,
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'sETH'],
+			tribes: ['hUSD', 'hBTC', 'hETH'],
 			contracts: [
 				'FuturesMarketManager',
 				'PerpsV2MarketSettings',

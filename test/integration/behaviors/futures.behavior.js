@@ -16,7 +16,7 @@ function itCanTrade({ ctx }) {
 		// Sckiped since futures market size is being reduced to deprecate futures in favor of PerpsV2
 		this.retries(0);
 
-		const sUSDAmount = ethers.utils.parseEther('100000');
+		const hUSDAmount = ethers.utils.parseEther('100000');
 
 		let someUser, otherUser;
 		let FuturesMarketManager,
@@ -25,7 +25,7 @@ function itCanTrade({ ctx }) {
 			FuturesMarketData,
 			FuturesMarketBTC,
 			ExchangeRates,
-			SynthsUSD;
+			TribehUSD;
 
 		before('target contracts and users', () => {
 			({
@@ -35,7 +35,7 @@ function itCanTrade({ ctx }) {
 				FuturesMarketData,
 				FuturesMarketBTC,
 				ExchangeRates,
-				SynthsUSD,
+				TribehUSD,
 			} = ctx.contracts);
 
 			// owner = ctx.users.owner;
@@ -44,7 +44,7 @@ function itCanTrade({ ctx }) {
 		});
 
 		before('ensure users have hUSD', async () => {
-			await ensureBalance({ ctx, symbol: 'hUSD', user: someUser, balance: sUSDAmount });
+			await ensureBalance({ ctx, symbol: 'hUSD', user: someUser, balance: hUSDAmount });
 		});
 
 		after('reset the hUSD balance', async () => {
@@ -60,18 +60,18 @@ function itCanTrade({ ctx }) {
 				assetKey = await market.baseAsset();
 				marketKey = await market.marketKey();
 				price = await ExchangeRates.rateForCurrency(assetKey);
-				balance = await SynthsUSD.balanceOf(someUser.address);
+				balance = await TribehUSD.balanceOf(someUser.address);
 				posSize1x = divideDecimal(margin, price);
 			});
 
 			it('user can transferMargin and withdraw it', async () => {
 				// transfer
 				await market.transferMargin(margin);
-				assert.bnEqual(await SynthsUSD.balanceOf(someUser.address), balance.sub(margin));
+				assert.bnEqual(await TribehUSD.balanceOf(someUser.address), balance.sub(margin));
 
 				// withdraw
 				await (await market.withdrawAllMargin()).wait();
-				const withdrawBalance = await SynthsUSD.balanceOf(someUser.address);
+				const withdrawBalance = await TribehUSD.balanceOf(someUser.address);
 				assert.bnEqual(withdrawBalance, balance);
 			});
 
@@ -220,7 +220,7 @@ function itCanTrade({ ctx }) {
 						? await PerpsV2MarketSettings.maxLeverage(marketKey)
 						: await FuturesMarketSettings.maxLeverage(marketKey);
 					assert.bnGt(maxLeverage, toUnit(1));
-					assert.bnLte(maxLeverage, toUnit(100)); // sETHPERP is set to 100
+					assert.bnLte(maxLeverage, toUnit(100)); // hETHPERP is set to 100
 
 					const maxMarketValueUSD = marketKeyIsV2[marketKey]
 						? await PerpsV2MarketSettings.maxMarketValue(marketKey)

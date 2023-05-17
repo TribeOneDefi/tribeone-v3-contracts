@@ -21,7 +21,7 @@ const {
 
 const {
 	setExchangeWaitingPeriod,
-	setExchangeFeeRateForSynths,
+	setExchangeFeeRateForTribes,
 	getDecodedLogs,
 	decodedEventEqual,
 	onlyGivenAddressCanInvoke,
@@ -40,67 +40,67 @@ const {
 contract('Issuer (via Tribeone)', async accounts => {
 	const WEEK = 604800;
 
-	const [hUSD, sAUD, sEUR, HAKA, sETH, ETH] = ['hUSD', 'sAUD', 'sEUR', 'HAKA', 'sETH', 'ETH'].map(
+	const [hUSD, sAUD, sEUR, HAKA, hETH, ETH] = ['hUSD', 'sAUD', 'sEUR', 'HAKA', 'hETH', 'ETH'].map(
 		toBytes32
 	);
-	const synthKeys = [hUSD, sAUD, sEUR, sETH, HAKA];
+	const tribeKeys = [hUSD, sAUD, sEUR, hETH, HAKA];
 
-	const [, owner, account1, account2, account3, account6, tribeoneBridgeToOptimism] = accounts;
+	const [, owner, account1, account2, account3, account6, tribeetixBridgeToOptimism] = accounts;
 
 	let tribeone,
-		tribeoneProxy,
+		tribeetixProxy,
 		systemStatus,
 		systemSettings,
 		delegateApprovals,
 		exchangeRates,
 		feePool,
-		sUSDContract,
-		sETHContract,
+		hUSDContract,
+		hETHContract,
 		sEURContract,
 		sAUDContract,
 		escrow,
 		rewardEscrowV2,
 		debtCache,
 		issuer,
-		synths,
+		tribes,
 		addressResolver,
-		synthRedeemer,
+		tribeRedeemer,
 		exchanger,
 		aggregatorDebtRatio,
-		aggregatorIssuedSynths,
+		aggregatorIssuedTribes,
 		circuitBreaker,
 		debtShares;
 
 	// run this once before all tests to prepare our environment, snapshots on beforeEach will take
 	// care of resetting to this state
 	before(async () => {
-		synths = ['hUSD', 'sAUD', 'sEUR', 'sETH'];
+		tribes = ['hUSD', 'sAUD', 'sEUR', 'hETH'];
 		({
 			Tribeone: tribeone,
-			ProxyERC20Tribeone: tribeoneProxy,
+			ProxyERC20Tribeone: tribeetixProxy,
 			SystemStatus: systemStatus,
 			SystemSettings: systemSettings,
 			ExchangeRates: exchangeRates,
 			TribeoneEscrow: escrow,
 			RewardEscrowV2: rewardEscrowV2,
-			SynthsUSD: sUSDContract,
-			SynthsETH: sETHContract,
-			SynthsAUD: sAUDContract,
-			SynthsEUR: sEURContract,
+			TribehUSD: hUSDContract,
+			TribehETH: hETHContract,
+			TribesAUD: sAUDContract,
+			TribesEUR: sEURContract,
 			Exchanger: exchanger,
 			FeePool: feePool,
 			DebtCache: debtCache,
 			Issuer: issuer,
 			DelegateApprovals: delegateApprovals,
 			AddressResolver: addressResolver,
-			SynthRedeemer: synthRedeemer,
+			TribeRedeemer: tribeRedeemer,
 			TribeoneDebtShare: debtShares,
 			CircuitBreaker: circuitBreaker,
 			'ext:AggregatorDebtRatio': aggregatorDebtRatio,
-			'ext:AggregatorIssuedSynths': aggregatorIssuedSynths,
+			'ext:AggregatorIssuedTribes': aggregatorIssuedTribes,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'Tribeone',
 				'ExchangeRates',
@@ -112,37 +112,37 @@ contract('Issuer (via Tribeone)', async accounts => {
 				'SystemSettings',
 				'Issuer',
 				'LiquidatorRewards',
-				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorIssuedTribes',
 				'OneNetAggregatorDebtRatio',
 				'DebtCache',
-				'Exchanger', // necessary for burnSynths to check settlement of hUSD
+				'Exchanger', // necessary for burnTribes to check settlement of hUSD
 				'DelegateApprovals', // necessary for *OnBehalf functions
 				'FlexibleStorage',
 				'CollateralManager',
-				'SynthRedeemer',
+				'TribeRedeemer',
 				'TribeoneDebtShare',
 			],
 		}));
 
 		// use implementation ABI on the proxy address to simplify calling
-		tribeone = await artifacts.require('Tribeone').at(tribeoneProxy.address);
+		tribeone = await artifacts.require('Tribeone').at(tribeetixProxy.address);
 
 		// mocks for bridge
 		await addressResolver.importAddresses(
 			['TribeoneBridgeToOptimism'].map(toBytes32),
-			[tribeoneBridgeToOptimism],
+			[tribeetixBridgeToOptimism],
 			{ from: owner }
 		);
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, hETH, ETH]);
 	});
 
 	async function updateDebtMonitors() {
 		await debtCache.takeDebtSnapshot();
 		await circuitBreaker.resetLastValue(
-			[aggregatorIssuedSynths.address, aggregatorDebtRatio.address],
+			[aggregatorIssuedTribes.address, aggregatorDebtRatio.address],
 			[
-				(await aggregatorIssuedSynths.latestRoundData())[1],
+				(await aggregatorIssuedTribes.latestRoundData())[1],
 				(await aggregatorDebtRatio.latestRoundData())[1],
 			],
 			{ from: owner }
@@ -155,17 +155,17 @@ contract('Issuer (via Tribeone)', async accounts => {
 		await updateAggregatorRates(
 			exchangeRates,
 			circuitBreaker,
-			[sAUD, sEUR, HAKA, sETH],
+			[sAUD, sEUR, HAKA, hETH],
 			['0.5', '1.25', '0.1', '200'].map(toUnit)
 		);
 
 		// set a 0.3% default exchange fee rate
 		const exchangeFeeRate = toUnit('0.003');
-		await setExchangeFeeRateForSynths({
+		await setExchangeFeeRateForTribes({
 			owner,
 			systemSettings,
-			synthKeys,
-			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+			tribeKeys,
+			exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 		});
 		await updateDebtMonitors();
 	});
@@ -175,23 +175,23 @@ contract('Issuer (via Tribeone)', async accounts => {
 			abi: issuer.abi,
 			ignoreParents: ['Owned', 'MixinResolver'],
 			expected: [
-				'addSynth',
-				'addSynths',
+				'addTribe',
+				'addTribes',
 				'burnForRedemption',
-				'burnSynths',
-				'burnSynthsOnBehalf',
-				'burnSynthsToTarget',
-				'burnSynthsToTargetOnBehalf',
-				'issueSynthsWithoutDebt',
-				'burnSynthsWithoutDebt',
-				'issueMaxSynths',
-				'issueMaxSynthsOnBehalf',
-				'issueSynths',
-				'issueSynthsOnBehalf',
+				'burnTribes',
+				'burnTribesOnBehalf',
+				'burnTribesToTarget',
+				'burnTribesToTargetOnBehalf',
+				'issueTribesWithoutDebt',
+				'burnTribesWithoutDebt',
+				'issueMaxTribes',
+				'issueMaxTribesOnBehalf',
+				'issueTribes',
+				'issueTribesOnBehalf',
 				'liquidateAccount',
 				'modifyDebtSharesForMigration',
-				'removeSynth',
-				'removeSynths',
+				'removeTribe',
+				'removeTribes',
 				'setCurrentPeriodId',
 				'upgradeCollateralShort',
 			],
@@ -207,21 +207,21 @@ contract('Issuer (via Tribeone)', async accounts => {
 	});
 
 	describe('protected methods', () => {
-		it('issueSynthsWithoutDebt() cannot be invoked directly by a user', async () => {
+		it('issueTribesWithoutDebt() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.issueSynthsWithoutDebt,
+				fnc: issuer.issueTribesWithoutDebt,
 				args: [hUSD, owner, toUnit(100)],
 				accounts,
-				address: tribeoneBridgeToOptimism,
+				address: tribeetixBridgeToOptimism,
 				reason: 'only trusted minters',
 			});
 		});
 
-		it('burnSynthsWithoutDebt() cannot be invoked directly by a user', async () => {
+		it('burnTribesWithoutDebt() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.burnSynthsWithoutDebt,
+				fnc: issuer.burnTribesWithoutDebt,
 				args: [hUSD, owner, toUnit(100)],
-				// full functionality of this method requires issuing synths,
+				// full functionality of this method requires issuing tribes,
 				// so just test that its blocked here and don't include the trusted addr
 				accounts: [owner, account1],
 				reason: 'only trusted minters',
@@ -237,57 +237,57 @@ contract('Issuer (via Tribeone)', async accounts => {
 			});
 		});
 
-		it('issueSynths() cannot be invoked directly by a user', async () => {
+		it('issueTribes() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.issueSynths,
+				fnc: issuer.issueTribes,
 				args: [account1, toUnit('1')],
 				accounts,
 				reason: 'Only Tribeone',
 			});
 		});
-		it('issueSynthsOnBehalf() cannot be invoked directly by a user', async () => {
+		it('issueTribesOnBehalf() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.issueSynthsOnBehalf,
+				fnc: issuer.issueTribesOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
 				reason: 'Only Tribeone',
 			});
 		});
-		it('issueMaxSynths() cannot be invoked directly by a user', async () => {
+		it('issueMaxTribes() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.issueMaxSynths,
+				fnc: issuer.issueMaxTribes,
 				args: [account1],
 				accounts,
 				reason: 'Only Tribeone',
 			});
 		});
-		it('issueMaxSynthsOnBehalf() cannot be invoked directly by a user', async () => {
+		it('issueMaxTribesOnBehalf() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.issueMaxSynthsOnBehalf,
+				fnc: issuer.issueMaxTribesOnBehalf,
 				args: [account1, account2],
 				accounts,
 				reason: 'Only Tribeone',
 			});
 		});
-		it('burnSynths() cannot be invoked directly by a user', async () => {
+		it('burnTribes() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.burnSynths,
+				fnc: issuer.burnTribes,
 				args: [account1, toUnit('1')],
 				accounts,
 				reason: 'Only Tribeone',
 			});
 		});
-		it('burnSynthsOnBehalf() cannot be invoked directly by a user', async () => {
+		it('burnTribesOnBehalf() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.burnSynthsOnBehalf,
+				fnc: issuer.burnTribesOnBehalf,
 				args: [account1, account2, toUnit('1')],
 				accounts,
 				reason: 'Only Tribeone',
 			});
 		});
-		it('burnSynthsToTarget() cannot be invoked directly by a user', async () => {
+		it('burnTribesToTarget() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.burnSynthsToTarget,
+				fnc: issuer.burnTribesToTarget,
 				args: [account1],
 				accounts,
 				reason: 'Only Tribeone',
@@ -301,9 +301,9 @@ contract('Issuer (via Tribeone)', async accounts => {
 				reason: 'Only Tribeone',
 			});
 		});
-		it('burnSynthsToTargetOnBehalf() cannot be invoked directly by a user', async () => {
+		it('burnTribesToTargetOnBehalf() cannot be invoked directly by a user', async () => {
 			await onlyGivenAddressCanInvoke({
-				fnc: issuer.burnSynthsToTargetOnBehalf,
+				fnc: issuer.burnTribesToTargetOnBehalf,
 				args: [account1, account2],
 				accounts,
 				reason: 'Only Tribeone',
@@ -340,25 +340,25 @@ contract('Issuer (via Tribeone)', async accounts => {
 					now = await currentTime();
 				});
 
-				it('should issue synths and store issue timestamp after now', async () => {
-					// issue synths
-					await tribeone.issueSynths(web3.utils.toBN('5'), { from: account1 });
+				it('should issue tribes and store issue timestamp after now', async () => {
+					// issue tribes
+					await tribeone.issueTribes(web3.utils.toBN('5'), { from: account1 });
 
 					// issue timestamp should be greater than now in future
 					const issueTimestamp = await issuer.lastIssueEvent(owner);
 					assert.ok(issueTimestamp.gte(now));
 				});
 
-				describe('require wait time on next burn synth after minting', async () => {
-					it('should revert when burning any synths within minStakeTime', async () => {
+				describe('require wait time on next burn tribe after minting', async () => {
+					it('should revert when burning any tribes within minStakeTime', async () => {
 						// set minimumStakeTime
 						await systemSettings.setMinimumStakeTime(60 * 60 * 8, { from: owner });
 
-						// issue synths first
-						await tribeone.issueSynths(web3.utils.toBN('5'), { from: account1 });
+						// issue tribes first
+						await tribeone.issueTribes(web3.utils.toBN('5'), { from: account1 });
 
 						await assert.revert(
-							tribeone.burnSynths(web3.utils.toBN('5'), { from: account1 }),
+							tribeone.burnTribes(web3.utils.toBN('5'), { from: account1 }),
 							'Minimum stake time not reached'
 						);
 					});
@@ -366,22 +366,22 @@ contract('Issuer (via Tribeone)', async accounts => {
 						// set minimumStakeTime
 						await systemSettings.setMinimumStakeTime(120, { from: owner });
 
-						// issue synths first
-						await tribeone.issueSynths(toUnit('0.001'), { from: account1 });
+						// issue tribes first
+						await tribeone.issueTribes(toUnit('0.001'), { from: account1 });
 
 						// fastForward 30 seconds
 						await fastForward(10);
 
 						await assert.revert(
-							tribeone.burnSynths(toUnit('0.001'), { from: account1 }),
+							tribeone.burnTribes(toUnit('0.001'), { from: account1 }),
 							'Minimum stake time not reached'
 						);
 
 						// fastForward 115 seconds
 						await fastForward(125);
 
-						// burn synths
-						await tribeone.burnSynths(toUnit('0.001'), { from: account1 });
+						// burn tribes
+						await tribeone.burnTribes(toUnit('0.001'), { from: account1 });
 					});
 				});
 			});
@@ -390,30 +390,30 @@ contract('Issuer (via Tribeone)', async accounts => {
 				describe('when exchange rates set', () => {
 					beforeEach(async () => {
 						await fastForward(10);
-						// Send a price update to give the synth rates
+						// Send a price update to give the tribe rates
 
 						await updateAggregatorRates(
 							exchangeRates,
 							circuitBreaker,
-							[sAUD, sEUR, sETH, ETH, HAKA],
+							[sAUD, sEUR, hETH, ETH, HAKA],
 							['0.5', '1.25', '100', '100', '2'].map(toUnit)
 						);
 					});
 
 					describe('when numerous issues in many currencies', () => {
 						beforeEach(async () => {
-							// as our synths are mocks, let's issue some amount to users
-							await sUSDContract.issue(account1, toUnit('1000'));
+							// as our tribes are mocks, let's issue some amount to users
+							await hUSDContract.issue(account1, toUnit('1000'));
 
 							await sAUDContract.issue(account1, toUnit('1000')); // 500 hUSD worth
 							await sAUDContract.issue(account2, toUnit('1000')); // 500 hUSD worth
 
 							await sEURContract.issue(account3, toUnit('80')); // 100 hUSD worth
 
-							await sETHContract.issue(account1, toUnit('1')); // 100 hUSD worth
+							await hETHContract.issue(account1, toUnit('1')); // 100 hUSD worth
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
-							assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('0'));
+							assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('0'));
 							await updateDebtMonitors();
 						});
 						it('then should have recorded debt and debt shares even though there are none', async () => {
@@ -427,7 +427,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					describe('when issued through HAKA staking', () => {
 						beforeEach(async () => {
-							// as our synths are mocks, let's issue some amount to users
+							// as our tribes are mocks, let's issue some amount to users
 							const issuedTribeones = web3.utils.toBN('200012');
 							await tribeone.transfer(account1, toUnit(issuedTribeones), {
 								from: owner,
@@ -435,7 +435,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 							// Issue
 							const amountIssued = toUnit('2011');
-							await tribeone.issueSynths(amountIssued, { from: account1 });
+							await tribeone.issueTribes(amountIssued, { from: account1 });
 							await updateDebtMonitors();
 						});
 						it('then should have recorded debt and debt shares', async () => {
@@ -449,7 +449,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					describe('when oracle updatedAt is old', () => {
 						beforeEach(async () => {
-							// as our synths are mocks, let's issue some amount to users
+							// as our tribes are mocks, let's issue some amount to users
 							const issuedTribeones = web3.utils.toBN('200012');
 							await tribeone.transfer(account1, toUnit(issuedTribeones), {
 								from: owner,
@@ -457,7 +457,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 							// Issue
 							const amountIssued = toUnit('2011');
-							await tribeone.issueSynths(amountIssued, { from: account1 });
+							await tribeone.issueTribes(amountIssued, { from: account1 });
 							await updateDebtMonitors();
 
 							await aggregatorDebtRatio.setOverrideTimestamp(500); // really old timestamp
@@ -469,15 +469,15 @@ contract('Issuer (via Tribeone)', async accounts => {
 				});
 			});
 
-			describe('totalIssuedSynths()', () => {
+			describe('totalIssuedTribes()', () => {
 				describe('when exchange rates set', () => {
 					beforeEach(async () => {
 						await fastForward(10);
-						// Send a price update to give the synth rates
+						// Send a price update to give the tribe rates
 						await updateAggregatorRates(
 							exchangeRates,
 							circuitBreaker,
-							[sAUD, sEUR, sETH, ETH, HAKA],
+							[sAUD, sEUR, hETH, ETH, HAKA],
 							['0.5', '1.25', '100', '100', '2'].map(toUnit)
 						);
 						await updateDebtMonitors();
@@ -485,31 +485,31 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					describe('when numerous issues in one currency', () => {
 						beforeEach(async () => {
-							// as our synths are mocks, let's issue some amount to users
-							await sUSDContract.issue(account1, toUnit('1000'));
-							await sUSDContract.issue(account2, toUnit('100'));
-							await sUSDContract.issue(account3, toUnit('10'));
-							await sUSDContract.issue(account1, toUnit('1'));
+							// as our tribes are mocks, let's issue some amount to users
+							await hUSDContract.issue(account1, toUnit('1000'));
+							await hUSDContract.issue(account2, toUnit('100'));
+							await hUSDContract.issue(account3, toUnit('10'));
+							await hUSDContract.issue(account1, toUnit('1'));
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
-							assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('0'));
+							assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('0'));
 							await updateDebtMonitors();
 						});
-						it('then totalIssuedSynths in should correctly calculate the total issued synths in hUSD', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('1111'));
+						it('then totalIssuedTribes in should correctly calculate the total issued tribes in hUSD', async () => {
+							assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('1111'));
 						});
-						it('and in another synth currency', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(sAUD), toUnit('2222'));
+						it('and in another tribe currency', async () => {
+							assert.bnEqual(await tribeone.totalIssuedTribes(sAUD), toUnit('2222'));
 						});
 						it('and in HAKA', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(HAKA), divideDecimal('1111', '2'));
+							assert.bnEqual(await tribeone.totalIssuedTribes(HAKA), divideDecimal('1111', '2'));
 						});
-						it('and in a non-synth currency', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(ETH), divideDecimal('1111', '100'));
+						it('and in a non-tribe currency', async () => {
+							assert.bnEqual(await tribeone.totalIssuedTribes(ETH), divideDecimal('1111', '100'));
 						});
 						it('and in an unknown currency, reverts', async () => {
 							await assert.revert(
-								tribeone.totalIssuedSynths(toBytes32('XYZ')),
+								tribeone.totalIssuedTribes(toBytes32('XYZ')),
 								'SafeMath: division by zero'
 							);
 						});
@@ -517,35 +517,35 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					describe('when numerous issues in many currencies', () => {
 						beforeEach(async () => {
-							// as our synths are mocks, let's issue some amount to users
-							await sUSDContract.issue(account1, toUnit('1000'));
+							// as our tribes are mocks, let's issue some amount to users
+							await hUSDContract.issue(account1, toUnit('1000'));
 
 							await sAUDContract.issue(account1, toUnit('1000')); // 500 hUSD worth
 							await sAUDContract.issue(account2, toUnit('1000')); // 500 hUSD worth
 
 							await sEURContract.issue(account3, toUnit('80')); // 100 hUSD worth
 
-							await sETHContract.issue(account1, toUnit('1')); // 100 hUSD worth
+							await hETHContract.issue(account1, toUnit('1')); // 100 hUSD worth
 
 							// and since we are are bypassing the usual issuance flow here, we must cache the debt snapshot
-							assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('0'));
+							assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('0'));
 							await updateDebtMonitors();
 						});
-						it('then totalIssuedSynths in should correctly calculate the total issued synths in hUSD', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('2200'));
+						it('then totalIssuedTribes in should correctly calculate the total issued tribes in hUSD', async () => {
+							assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('2200'));
 						});
-						it('and in another synth currency', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(sAUD), toUnit('4400', '2'));
+						it('and in another tribe currency', async () => {
+							assert.bnEqual(await tribeone.totalIssuedTribes(sAUD), toUnit('4400', '2'));
 						});
 						it('and in HAKA', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(HAKA), divideDecimal('2200', '2'));
+							assert.bnEqual(await tribeone.totalIssuedTribes(HAKA), divideDecimal('2200', '2'));
 						});
-						it('and in a non-synth currency', async () => {
-							assert.bnEqual(await tribeone.totalIssuedSynths(ETH), divideDecimal('2200', '100'));
+						it('and in a non-tribe currency', async () => {
+							assert.bnEqual(await tribeone.totalIssuedTribes(ETH), divideDecimal('2200', '100'));
 						});
 						it('and in an unknown currency, reverts', async () => {
 							await assert.revert(
-								tribeone.totalIssuedSynths(toBytes32('XYZ')),
+								tribeone.totalIssuedTribes(toBytes32('XYZ')),
 								'SafeMath: division by zero'
 							);
 						});
@@ -568,21 +568,21 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					const amountIssuedAcc1 = toUnit('30');
 					const amountIssuedAcc2 = toUnit('50');
-					await tribeone.issueSynths(amountIssuedAcc1, { from: account1 });
-					await tribeone.issueSynths(amountIssuedAcc2, { from: account2 });
+					await tribeone.issueTribes(amountIssuedAcc1, { from: account1 });
+					await tribeone.issueTribes(amountIssuedAcc2, { from: account2 });
 
 					await tribeone.exchange(hUSD, amountIssuedAcc2, sAUD, { from: account2 });
 
 					const PRECISE_UNIT = web3.utils.toWei(web3.utils.toBN('1'), 'gether');
-					let totalIssuedSynthsUSD = await tribeone.totalIssuedSynths(hUSD);
+					let totalIssuedTribehUSD = await tribeone.totalIssuedTribes(hUSD);
 					const account1DebtRatio = divideDecimal(
 						amountIssuedAcc1,
-						totalIssuedSynthsUSD,
+						totalIssuedTribehUSD,
 						PRECISE_UNIT
 					);
 					const account2DebtRatio = divideDecimal(
 						amountIssuedAcc2,
-						totalIssuedSynthsUSD,
+						totalIssuedTribehUSD,
 						PRECISE_UNIT
 					);
 
@@ -590,16 +590,16 @@ contract('Issuer (via Tribeone)', async accounts => {
 					await updateAggregatorRates(exchangeRates, circuitBreaker, [sAUD], [newAUDRate]);
 					await updateDebtMonitors();
 
-					totalIssuedSynthsUSD = await tribeone.totalIssuedSynths(hUSD);
+					totalIssuedTribehUSD = await tribeone.totalIssuedTribes(hUSD);
 					const conversionFactor = web3.utils.toBN(1000000000);
 					const expectedDebtAccount1 = multiplyDecimal(
 						account1DebtRatio,
-						totalIssuedSynthsUSD.mul(conversionFactor),
+						totalIssuedTribehUSD.mul(conversionFactor),
 						PRECISE_UNIT
 					).div(conversionFactor);
 					const expectedDebtAccount2 = multiplyDecimal(
 						account2DebtRatio,
-						totalIssuedSynthsUSD.mul(conversionFactor),
+						totalIssuedTribehUSD.mul(conversionFactor),
 						PRECISE_UNIT
 					).div(conversionFactor);
 
@@ -628,17 +628,17 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					const issuedSynths = toUnit('1001');
-					await tribeone.issueSynths(issuedSynths, { from: account1 });
+					const issuedTribes = toUnit('1001');
+					await tribeone.issueTribes(issuedTribes, { from: account1 });
 
 					const debt = await tribeone.debtBalanceOf(account1, toBytes32('hUSD'));
-					assert.bnEqual(debt, issuedSynths);
+					assert.bnEqual(debt, issuedTribes);
 				});
 			});
 
-			describe('remainingIssuableSynths()', () => {
-				it("should correctly calculate a user's remaining issuable synths with prior issuance", async () => {
-					const haka2usdRate = await exchangeRates.rateForCurrency(HAKA);
+			describe('remainingIssuableTribes()', () => {
+				it("should correctly calculate a user's remaining issuable tribes with prior issuance", async () => {
+					const snx2usdRate = await exchangeRates.rateForCurrency(HAKA);
 					const issuanceRatio = await systemSettings.issuanceRatio();
 
 					const issuedTribeones = web3.utils.toBN('200012');
@@ -648,23 +648,23 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					// Issue
 					const amountIssued = toUnit('2011');
-					await tribeone.issueSynths(amountIssued, { from: account1 });
+					await tribeone.issueTribes(amountIssued, { from: account1 });
 
-					const expectedIssuableSynths = multiplyDecimal(
+					const expectedIssuableTribes = multiplyDecimal(
 						toUnit(issuedTribeones),
-						multiplyDecimal(haka2usdRate, issuanceRatio)
+						multiplyDecimal(snx2usdRate, issuanceRatio)
 					).sub(amountIssued);
 
-					const issuableSynths = await issuer.remainingIssuableSynths(account1);
-					assert.bnEqual(issuableSynths.maxIssuable, expectedIssuableSynths);
+					const issuableTribes = await issuer.remainingIssuableTribes(account1);
+					assert.bnEqual(issuableTribes.maxIssuable, expectedIssuableTribes);
 
 					// other args should also be correct
-					assert.bnEqual(issuableSynths.totalSystemDebt, amountIssued);
-					assert.bnEqual(issuableSynths.alreadyIssued, amountIssued);
+					assert.bnEqual(issuableTribes.totalSystemDebt, amountIssued);
+					assert.bnEqual(issuableTribes.alreadyIssued, amountIssued);
 				});
 
-				it("should correctly calculate a user's remaining issuable synths without prior issuance", async () => {
-					const haka2usdRate = await exchangeRates.rateForCurrency(HAKA);
+				it("should correctly calculate a user's remaining issuable tribes without prior issuance", async () => {
+					const snx2usdRate = await exchangeRates.rateForCurrency(HAKA);
 					const issuanceRatio = await systemSettings.issuanceRatio();
 
 					const issuedTribeones = web3.utils.toBN('20');
@@ -672,18 +672,18 @@ contract('Issuer (via Tribeone)', async accounts => {
 						from: owner,
 					});
 
-					const expectedIssuableSynths = multiplyDecimal(
+					const expectedIssuableTribes = multiplyDecimal(
 						toUnit(issuedTribeones),
-						multiplyDecimal(haka2usdRate, issuanceRatio)
+						multiplyDecimal(snx2usdRate, issuanceRatio)
 					);
 
-					const remainingIssuable = await issuer.remainingIssuableSynths(account1);
-					assert.bnEqual(remainingIssuable.maxIssuable, expectedIssuableSynths);
+					const remainingIssuable = await issuer.remainingIssuableTribes(account1);
+					assert.bnEqual(remainingIssuable.maxIssuable, expectedIssuableTribes);
 				});
 			});
 
-			describe('maxIssuableSynths()', () => {
-				it("should correctly calculate a user's maximum issuable synths without prior issuance", async () => {
+			describe('maxIssuableTribes()', () => {
+				it("should correctly calculate a user's maximum issuable tribes without prior issuance", async () => {
 					const rate = await exchangeRates.rateForCurrency(toBytes32('HAKA'));
 					const issuedTribeones = web3.utils.toBN('200000');
 					await tribeone.transfer(account1, toUnit(issuedTribeones), {
@@ -691,22 +691,22 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 					const issuanceRatio = await systemSettings.issuanceRatio();
 
-					const expectedIssuableSynths = multiplyDecimal(
+					const expectedIssuableTribes = multiplyDecimal(
 						toUnit(issuedTribeones),
 						multiplyDecimal(rate, issuanceRatio)
 					);
-					const maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
+					const maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
 
-					assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
+					assert.bnEqual(expectedIssuableTribes, maxIssuableTribes);
 				});
 
-				it("should correctly calculate a user's maximum issuable synths without any HAKA", async () => {
-					const maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
-					assert.bnEqual(0, maxIssuableSynths);
+				it("should correctly calculate a user's maximum issuable tribes without any HAKA", async () => {
+					const maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
+					assert.bnEqual(0, maxIssuableTribes);
 				});
 
-				it("should correctly calculate a user's maximum issuable synths with prior issuance", async () => {
-					const haka2usdRate = await exchangeRates.rateForCurrency(HAKA);
+				it("should correctly calculate a user's maximum issuable tribes with prior issuance", async () => {
+					const snx2usdRate = await exchangeRates.rateForCurrency(HAKA);
 
 					const issuedTribeones = web3.utils.toBN('320001');
 					await tribeone.transfer(account1, toUnit(issuedTribeones), {
@@ -715,53 +715,53 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					const issuanceRatio = await systemSettings.issuanceRatio();
 					const amountIssued = web3.utils.toBN('1234');
-					await tribeone.issueSynths(toUnit(amountIssued), { from: account1 });
+					await tribeone.issueTribes(toUnit(amountIssued), { from: account1 });
 
-					const expectedIssuableSynths = multiplyDecimal(
+					const expectedIssuableTribes = multiplyDecimal(
 						toUnit(issuedTribeones),
-						multiplyDecimal(haka2usdRate, issuanceRatio)
+						multiplyDecimal(snx2usdRate, issuanceRatio)
 					);
 
-					const maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
-					assert.bnEqual(expectedIssuableSynths, maxIssuableSynths);
+					const maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
+					assert.bnEqual(expectedIssuableTribes, maxIssuableTribes);
 				});
 			});
 
-			describe('adding and removing synths', () => {
-				it('should allow adding a Synth contract', async () => {
-					const previousSynthCount = await tribeone.availableSynthCount();
+			describe('adding and removing tribes', () => {
+				it('should allow adding a Tribe contract', async () => {
+					const previousTribeCount = await tribeone.availableTribeCount();
 
-					const { token: synth } = await mockToken({
+					const { token: tribe } = await mockToken({
 						accounts,
-						synth: 'sXYZ',
+						tribe: 'sXYZ',
 						skipInitialAllocation: true,
 						supply: 0,
 						name: 'XYZ',
 						symbol: 'XYZ',
 					});
 
-					const txn = await issuer.addSynth(synth.address, { from: owner });
+					const txn = await issuer.addTribe(tribe.address, { from: owner });
 
 					const currencyKey = toBytes32('sXYZ');
 
-					// Assert that we've successfully added a Synth
+					// Assert that we've successfully added a Tribe
 					assert.bnEqual(
-						await tribeone.availableSynthCount(),
-						previousSynthCount.add(web3.utils.toBN(1))
+						await tribeone.availableTribeCount(),
+						previousTribeCount.add(web3.utils.toBN(1))
 					);
 					// Assert that it's at the end of the array
-					assert.equal(await tribeone.availableSynths(previousSynthCount), synth.address);
+					assert.equal(await tribeone.availableTribes(previousTribeCount), tribe.address);
 					// Assert that it's retrievable by its currencyKey
-					assert.equal(await tribeone.synths(currencyKey), synth.address);
+					assert.equal(await tribeone.tribes(currencyKey), tribe.address);
 
 					// Assert event emitted
-					assert.eventEqual(txn.logs[0], 'SynthAdded', [currencyKey, synth.address]);
+					assert.eventEqual(txn.logs[0], 'TribeAdded', [currencyKey, tribe.address]);
 				});
 
-				it('should disallow adding a Synth contract when the user is not the owner', async () => {
-					const { token: synth } = await mockToken({
+				it('should disallow adding a Tribe contract when the user is not the owner', async () => {
+					const { token: tribe } = await mockToken({
 						accounts,
-						synth: 'sXYZ',
+						tribe: 'sXYZ',
 						skipInitialAllocation: true,
 						supply: 0,
 						name: 'XYZ',
@@ -769,60 +769,60 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					await onlyGivenAddressCanInvoke({
-						fnc: issuer.addSynth,
+						fnc: issuer.addTribe,
 						accounts,
-						args: [synth.address],
+						args: [tribe.address],
 						address: owner,
 						reason: 'Only the contract owner may perform this action',
 					});
 				});
 
-				it('should disallow double adding a Synth contract with the same address', async () => {
-					const { token: synth } = await mockToken({
+				it('should disallow double adding a Tribe contract with the same address', async () => {
+					const { token: tribe } = await mockToken({
 						accounts,
-						synth: 'sXYZ',
+						tribe: 'sXYZ',
 						skipInitialAllocation: true,
 						supply: 0,
 						name: 'XYZ',
 						symbol: 'XYZ',
 					});
 
-					await issuer.addSynth(synth.address, { from: owner });
-					await assert.revert(issuer.addSynth(synth.address, { from: owner }), 'Synth exists');
+					await issuer.addTribe(tribe.address, { from: owner });
+					await assert.revert(issuer.addTribe(tribe.address, { from: owner }), 'Tribe exists');
 				});
 
-				it('should disallow double adding a Synth contract with the same currencyKey', async () => {
-					const { token: synth1 } = await mockToken({
+				it('should disallow double adding a Tribe contract with the same currencyKey', async () => {
+					const { token: tribe1 } = await mockToken({
 						accounts,
-						synth: 'sXYZ',
+						tribe: 'sXYZ',
 						skipInitialAllocation: true,
 						supply: 0,
 						name: 'XYZ',
 						symbol: 'XYZ',
 					});
 
-					const { token: synth2 } = await mockToken({
+					const { token: tribe2 } = await mockToken({
 						accounts,
-						synth: 'sXYZ',
+						tribe: 'sXYZ',
 						skipInitialAllocation: true,
 						supply: 0,
 						name: 'XYZ',
 						symbol: 'XYZ',
 					});
 
-					await issuer.addSynth(synth1.address, { from: owner });
-					await assert.revert(issuer.addSynth(synth2.address, { from: owner }), 'Synth exists');
+					await issuer.addTribe(tribe1.address, { from: owner });
+					await assert.revert(issuer.addTribe(tribe2.address, { from: owner }), 'Tribe exists');
 				});
 
-				describe('when another synth is added with 0 supply', () => {
-					let currencyKey, synth, synthProxy;
+				describe('when another tribe is added with 0 supply', () => {
+					let currencyKey, tribe, tribeProxy;
 
 					beforeEach(async () => {
-						const symbol = 'sBTC';
+						const symbol = 'hBTC';
 						currencyKey = toBytes32(symbol);
 
-						({ token: synth, proxy: synthProxy } = await mockToken({
-							synth: symbol,
+						({ token: tribe, proxy: tribeProxy } = await mockToken({
+							tribe: symbol,
 							accounts,
 							name: 'test',
 							symbol,
@@ -830,38 +830,38 @@ contract('Issuer (via Tribeone)', async accounts => {
 							skipInitialAllocation: true,
 						}));
 
-						await issuer.addSynth(synth.address, { from: owner });
+						await issuer.addTribe(tribe.address, { from: owner });
 						await setupPriceAggregators(exchangeRates, owner, [currencyKey]);
 					});
 
-					it('should be able to query multiple synth addresses', async () => {
-						const synthAddresses = await issuer.getSynths([currencyKey, sETH, hUSD]);
-						assert.equal(synthAddresses[0], synth.address);
-						assert.equal(synthAddresses[1], sETHContract.address);
-						assert.equal(synthAddresses[2], sUSDContract.address);
-						assert.equal(synthAddresses.length, 3);
+					it('should be able to query multiple tribe addresses', async () => {
+						const tribeAddresses = await issuer.getTribes([currencyKey, hETH, hUSD]);
+						assert.equal(tribeAddresses[0], tribe.address);
+						assert.equal(tribeAddresses[1], hETHContract.address);
+						assert.equal(tribeAddresses[2], hUSDContract.address);
+						assert.equal(tribeAddresses.length, 3);
 					});
 
-					it('should allow removing a Synth contract when it has no issued balance', async () => {
-						const synthCount = await tribeone.availableSynthCount();
+					it('should allow removing a Tribe contract when it has no issued balance', async () => {
+						const tribeCount = await tribeone.availableTribeCount();
 
-						assert.notEqual(await tribeone.synths(currencyKey), ZERO_ADDRESS);
+						assert.notEqual(await tribeone.tribes(currencyKey), ZERO_ADDRESS);
 
-						const txn = await issuer.removeSynth(currencyKey, { from: owner });
+						const txn = await issuer.removeTribe(currencyKey, { from: owner });
 
-						// Assert that we have one less synth, and that the specific currency key is gone.
+						// Assert that we have one less tribe, and that the specific currency key is gone.
 						assert.bnEqual(
-							await tribeone.availableSynthCount(),
-							synthCount.sub(web3.utils.toBN(1))
+							await tribeone.availableTribeCount(),
+							tribeCount.sub(web3.utils.toBN(1))
 						);
-						assert.equal(await tribeone.synths(currencyKey), ZERO_ADDRESS);
+						assert.equal(await tribeone.tribes(currencyKey), ZERO_ADDRESS);
 
-						assert.eventEqual(txn, 'SynthRemoved', [currencyKey, synth.address]);
+						assert.eventEqual(txn, 'TribeRemoved', [currencyKey, tribe.address]);
 					});
 
 					it('should disallow removing a token by a non-owner', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: issuer.removeSynth,
+							fnc: issuer.removeTribe,
 							args: [currencyKey],
 							accounts,
 							address: owner,
@@ -869,18 +869,18 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 					});
 
-					describe('when that synth has issued but has no rate', () => {
+					describe('when that tribe has issued but has no rate', () => {
 						beforeEach(async () => {
-							await synth.issue(account1, toUnit('100'));
+							await tribe.issue(account1, toUnit('100'));
 						});
-						it('should disallow removing a Synth contract when it has an issued balance and no rate', async () => {
-							// Assert that we can't remove the synth now
+						it('should disallow removing a Tribe contract when it has an issued balance and no rate', async () => {
+							// Assert that we can't remove the tribe now
 							await assert.revert(
-								issuer.removeSynth(currencyKey, { from: owner }),
+								issuer.removeTribe(currencyKey, { from: owner }),
 								'Cannot remove without rate'
 							);
 						});
-						describe('when the synth has a rate', () => {
+						describe('when the tribe has a rate', () => {
 							beforeEach(async () => {
 								await updateAggregatorRates(
 									exchangeRates,
@@ -890,14 +890,14 @@ contract('Issuer (via Tribeone)', async accounts => {
 								);
 							});
 
-							describe('when another user exchanges into the synth', () => {
+							describe('when another user exchanges into the tribe', () => {
 								beforeEach(async () => {
-									await sUSDContract.issue(account2, toUnit('1000'));
+									await hUSDContract.issue(account2, toUnit('1000'));
 									await tribeone.exchange(hUSD, toUnit('100'), currencyKey, { from: account2 });
 								});
-								describe('when the synth is removed', () => {
+								describe('when the tribe is removed', () => {
 									beforeEach(async () => {
-										await issuer.removeSynth(currencyKey, { from: owner });
+										await issuer.removeTribe(currencyKey, { from: owner });
 									});
 									it('then settling works as expected', async () => {
 										await tribeone.settle(currencyKey);
@@ -906,16 +906,16 @@ contract('Issuer (via Tribeone)', async accounts => {
 										assert.equal(numEntries, '0');
 									});
 								});
-								describe('when the same user exchanges out of the synth', () => {
+								describe('when the same user exchanges out of the tribe', () => {
 									beforeEach(async () => {
 										await setExchangeWaitingPeriod({ owner, systemSettings, secs: 60 });
 										// pass through the waiting period so we can exchange again
 										await fastForward(90);
 										await tribeone.exchange(currencyKey, toUnit('1'), hUSD, { from: account2 });
 									});
-									describe('when the synth is removed', () => {
+									describe('when the tribe is removed', () => {
 										beforeEach(async () => {
-											await issuer.removeSynth(currencyKey, { from: owner });
+											await issuer.removeTribe(currencyKey, { from: owner });
 										});
 										it('then settling works as expected', async () => {
 											await tribeone.settle(hUSD);
@@ -933,41 +933,41 @@ contract('Issuer (via Tribeone)', async accounts => {
 							});
 
 							describe('when a debt snapshot is taken', () => {
-								let totalIssuedSynths;
+								let totalIssuedTribes;
 								beforeEach(async () => {
 									await updateDebtMonitors();
 
-									totalIssuedSynths = await issuer.totalIssuedSynths(hUSD, true);
+									totalIssuedTribes = await issuer.totalIssuedTribes(hUSD, true);
 
-									// 100 sETH at 2 per sETH is 200 total debt
-									assert.bnEqual(totalIssuedSynths, toUnit('200'));
+									// 100 hETH at 2 per hETH is 200 total debt
+									assert.bnEqual(totalIssuedTribes, toUnit('200'));
 								});
-								describe('when the synth is removed', () => {
+								describe('when the tribe is removed', () => {
 									let txn;
 									beforeEach(async () => {
 										// base conditions
-										assert.equal(await sUSDContract.balanceOf(synthRedeemer.address), '0');
-										assert.equal(await synthRedeemer.redemptions(synthProxy.address), '0');
+										assert.equal(await hUSDContract.balanceOf(tribeRedeemer.address), '0');
+										assert.equal(await tribeRedeemer.redemptions(tribeProxy.address), '0');
 
 										// now do the removal
-										txn = await issuer.removeSynth(currencyKey, { from: owner });
+										txn = await issuer.removeTribe(currencyKey, { from: owner });
 									});
 									it('emits an event', async () => {
-										assert.eventEqual(txn, 'SynthRemoved', [currencyKey, synth.address]);
+										assert.eventEqual(txn, 'TribeRemoved', [currencyKey, tribe.address]);
 									});
 									it('issues the equivalent amount of hUSD', async () => {
-										const amountOfsUSDIssued = await sUSDContract.balanceOf(synthRedeemer.address);
+										const amountOfhUSDIssued = await hUSDContract.balanceOf(tribeRedeemer.address);
 
-										// 100 units of sBTC at a rate of 2:1
-										assert.bnEqual(amountOfsUSDIssued, toUnit('200'));
+										// 100 units of hBTC at a rate of 2:1
+										assert.bnEqual(amountOfhUSDIssued, toUnit('200'));
 									});
 									it('it invokes deprecate on the redeemer via the proxy', async () => {
-										const redeemRate = await synthRedeemer.redemptions(synthProxy.address);
+										const redeemRate = await tribeRedeemer.redemptions(tribeProxy.address);
 
 										assert.bnEqual(redeemRate, toUnit('2'));
 									});
 									it('and total debt remains unchanged', async () => {
-										assert.bnEqual(await issuer.totalIssuedSynths(hUSD, true), totalIssuedSynths);
+										assert.bnEqual(await issuer.totalIssuedTribes(hUSD, true), totalIssuedTribes);
 									});
 								});
 							});
@@ -975,15 +975,15 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 				});
 
-				describe('multiple add/remove synths', () => {
-					let currencyKey, synth;
+				describe('multiple add/remove tribes', () => {
+					let currencyKey, tribe;
 
 					beforeEach(async () => {
-						const symbol = 'sBTC';
+						const symbol = 'hBTC';
 						currencyKey = toBytes32(symbol);
 
-						({ token: synth } = await mockToken({
-							synth: symbol,
+						({ token: tribe } = await mockToken({
+							tribe: symbol,
 							accounts,
 							name: 'test',
 							symbol,
@@ -991,59 +991,59 @@ contract('Issuer (via Tribeone)', async accounts => {
 							skipInitialAllocation: true,
 						}));
 
-						await issuer.addSynth(synth.address, { from: owner });
+						await issuer.addTribe(tribe.address, { from: owner });
 					});
 
-					it('should allow adding multiple Synth contracts at once', async () => {
-						const previousSynthCount = await tribeone.availableSynthCount();
+					it('should allow adding multiple Tribe contracts at once', async () => {
+						const previousTribeCount = await tribeone.availableTribeCount();
 
-						const { token: synth1 } = await mockToken({
+						const { token: tribe1 } = await mockToken({
 							accounts,
-							synth: 'sXYZ',
+							tribe: 'sXYZ',
 							skipInitialAllocation: true,
 							supply: 0,
 							name: 'XYZ',
 							symbol: 'XYZ',
 						});
 
-						const { token: synth2 } = await mockToken({
+						const { token: tribe2 } = await mockToken({
 							accounts,
-							synth: 'sABC',
+							tribe: 'sABC',
 							skipInitialAllocation: true,
 							supply: 0,
 							name: 'ABC',
 							symbol: 'ABC',
 						});
 
-						const txn = await issuer.addSynths([synth1.address, synth2.address], { from: owner });
+						const txn = await issuer.addTribes([tribe1.address, tribe2.address], { from: owner });
 
 						const currencyKey1 = toBytes32('sXYZ');
 						const currencyKey2 = toBytes32('sABC');
 
-						// Assert that we've successfully added two Synths
+						// Assert that we've successfully added two Tribes
 						assert.bnEqual(
-							await tribeone.availableSynthCount(),
-							previousSynthCount.add(web3.utils.toBN(2))
+							await tribeone.availableTribeCount(),
+							previousTribeCount.add(web3.utils.toBN(2))
 						);
 						// Assert that they're at the end of the array
-						assert.equal(await tribeone.availableSynths(previousSynthCount), synth1.address);
+						assert.equal(await tribeone.availableTribes(previousTribeCount), tribe1.address);
 						assert.equal(
-							await tribeone.availableSynths(previousSynthCount.add(web3.utils.toBN(1))),
-							synth2.address
+							await tribeone.availableTribes(previousTribeCount.add(web3.utils.toBN(1))),
+							tribe2.address
 						);
 						// Assert that they are retrievable by currencyKey
-						assert.equal(await tribeone.synths(currencyKey1), synth1.address);
-						assert.equal(await tribeone.synths(currencyKey2), synth2.address);
+						assert.equal(await tribeone.tribes(currencyKey1), tribe1.address);
+						assert.equal(await tribeone.tribes(currencyKey2), tribe2.address);
 
 						// Assert events emitted
-						assert.eventEqual(txn.logs[0], 'SynthAdded', [currencyKey1, synth1.address]);
-						assert.eventEqual(txn.logs[1], 'SynthAdded', [currencyKey2, synth2.address]);
+						assert.eventEqual(txn.logs[0], 'TribeAdded', [currencyKey1, tribe1.address]);
+						assert.eventEqual(txn.logs[1], 'TribeAdded', [currencyKey2, tribe2.address]);
 					});
 
-					it('should disallow multi-adding the same Synth contract', async () => {
-						const { token: synth } = await mockToken({
+					it('should disallow multi-adding the same Tribe contract', async () => {
+						const { token: tribe } = await mockToken({
 							accounts,
-							synth: 'sXYZ',
+							tribe: 'sXYZ',
 							skipInitialAllocation: true,
 							supply: 0,
 							name: 'XYZ',
@@ -1051,24 +1051,24 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 
 						await assert.revert(
-							issuer.addSynths([synth.address, synth.address], { from: owner }),
-							'Synth exists'
+							issuer.addTribes([tribe.address, tribe.address], { from: owner }),
+							'Tribe exists'
 						);
 					});
 
-					it('should disallow multi-adding synth contracts with the same currency key', async () => {
-						const { token: synth1 } = await mockToken({
+					it('should disallow multi-adding tribe contracts with the same currency key', async () => {
+						const { token: tribe1 } = await mockToken({
 							accounts,
-							synth: 'sXYZ',
+							tribe: 'sXYZ',
 							skipInitialAllocation: true,
 							supply: 0,
 							name: 'XYZ',
 							symbol: 'XYZ',
 						});
 
-						const { token: synth2 } = await mockToken({
+						const { token: tribe2 } = await mockToken({
 							accounts,
-							synth: 'sXYZ',
+							tribe: 'sXYZ',
 							skipInitialAllocation: true,
 							supply: 0,
 							name: 'XYZ',
@@ -1076,35 +1076,35 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 
 						await assert.revert(
-							issuer.addSynths([synth1.address, synth2.address], { from: owner }),
-							'Synth exists'
+							issuer.addTribes([tribe1.address, tribe2.address], { from: owner }),
+							'Tribe exists'
 						);
 					});
 
-					it('should disallow removing non-existent synths', async () => {
+					it('should disallow removing non-existent tribes', async () => {
 						const fakeCurrencyKey = toBytes32('NOPE');
 
-						// Assert that we can't remove the synth
+						// Assert that we can't remove the tribe
 						await assert.revert(
-							issuer.removeSynths([currencyKey, fakeCurrencyKey], { from: owner }),
-							'Synth does not exist'
+							issuer.removeTribes([currencyKey, fakeCurrencyKey], { from: owner }),
+							'Tribe does not exist'
 						);
 					});
 
 					it('should disallow removing hUSD', async () => {
 						// Assert that we can't remove hUSD
 						await assert.revert(
-							issuer.removeSynths([currencyKey, hUSD], { from: owner }),
-							'Cannot remove synth'
+							issuer.removeTribes([currencyKey, hUSD], { from: owner }),
+							'Cannot remove tribe'
 						);
 					});
 
-					it('should allow removing synths with no balance', async () => {
+					it('should allow removing tribes with no balance', async () => {
 						const symbol2 = 'sFOO';
 						const currencyKey2 = toBytes32(symbol2);
 
-						const { token: synth2 } = await mockToken({
-							synth: symbol2,
+						const { token: tribe2 } = await mockToken({
+							tribe: symbol2,
 							accounts,
 							name: 'foo',
 							symbol2,
@@ -1112,20 +1112,20 @@ contract('Issuer (via Tribeone)', async accounts => {
 							skipInitialAllocation: true,
 						});
 
-						await issuer.addSynth(synth2.address, { from: owner });
+						await issuer.addTribe(tribe2.address, { from: owner });
 
-						const previousSynthCount = await tribeone.availableSynthCount();
+						const previousTribeCount = await tribeone.availableTribeCount();
 
-						const tx = await issuer.removeSynths([currencyKey, currencyKey2], { from: owner });
+						const tx = await issuer.removeTribes([currencyKey, currencyKey2], { from: owner });
 
 						assert.bnEqual(
-							await tribeone.availableSynthCount(),
-							previousSynthCount.sub(web3.utils.toBN(2))
+							await tribeone.availableTribeCount(),
+							previousTribeCount.sub(web3.utils.toBN(2))
 						);
 
 						// Assert events emitted
-						assert.eventEqual(tx.logs[0], 'SynthRemoved', [currencyKey, synth.address]);
-						assert.eventEqual(tx.logs[1], 'SynthRemoved', [currencyKey2, synth2.address]);
+						assert.eventEqual(tx.logs[0], 'TribeRemoved', [currencyKey, tribe.address]);
+						assert.eventEqual(tx.logs[1], 'TribeRemoved', [currencyKey2, tribe2.address]);
 					});
 				});
 			});
@@ -1133,7 +1133,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 			describe('issuance', () => {
 				describe('potential blocking conditions', () => {
 					beforeEach(async () => {
-						// ensure user has synths to issue from
+						// ensure user has tribes to issue from
 						await tribeone.transfer(account1, toUnit('1000'), { from: owner });
 					});
 
@@ -1144,13 +1144,13 @@ contract('Issuer (via Tribeone)', async accounts => {
 							});
 							it('then calling issue() reverts', async () => {
 								await assert.revert(
-									tribeone.issueSynths(toUnit('1'), { from: account1 }),
+									tribeone.issueTribes(toUnit('1'), { from: account1 }),
 									'Operation prohibited'
 								);
 							});
-							it('and calling issueMaxSynths() reverts', async () => {
+							it('and calling issueMaxTribes() reverts', async () => {
 								await assert.revert(
-									tribeone.issueMaxSynths({ from: account1 }),
+									tribeone.issueMaxTribes({ from: account1 }),
 									'Operation prohibited'
 								);
 							});
@@ -1159,10 +1159,10 @@ contract('Issuer (via Tribeone)', async accounts => {
 									await setStatus({ owner, systemStatus, section, suspend: false });
 								});
 								it('then calling issue() succeeds', async () => {
-									await tribeone.issueSynths(toUnit('1'), { from: account1 });
+									await tribeone.issueTribes(toUnit('1'), { from: account1 });
 								});
-								it('and calling issueMaxSynths() succeeds', async () => {
-									await tribeone.issueMaxSynths({ from: account1 });
+								it('and calling issueMaxTribes() succeeds', async () => {
+									await tribeone.issueMaxTribes({ from: account1 });
 								});
 							});
 						});
@@ -1175,16 +1175,16 @@ contract('Issuer (via Tribeone)', async accounts => {
 							await updateDebtMonitors();
 						});
 
-						it('reverts on issueSynths()', async () => {
+						it('reverts on issueTribes()', async () => {
 							await assert.revert(
-								tribeone.issueSynths(toUnit('1'), { from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.issueTribes(toUnit('1'), { from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
-						it('reverts on issueMaxSynths()', async () => {
+						it('reverts on issueMaxTribes()', async () => {
 							await assert.revert(
-								tribeone.issueMaxSynths({ from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.issueMaxTribes({ from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
 					});
@@ -1194,59 +1194,59 @@ contract('Issuer (via Tribeone)', async accounts => {
 							await aggregatorDebtRatio.setOverrideTimestamp(500); // really old timestamp
 						});
 
-						it('reverts on issueSynths()', async () => {
+						it('reverts on issueTribes()', async () => {
 							await assert.revert(
-								tribeone.issueSynths(toUnit('1'), { from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.issueTribes(toUnit('1'), { from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
-						it('reverts on issueMaxSynths()', async () => {
+						it('reverts on issueMaxTribes()', async () => {
 							await assert.revert(
-								tribeone.issueMaxSynths({ from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.issueMaxTribes({ from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
 					});
 				});
-				it('should allow the issuance of a small amount of synths', async () => {
+				it('should allow the issuance of a small amount of tribes', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('1000'), { from: owner });
 
 					// account1 should be able to issue
-					// Note: If a too small amount of synths are issued here, the amount may be
+					// Note: If a too small amount of tribes are issued here, the amount may be
 					// rounded to 0 in the debt register. This will revert. As such, there is a minimum
-					// number of synths that need to be issued each time issue is invoked. The exact
-					// amount depends on the Synth exchange rate and the total supply.
-					await tribeone.issueSynths(web3.utils.toBN('5'), { from: account1 });
+					// number of tribes that need to be issued each time issue is invoked. The exact
+					// amount depends on the Tribe exchange rate and the total supply.
+					await tribeone.issueTribes(web3.utils.toBN('5'), { from: account1 });
 				});
 
-				it('should be possible to issue the maximum amount of synths via issueSynths', async () => {
+				it('should be possible to issue the maximum amount of tribes via issueTribes', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('1000'), { from: owner });
 
-					const maxSynths = await tribeone.maxIssuableSynths(account1);
+					const maxTribes = await tribeone.maxIssuableTribes(account1);
 
 					// account1 should be able to issue
-					await tribeone.issueSynths(maxSynths, { from: account1 });
+					await tribeone.issueTribes(maxTribes, { from: account1 });
 				});
 
-				it('should allow an issuer to issue synths in one flavour', async () => {
+				it('should allow an issuer to issue tribes in one flavour', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('1000'), { from: owner });
 
 					// account1 should be able to issue
-					await tribeone.issueSynths(toUnit('10'), { from: account1 });
+					await tribeone.issueTribes(toUnit('10'), { from: account1 });
 
 					// There should be 10 hUSD of value in the system
-					assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('10'));
+					assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('10'));
 
 					// And account1 should own 100% of the debt.
-					assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('10'));
+					assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('10'));
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('10'));
 				});
 
 				// TODO: Check that the rounding errors are acceptable
-				it('should allow two issuers to issue synths in one flavour', async () => {
+				it('should allow two issuers to issue tribes in one flavour', async () => {
 					// Give some HAKA to account1 and account2
 					await tribeone.transfer(account1, toUnit('10000'), {
 						from: owner,
@@ -1256,11 +1256,11 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					await tribeone.issueSynths(toUnit('10'), { from: account1 });
-					await tribeone.issueSynths(toUnit('20'), { from: account2 });
+					await tribeone.issueTribes(toUnit('10'), { from: account1 });
+					await tribeone.issueTribes(toUnit('20'), { from: account2 });
 
-					// There should be 30sUSD of value in the system
-					assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('30'));
+					// There should be 30hUSD of value in the system
+					assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('30'));
 
 					// And the debt should be split 50/50.
 					// But there's a small rounding error.
@@ -1280,12 +1280,12 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					await tribeone.issueSynths(toUnit('10'), { from: account1 });
-					await tribeone.issueSynths(toUnit('20'), { from: account2 });
-					await tribeone.issueSynths(toUnit('10'), { from: account1 });
+					await tribeone.issueTribes(toUnit('10'), { from: account1 });
+					await tribeone.issueTribes(toUnit('20'), { from: account2 });
+					await tribeone.issueTribes(toUnit('10'), { from: account1 });
 
 					// There should be 40 hUSD of value in the system
-					assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('40'));
+					assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('40'));
 
 					// And the debt should be split 50/50.
 					// But there's a small rounding error.
@@ -1295,20 +1295,20 @@ contract('Issuer (via Tribeone)', async accounts => {
 					assert.bnClose(await tribeone.debtBalanceOf(account2, hUSD), toUnit('20'));
 				});
 
-				describe('issueSynthsWithoutDebt', () => {
+				describe('issueTribesWithoutDebt', () => {
 					describe('successfully invoked', () => {
 						let beforeCachedDebt;
 
 						beforeEach(async () => {
 							beforeCachedDebt = await debtCache.cachedDebt();
 
-							await issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: tribeoneBridgeToOptimism,
+							await issuer.issueTribesWithoutDebt(hETH, owner, toUnit(100), {
+								from: tribeetixBridgeToOptimism,
 							});
 						});
 
-						it('issues synths', async () => {
-							assert.bnEqual(await sETHContract.balanceOf(owner), toUnit(100));
+						it('issues tribes', async () => {
+							assert.bnEqual(await hETHContract.balanceOf(owner), toUnit(100));
 						});
 
 						it('maintains debt cache', async () => {
@@ -1317,22 +1317,22 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 				});
 
-				describe('burnSynthsWithoutDebt', () => {
+				describe('burnTribesWithoutDebt', () => {
 					describe('successfully invoked', () => {
 						let beforeCachedDebt;
 
 						beforeEach(async () => {
 							beforeCachedDebt = await debtCache.cachedDebt();
-							await issuer.issueSynthsWithoutDebt(sETH, owner, toUnit(100), {
-								from: tribeoneBridgeToOptimism,
+							await issuer.issueTribesWithoutDebt(hETH, owner, toUnit(100), {
+								from: tribeetixBridgeToOptimism,
 							});
-							await issuer.burnSynthsWithoutDebt(sETH, owner, toUnit(50), {
-								from: tribeoneBridgeToOptimism,
+							await issuer.burnTribesWithoutDebt(hETH, owner, toUnit(50), {
+								from: tribeetixBridgeToOptimism,
 							});
 						});
 
-						it('burns synths', async () => {
-							assert.bnEqual(await sETHContract.balanceOf(owner), toUnit(50));
+						it('burns tribes', async () => {
+							assert.bnEqual(await hETHContract.balanceOf(owner), toUnit(50));
 						});
 
 						it('maintains debt cache', async () => {
@@ -1341,62 +1341,62 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 				});
 
-				describe('issueMaxSynths', () => {
-					it('should allow an issuer to issue max synths in one flavour', async () => {
+				describe('issueMaxTribes', () => {
+					it('should allow an issuer to issue max tribes in one flavour', async () => {
 						// Give some HAKA to account1
 						await tribeone.transfer(account1, toUnit('10000'), {
 							from: owner,
 						});
 
 						// Issue
-						await tribeone.issueMaxSynths({ from: account1 });
+						await tribeone.issueMaxTribes({ from: account1 });
 
 						// There should be 200 hUSD of value in the system
-						assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('200'));
+						assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('200'));
 
 						// And account1 should own all of it.
 						assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('200'));
 					});
 				});
 
-				it('should allow an issuer to issue max synths via the standard issue call', async () => {
+				it('should allow an issuer to issue max tribes via the standard issue call', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('10000'), {
 						from: owner,
 					});
 
 					// Determine maximum amount that can be issued.
-					const maxIssuable = await tribeone.maxIssuableSynths(account1);
+					const maxIssuable = await tribeone.maxIssuableTribes(account1);
 
 					// Issue
-					await tribeone.issueSynths(maxIssuable, { from: account1 });
+					await tribeone.issueTribes(maxIssuable, { from: account1 });
 
 					// There should be 200 hUSD of value in the system
-					assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit('200'));
+					assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit('200'));
 
 					// And account1 should own all of it.
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('200'));
 				});
 
-				it('should disallow an issuer from issuing synths beyond their remainingIssuableSynths', async () => {
+				it('should disallow an issuer from issuing tribes beyond their remainingIssuableTribes', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('10000'), {
 						from: owner,
 					});
 
 					// They should now be able to issue hUSD
-					let issuableSynths = await issuer.remainingIssuableSynths(account1);
-					assert.bnEqual(issuableSynths.maxIssuable, toUnit('200'));
+					let issuableTribes = await issuer.remainingIssuableTribes(account1);
+					assert.bnEqual(issuableTribes.maxIssuable, toUnit('200'));
 
 					// Issue that amount.
-					await tribeone.issueSynths(issuableSynths.maxIssuable, { from: account1 });
+					await tribeone.issueTribes(issuableTribes.maxIssuable, { from: account1 });
 
-					// They should now have 0 issuable synths.
-					issuableSynths = await issuer.remainingIssuableSynths(account1);
-					assert.bnEqual(issuableSynths.maxIssuable, '0');
+					// They should now have 0 issuable tribes.
+					issuableTribes = await issuer.remainingIssuableTribes(account1);
+					assert.bnEqual(issuableTribes.maxIssuable, '0');
 
 					// And trying to issue the smallest possible unit of one should fail.
-					await assert.revert(tribeone.issueSynths('1', { from: account1 }), 'Amount too large');
+					await assert.revert(tribeone.issueTribes('1', { from: account1 }), 'Amount too large');
 				});
 
 				it('circuit breaks when debt changes dramatically', async () => {
@@ -1405,34 +1405,34 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// debt must start at 0
-					assert.bnEqual(await tribeone.totalIssuedSynths(hUSD), toUnit(0));
+					assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), toUnit(0));
 
 					// They should now be able to issue hUSD
-					await tribeone.issueSynths(toUnit('100'), { from: account1 });
+					await tribeone.issueTribes(toUnit('100'), { from: account1 });
 					await updateDebtMonitors();
-					await tribeone.issueSynths(toUnit('1'), { from: account1 });
+					await tribeone.issueTribes(toUnit('1'), { from: account1 });
 					await updateDebtMonitors();
 
-					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('101'));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), toUnit('101'));
 
-					await sUSDContract.issue(account1, toUnit('10000000'));
+					await hUSDContract.issue(account1, toUnit('10000000'));
 					await debtCache.takeDebtSnapshot();
 
-					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('10000101'));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), toUnit('10000101'));
 
 					// trigger circuit breaking
-					await tribeone.issueSynths(toUnit('1'), { from: account1 });
+					await tribeone.issueTribes(toUnit('1'), { from: account1 });
 
-					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('10000101'));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), toUnit('10000101'));
 
 					// undo
-					await sUSDContract.burn(account1, toUnit('10000000'));
+					await hUSDContract.burn(account1, toUnit('10000000'));
 
 					// circuit is still broken
-					await tribeone.issueSynths(toUnit('1'), { from: account1 });
-					await tribeone.issueSynths(toUnit('1'), { from: account1 });
+					await tribeone.issueTribes(toUnit('1'), { from: account1 });
+					await tribeone.issueTribes(toUnit('1'), { from: account1 });
 
-					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit('101'));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), toUnit('101'));
 				});
 			});
 
@@ -1443,38 +1443,38 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// They should now be able to issue hUSD
-					await tribeone.issueSynths(toUnit('100'), { from: account1 });
+					await tribeone.issueTribes(toUnit('100'), { from: account1 });
 					await updateDebtMonitors();
-					await tribeone.burnSynths(toUnit('1'), { from: account1 });
+					await tribeone.burnTribes(toUnit('1'), { from: account1 });
 
-					// burn the rest of the synths without getting rid of debt shares
-					await sUSDContract.burn(account1, toUnit('90'));
+					// burn the rest of the tribes without getting rid of debt shares
+					await hUSDContract.burn(account1, toUnit('90'));
 					await debtCache.takeDebtSnapshot();
 
 					// all debt should be burned here
-					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit(9));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), toUnit(9));
 
 					// trigger circuit breaking (not reverting here is part of the test)
-					await tribeone.burnSynths('1', { from: account1 });
+					await tribeone.burnTribes('1', { from: account1 });
 
 					// debt should not have changed
-					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit(9));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), toUnit(9));
 
 					// mint it back
-					await sUSDContract.issue(account1, toUnit('90'));
+					await hUSDContract.issue(account1, toUnit('90'));
 
-					await tribeone.burnSynths('1', { from: account1 });
-					await tribeone.burnSynths('1', { from: account1 });
+					await tribeone.burnTribes('1', { from: account1 });
+					await tribeone.burnTribes('1', { from: account1 });
 
 					// debt should not have changed
-					assert.bnEqual(await sUSDContract.balanceOf(account1), toUnit(99));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), toUnit(99));
 				});
 
 				describe('potential blocking conditions', () => {
 					beforeEach(async () => {
-						// ensure user has synths to burb
+						// ensure user has tribes to burb
 						await tribeone.transfer(account1, toUnit('1000'), { from: owner });
-						await tribeone.issueMaxSynths({ from: account1 });
+						await tribeone.issueMaxTribes({ from: account1 });
 					});
 					['System', 'Issuance'].forEach(section => {
 						describe(`when ${section} is suspended`, () => {
@@ -1483,13 +1483,13 @@ contract('Issuer (via Tribeone)', async accounts => {
 							});
 							it('then calling burn() reverts', async () => {
 								await assert.revert(
-									tribeone.burnSynths(toUnit('1'), { from: account1 }),
+									tribeone.burnTribes(toUnit('1'), { from: account1 }),
 									'Operation prohibited'
 								);
 							});
-							it('and calling burnSynthsToTarget() reverts', async () => {
+							it('and calling burnTribesToTarget() reverts', async () => {
 								await assert.revert(
-									tribeone.burnSynthsToTarget({ from: account1 }),
+									tribeone.burnTribesToTarget({ from: account1 }),
 									'Operation prohibited'
 								);
 							});
@@ -1497,11 +1497,11 @@ contract('Issuer (via Tribeone)', async accounts => {
 								beforeEach(async () => {
 									await setStatus({ owner, systemStatus, section, suspend: false });
 								});
-								it('then calling burnSynths() succeeds', async () => {
-									await tribeone.burnSynths(toUnit('1'), { from: account1 });
+								it('then calling burnTribes() succeeds', async () => {
+									await tribeone.burnTribes(toUnit('1'), { from: account1 });
 								});
-								it('and calling burnSynthsToTarget() succeeds', async () => {
-									await tribeone.burnSynthsToTarget({ from: account1 });
+								it('and calling burnTribesToTarget() succeeds', async () => {
+									await tribeone.burnTribesToTarget({ from: account1 });
 								});
 							});
 						});
@@ -1517,14 +1517,14 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 						it('then calling burn() reverts', async () => {
 							await assert.revert(
-								tribeone.burnSynths(toUnit('1'), { from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.burnTribes(toUnit('1'), { from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
-						it('and calling burnSynthsToTarget() reverts', async () => {
+						it('and calling burnTribesToTarget() reverts', async () => {
 							await assert.revert(
-								tribeone.burnSynthsToTarget({ from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.burnTribesToTarget({ from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
 					});
@@ -1536,75 +1536,75 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 						it('then calling burn() reverts', async () => {
 							await assert.revert(
-								tribeone.burnSynths(toUnit('1'), { from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.burnTribes(toUnit('1'), { from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
-						it('and calling burnSynthsToTarget() reverts', async () => {
+						it('and calling burnTribesToTarget() reverts', async () => {
 							await assert.revert(
-								tribeone.burnSynthsToTarget({ from: account1 }),
-								'A synth or HAKA rate is invalid'
+								tribeone.burnTribesToTarget({ from: account1 }),
+								'A tribe or HAKA rate is invalid'
 							);
 						});
 					});
 				});
 
-				it('should allow an issuer with outstanding debt to burn synths and decrease debt', async () => {
+				it('should allow an issuer with outstanding debt to burn tribes and decrease debt', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('10000'), {
 						from: owner,
 					});
 
 					// Issue
-					await tribeone.issueMaxSynths({ from: account1 });
+					await tribeone.issueMaxTribes({ from: account1 });
 
 					// account1 should now have 200 hUSD of debt.
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('200'));
 
 					// Burn 100 hUSD
-					await tribeone.burnSynths(toUnit('100'), { from: account1 });
+					await tribeone.burnTribes(toUnit('100'), { from: account1 });
 
 					// account1 should now have 100 hUSD of debt.
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('100'));
 				});
 
-				it('should disallow an issuer without outstanding debt from burning synths', async () => {
+				it('should disallow an issuer without outstanding debt from burning tribes', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('10000'), {
 						from: owner,
 					});
 
 					// Issue
-					await tribeone.issueMaxSynths({ from: account1 });
+					await tribeone.issueMaxTribes({ from: account1 });
 
 					// account2 should not have anything and can't burn.
 					await assert.revert(
-						tribeone.burnSynths(toUnit('10'), { from: account2 }),
+						tribeone.burnTribes(toUnit('10'), { from: account2 }),
 						'No debt to forgive'
 					);
 
-					// And even when we give account2 synths, it should not be able to burn.
-					await sUSDContract.transfer(account2, toUnit('100'), {
+					// And even when we give account2 tribes, it should not be able to burn.
+					await hUSDContract.transfer(account2, toUnit('100'), {
 						from: account1,
 					});
 
 					await assert.revert(
-						tribeone.burnSynths(toUnit('10'), { from: account2 }),
+						tribeone.burnTribes(toUnit('10'), { from: account2 }),
 						'No debt to forgive'
 					);
 				});
 
-				it('should revert when trying to burn synths that do not exist', async () => {
+				it('should revert when trying to burn tribes that do not exist', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('10000'), {
 						from: owner,
 					});
 
 					// Issue
-					await tribeone.issueMaxSynths({ from: account1 });
+					await tribeone.issueMaxTribes({ from: account1 });
 
-					// Transfer all newly issued synths to account2
-					await sUSDContract.transfer(account2, toUnit('200'), {
+					// Transfer all newly issued tribes to account2
+					await hUSDContract.transfer(account2, toUnit('200'), {
 						from: account1,
 					});
 
@@ -1614,7 +1614,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					// Burning any amount of hUSD beyond what is owned will cause a revert
 					await assert.revert(
-						tribeone.burnSynths('1', { from: account1 }),
+						tribeone.burnTribes('1', { from: account1 }),
 						'SafeMath: subtraction overflow'
 					);
 				});
@@ -1632,45 +1632,45 @@ contract('Issuer (via Tribeone)', async accounts => {
 					const fullAmount = toUnit('210');
 					const account1Payment = toUnit('10');
 					const account2Payment = fullAmount.sub(account1Payment);
-					await tribeone.issueSynths(account1Payment, { from: account1 });
-					await tribeone.issueSynths(account2Payment, { from: account2 });
+					await tribeone.issueTribes(account1Payment, { from: account1 });
+					await tribeone.issueTribes(account2Payment, { from: account2 });
 
-					// Transfer all of account2's synths to account1
+					// Transfer all of account2's tribes to account1
 					const amountTransferred = toUnit('200');
-					await sUSDContract.transfer(account1, amountTransferred, {
+					await hUSDContract.transfer(account1, amountTransferred, {
 						from: account2,
 					});
 					// return;
 
-					const balanceOfAccount1 = await sUSDContract.balanceOf(account1);
+					const balanceOfAccount1 = await hUSDContract.balanceOf(account1);
 
-					// Then try to burn them all. Only 10 synths (and fees) should be gone.
-					await tribeone.burnSynths(balanceOfAccount1, { from: account1 });
-					const balanceOfAccount1AfterBurn = await sUSDContract.balanceOf(account1);
+					// Then try to burn them all. Only 10 tribes (and fees) should be gone.
+					await tribeone.burnTribes(balanceOfAccount1, { from: account1 });
+					const balanceOfAccount1AfterBurn = await hUSDContract.balanceOf(account1);
 
 					// Recording debts in the debt ledger reduces accuracy.
 					//   Let's allow for a 1000 margin of error.
 					assert.bnClose(balanceOfAccount1AfterBurn, amountTransferred, '1000');
 				});
 
-				it("should successfully burn all user's synths @gasprofile", async () => {
+				it("should successfully burn all user's tribes @gasprofile", async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('10000'), {
 						from: owner,
 					});
 
 					// Issue
-					await tribeone.issueSynths(toUnit('199'), { from: account1 });
+					await tribeone.issueTribes(toUnit('199'), { from: account1 });
 
-					// Then try to burn them all. Only 10 synths (and fees) should be gone.
-					await tribeone.burnSynths(await sUSDContract.balanceOf(account1), {
+					// Then try to burn them all. Only 10 tribes (and fees) should be gone.
+					await tribeone.burnTribes(await hUSDContract.balanceOf(account1), {
 						from: account1,
 					});
 
-					assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), web3.utils.toBN(0));
 				});
 
-				it('should burn the correct amount of synths', async () => {
+				it('should burn the correct amount of tribes', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('200000'), {
 						from: owner,
@@ -1680,17 +1680,17 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					await tribeone.issueSynths(toUnit('199'), { from: account1 });
+					await tribeone.issueTribes(toUnit('199'), { from: account1 });
 
-					// Then try to burn them all. Only 10 synths (and fees) should be gone.
-					await tribeone.burnSynths(await sUSDContract.balanceOf(account1), {
+					// Then try to burn them all. Only 10 tribes (and fees) should be gone.
+					await tribeone.burnTribes(await hUSDContract.balanceOf(account1), {
 						from: account1,
 					});
 
-					assert.bnEqual(await sUSDContract.balanceOf(account1), web3.utils.toBN(0));
+					assert.bnEqual(await hUSDContract.balanceOf(account1), web3.utils.toBN(0));
 				});
 
-				it('should burn the correct amount of synths', async () => {
+				it('should burn the correct amount of tribes', async () => {
 					// Give some HAKA to account1
 					await tribeone.transfer(account1, toUnit('200000'), {
 						from: owner,
@@ -1700,11 +1700,11 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					const issuedSynthsPt1 = toUnit('2000');
-					const issuedSynthsPt2 = toUnit('2000');
-					await tribeone.issueSynths(issuedSynthsPt1, { from: account1 });
-					await tribeone.issueSynths(issuedSynthsPt2, { from: account1 });
-					await tribeone.issueSynths(toUnit('1000'), { from: account2 });
+					const issuedTribesPt1 = toUnit('2000');
+					const issuedTribesPt2 = toUnit('2000');
+					await tribeone.issueTribes(issuedTribesPt1, { from: account1 });
+					await tribeone.issueTribes(issuedTribesPt2, { from: account1 });
+					await tribeone.issueTribes(toUnit('1000'), { from: account2 });
 
 					const debt = await tribeone.debtBalanceOf(account1, hUSD);
 					assert.bnClose(debt, toUnit('4000'));
@@ -1724,20 +1724,20 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 
 						// Issue
-						const issuedSynths1 = toUnit('2000');
-						const issuedSynths2 = toUnit('2000');
-						const issuedSynths3 = toUnit('2000');
+						const issuedTribes1 = toUnit('2000');
+						const issuedTribes2 = toUnit('2000');
+						const issuedTribes3 = toUnit('2000');
 
-						// Send more than their synth balance to burn all
-						const burnAllSynths = toUnit('2050');
+						// Send more than their tribe balance to burn all
+						const burnAllTribes = toUnit('2050');
 
-						await tribeone.issueSynths(issuedSynths1, { from: account1 });
-						await tribeone.issueSynths(issuedSynths2, { from: account2 });
-						await tribeone.issueSynths(issuedSynths3, { from: account3 });
+						await tribeone.issueTribes(issuedTribes1, { from: account1 });
+						await tribeone.issueTribes(issuedTribes2, { from: account2 });
+						await tribeone.issueTribes(issuedTribes3, { from: account3 });
 
-						await tribeone.burnSynths(burnAllSynths, { from: account1 });
-						await tribeone.burnSynths(burnAllSynths, { from: account2 });
-						await tribeone.burnSynths(burnAllSynths, { from: account3 });
+						await tribeone.burnTribes(burnAllTribes, { from: account1 });
+						await tribeone.burnTribes(burnAllTribes, { from: account2 });
+						await tribeone.burnTribes(burnAllTribes, { from: account3 });
 
 						const debtBalance1After = await tribeone.debtBalanceOf(account1, hUSD);
 						const debtBalance2After = await tribeone.debtBalanceOf(account2, hUSD);
@@ -1748,7 +1748,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 						assert.bnEqual(debtBalance3After, '0');
 					});
 
-					it('should allow user to burn all synths issued even after other users have issued', async () => {
+					it('should allow user to burn all tribes issued even after other users have issued', async () => {
 						// Give some HAKA to account1
 						await tribeone.transfer(account1, toUnit('500000'), {
 							from: owner,
@@ -1761,16 +1761,16 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 
 						// Issue
-						const issuedSynths1 = toUnit('2000');
-						const issuedSynths2 = toUnit('2000');
-						const issuedSynths3 = toUnit('2000');
+						const issuedTribes1 = toUnit('2000');
+						const issuedTribes2 = toUnit('2000');
+						const issuedTribes3 = toUnit('2000');
 
-						await tribeone.issueSynths(issuedSynths1, { from: account1 });
-						await tribeone.issueSynths(issuedSynths2, { from: account2 });
-						await tribeone.issueSynths(issuedSynths3, { from: account3 });
+						await tribeone.issueTribes(issuedTribes1, { from: account1 });
+						await tribeone.issueTribes(issuedTribes2, { from: account2 });
+						await tribeone.issueTribes(issuedTribes3, { from: account3 });
 
 						const debtBalanceBefore = await tribeone.debtBalanceOf(account1, hUSD);
-						await tribeone.burnSynths(debtBalanceBefore, { from: account1 });
+						await tribeone.burnTribes(debtBalanceBefore, { from: account1 });
 						const debtBalanceAfter = await tribeone.debtBalanceOf(account1, hUSD);
 
 						assert.bnEqual(debtBalanceAfter, '0');
@@ -1783,10 +1783,10 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 
 						// Issue
-						const issuedSynths1 = toUnit('10');
+						const issuedTribes1 = toUnit('10');
 
-						await tribeone.issueSynths(issuedSynths1, { from: account1 });
-						await tribeone.burnSynths(issuedSynths1.add(toUnit('9000')), {
+						await tribeone.issueTribes(issuedTribes1, { from: account1 });
+						await tribeone.burnTribes(issuedTribes1.add(toUnit('9000')), {
 							from: account1,
 						});
 						const debtBalanceAfter = await tribeone.debtBalanceOf(account1, hUSD);
@@ -1804,11 +1804,11 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 
 						// Issue
-						const issuedSynths1 = toUnit('150000');
-						const issuedSynths2 = toUnit('50000');
+						const issuedTribes1 = toUnit('150000');
+						const issuedTribes2 = toUnit('50000');
 
-						await tribeone.issueSynths(issuedSynths1, { from: account1 });
-						await tribeone.issueSynths(issuedSynths2, { from: account2 });
+						await tribeone.issueTribes(issuedTribes1, { from: account1 });
+						await tribeone.issueTribes(issuedTribes2, { from: account2 });
 
 						let debtBalance1After = await tribeone.debtBalanceOf(account1, hUSD);
 						let debtBalance2After = await tribeone.debtBalanceOf(account2, hUSD);
@@ -1818,7 +1818,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 						assert.bnClose(debtBalance2After, toUnit('50000'), '100000');
 
 						// Account 1 burns 100,000
-						await tribeone.burnSynths(toUnit('100000'), { from: account1 });
+						await tribeone.burnTribes(toUnit('100000'), { from: account1 });
 
 						debtBalance1After = await tribeone.debtBalanceOf(account1, hUSD);
 						debtBalance2After = await tribeone.debtBalanceOf(account2, hUSD);
@@ -1827,18 +1827,18 @@ contract('Issuer (via Tribeone)', async accounts => {
 						assert.bnClose(debtBalance2After, toUnit('50000'), '100000');
 					});
 
-					it('should revert if sender tries to issue synths with 0 amount', async () => {
-						// Issue 0 amount of synth
-						const issuedSynths1 = toUnit('0');
+					it('should revert if sender tries to issue tribes with 0 amount', async () => {
+						// Issue 0 amount of tribe
+						const issuedTribes1 = toUnit('0');
 
 						await assert.revert(
-							tribeone.issueSynths(issuedSynths1, { from: account1 }),
-							'cannot issue 0 synths'
+							tribeone.issueTribes(issuedTribes1, { from: account1 }),
+							'cannot issue 0 tribes'
 						);
 					});
 				});
 
-				describe('burnSynthsToTarget', () => {
+				describe('burnTribesToTarget', () => {
 					beforeEach(async () => {
 						// Give some HAKA to account1
 						await tribeone.transfer(account1, toUnit('40000'), {
@@ -1849,7 +1849,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 						await updateDebtMonitors();
 
 						// Issue
-						await tribeone.issueMaxSynths({ from: account1 });
+						await tribeone.issueMaxTribes({ from: account1 });
 						assert.bnClose(await tribeone.debtBalanceOf(account1, hUSD), toUnit('8000'));
 
 						// Set minimumStakeTime to 1 hour
@@ -1857,94 +1857,94 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					describe('when the HAKA price drops 50%', () => {
-						let maxIssuableSynths;
+						let maxIssuableTribes;
 						beforeEach(async () => {
 							await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], ['.5'].map(toUnit));
 							await updateDebtMonitors();
 
-							maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
+							maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
 							assert.equal(await feePool.isFeesClaimable(account1), false);
 						});
 
-						it('then the maxIssuableSynths drops 50%', async () => {
-							assert.bnClose(maxIssuableSynths, toUnit('4000'));
+						it('then the maxIssuableTribes drops 50%', async () => {
+							assert.bnClose(maxIssuableTribes, toUnit('4000'));
 						});
-						it('then calling burnSynthsToTarget() reduces hUSD to c-ratio target', async () => {
-							await tribeone.burnSynthsToTarget({ from: account1 });
+						it('then calling burnTribesToTarget() reduces hUSD to c-ratio target', async () => {
+							await tribeone.burnTribesToTarget({ from: account1 });
 							assert.bnClose(await tribeone.debtBalanceOf(account1, hUSD), toUnit('4000'));
 						});
 						it('then fees are claimable', async () => {
-							await tribeone.burnSynthsToTarget({ from: account1 });
+							await tribeone.burnTribesToTarget({ from: account1 });
 							assert.equal(await feePool.isFeesClaimable(account1), true);
 						});
 					});
 
 					describe('when the HAKA price drops 10%', () => {
-						let maxIssuableSynths;
+						let maxIssuableTribes;
 						beforeEach(async () => {
 							await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], ['.9'].map(toUnit));
 							await updateDebtMonitors();
 
-							maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
+							maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
 						});
 
-						it('then the maxIssuableSynths drops 10%', async () => {
-							assert.bnEqual(maxIssuableSynths, toUnit('7200'));
+						it('then the maxIssuableTribes drops 10%', async () => {
+							assert.bnEqual(maxIssuableTribes, toUnit('7200'));
 						});
-						it('then calling burnSynthsToTarget() reduces hUSD to c-ratio target', async () => {
-							await tribeone.burnSynthsToTarget({ from: account1 });
+						it('then calling burnTribesToTarget() reduces hUSD to c-ratio target', async () => {
+							await tribeone.burnTribesToTarget({ from: account1 });
 							assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('7200'));
 						});
 						it('then fees are claimable', async () => {
-							await tribeone.burnSynthsToTarget({ from: account1 });
+							await tribeone.burnTribesToTarget({ from: account1 });
 							assert.equal(await feePool.isFeesClaimable(account1), true);
 						});
 					});
 
 					describe('when the HAKA price drops 90%', () => {
-						let maxIssuableSynths;
+						let maxIssuableTribes;
 						beforeEach(async () => {
 							await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], ['.1'].map(toUnit));
 							await updateDebtMonitors();
 
-							maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
+							maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
 						});
 
-						it('then the maxIssuableSynths drops 10%', async () => {
-							assert.bnEqual(maxIssuableSynths, toUnit('800'));
+						it('then the maxIssuableTribes drops 10%', async () => {
+							assert.bnEqual(maxIssuableTribes, toUnit('800'));
 						});
-						it('then calling burnSynthsToTarget() reduces hUSD to c-ratio target', async () => {
-							await tribeone.burnSynthsToTarget({ from: account1 });
+						it('then calling burnTribesToTarget() reduces hUSD to c-ratio target', async () => {
+							await tribeone.burnTribesToTarget({ from: account1 });
 							assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('800'));
 						});
 						it('then fees are claimable', async () => {
-							await tribeone.burnSynthsToTarget({ from: account1 });
+							await tribeone.burnTribesToTarget({ from: account1 });
 							assert.equal(await feePool.isFeesClaimable(account1), true);
 						});
 					});
 
 					describe('when the HAKA price increases 100%', () => {
-						let maxIssuableSynths;
+						let maxIssuableTribes;
 						beforeEach(async () => {
 							await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], ['2'].map(toUnit));
 							await updateDebtMonitors();
 
-							maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
+							maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
 						});
 
-						it('then the maxIssuableSynths increases 100%', async () => {
-							assert.bnEqual(maxIssuableSynths, toUnit('16000'));
+						it('then the maxIssuableTribes increases 100%', async () => {
+							assert.bnEqual(maxIssuableTribes, toUnit('16000'));
 						});
-						it('then calling burnSynthsToTarget() reverts', async () => {
+						it('then calling burnTribesToTarget() reverts', async () => {
 							await assert.revert(
-								tribeone.burnSynthsToTarget({ from: account1 }),
+								tribeone.burnTribesToTarget({ from: account1 }),
 								'SafeMath: subtraction overflow'
 							);
 						});
 					});
 				});
 
-				describe('burnSynths() after exchange()', () => {
+				describe('burnTribes() after exchange()', () => {
 					describe('given the waiting period is set to 60s', () => {
 						let amount;
 						const exchangeFeeRate = toUnit('0');
@@ -1953,17 +1953,17 @@ contract('Issuer (via Tribeone)', async accounts => {
 							await setExchangeWaitingPeriod({ owner, systemSettings, secs: 60 });
 
 							// set the exchange fee to 0 to effectively ignore it
-							await setExchangeFeeRateForSynths({
+							await setExchangeFeeRateForTribes({
 								owner,
 								systemSettings,
-								synthKeys,
-								exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+								tribeKeys,
+								exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 							});
 						});
 						describe('and a user has 1250 hUSD issued', () => {
 							beforeEach(async () => {
 								await tribeone.transfer(account1, toUnit('1000000'), { from: owner });
-								await tribeone.issueSynths(amount, { from: account1 });
+								await tribeone.issueTribes(amount, { from: account1 });
 							});
 							describe('and is has been exchanged into sEUR at a rate of 1.25:1 and the waiting period has expired', () => {
 								beforeEach(async () => {
@@ -1977,7 +1977,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 									describe('when they attempt to burn the hUSD', () => {
 										it('then it fails as the waiting period is ongoing', async () => {
 											await assert.revert(
-												tribeone.burnSynths(amount, { from: account1 }),
+												tribeone.burnTribes(amount, { from: account1 }),
 												'Cannot settle during waiting period'
 											);
 										});
@@ -1989,23 +1989,23 @@ contract('Issuer (via Tribeone)', async accounts => {
 										describe('when they attempt to burn the hUSD', () => {
 											let txn;
 											beforeEach(async () => {
-												txn = await tribeone.burnSynths(amount, { from: account1 });
+												txn = await tribeone.burnTribes(amount, { from: account1 });
 											});
 											it('then it succeeds and burns the entire hUSD amount', async () => {
 												const logs = await getDecodedLogs({
 													hash: txn.tx,
-													contracts: [tribeone, sUSDContract],
+													contracts: [tribeone, hUSDContract],
 												});
 
 												decodedEventEqual({
 													event: 'Burned',
-													emittedFrom: sUSDContract.address,
+													emittedFrom: hUSDContract.address,
 													args: [account1, amount],
 													log: logs.find(({ name } = {}) => name === 'Burned'),
 												});
 
-												const sUSDBalance = await sUSDContract.balanceOf(account1);
-												assert.equal(sUSDBalance, '0');
+												const hUSDBalance = await hUSDContract.balanceOf(account1);
+												assert.equal(hUSDBalance, '0');
 
 												const debtBalance = await tribeone.debtBalanceOf(account1, hUSD);
 												assert.equal(debtBalance, '0');
@@ -2029,17 +2029,17 @@ contract('Issuer (via Tribeone)', async accounts => {
 											describe('when they attempt to burn the entire amount hUSD', () => {
 												let txn;
 												beforeEach(async () => {
-													txn = await tribeone.burnSynths(amount, { from: account1 });
+													txn = await tribeone.burnTribes(amount, { from: account1 });
 												});
 												it('then it succeeds and burns their hUSD minus the reclaim amount from settlement', async () => {
 													const logs = await getDecodedLogs({
 														hash: txn.tx,
-														contracts: [tribeone, sUSDContract],
+														contracts: [tribeone, hUSDContract],
 													});
 
 													decodedEventEqual({
 														event: 'Burned',
-														emittedFrom: sUSDContract.address,
+														emittedFrom: hUSDContract.address,
 														args: [account1, amount.sub(toUnit('250'))],
 														log: logs
 															.reverse()
@@ -2047,36 +2047,36 @@ contract('Issuer (via Tribeone)', async accounts => {
 															.find(({ name }) => name === 'Burned'),
 													});
 
-													const sUSDBalance = await sUSDContract.balanceOf(account1);
-													assert.equal(sUSDBalance, '0');
+													const hUSDBalance = await hUSDContract.balanceOf(account1);
+													assert.equal(hUSDBalance, '0');
 												});
 												it('and their debt balance is now 0 because they are the only debt holder in the system', async () => {
 													// the debt balance remaining is what was reclaimed from the exchange
 													const debtBalance = await tribeone.debtBalanceOf(account1, hUSD);
 													// because this user is the only one holding debt, when we burn 250 hUSD in a reclaim,
-													// it removes it from the totalIssuedSynths and
+													// it removes it from the totalIssuedTribes and
 													assert.equal(debtBalance, '0');
 												});
 											});
 											describe('when another user also has the same amount of debt', () => {
 												beforeEach(async () => {
 													await tribeone.transfer(account2, toUnit('1000000'), { from: owner });
-													await tribeone.issueSynths(amount, { from: account2 });
+													await tribeone.issueTribes(amount, { from: account2 });
 												});
 												describe('when the first user attempts to burn the entire amount hUSD', () => {
 													let txn;
 													beforeEach(async () => {
-														txn = await tribeone.burnSynths(amount, { from: account1 });
+														txn = await tribeone.burnTribes(amount, { from: account1 });
 													});
 													it('then it succeeds and burns their hUSD minus the reclaim amount from settlement', async () => {
 														const logs = await getDecodedLogs({
 															hash: txn.tx,
-															contracts: [tribeone, sUSDContract],
+															contracts: [tribeone, hUSDContract],
 														});
 
 														decodedEventEqual({
 															event: 'Burned',
-															emittedFrom: sUSDContract.address,
+															emittedFrom: hUSDContract.address,
 															args: [account1, amount.sub(toUnit('250'))],
 															log: logs
 																.reverse()
@@ -2084,15 +2084,15 @@ contract('Issuer (via Tribeone)', async accounts => {
 																.find(({ name }) => name === 'Burned'),
 														});
 
-														const sUSDBalance = await sUSDContract.balanceOf(account1);
-														assert.equal(sUSDBalance, '0');
+														const hUSDBalance = await hUSDContract.balanceOf(account1);
+														assert.equal(hUSDBalance, '0');
 													});
 													it('and their debt balance is now half of the reclaimed balance because they owe half of the pool', async () => {
 														// the debt balance remaining is what was reclaimed from the exchange
 														const debtBalance = await tribeone.debtBalanceOf(account1, hUSD);
 														// because this user is holding half the debt, when we burn 250 hUSD in a reclaim,
-														// it removes it from the totalIssuedSynths and so both users have half of 250
-														// in owing synths
+														// it removes it from the totalIssuedTribes and so both users have half of 250
+														// in owing tribes
 														assert.bnClose(debtBalance, divideDecimal('250', 2), '100000');
 													});
 												});
@@ -2117,11 +2117,11 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					const issuedSynthsPt1 = toUnit('2000');
-					const issuedSynthsPt2 = toUnit('2000');
-					await tribeone.issueSynths(issuedSynthsPt1, { from: account1 });
-					await tribeone.issueSynths(issuedSynthsPt2, { from: account1 });
-					await tribeone.issueSynths(toUnit('1000'), { from: account2 });
+					const issuedTribesPt1 = toUnit('2000');
+					const issuedTribesPt2 = toUnit('2000');
+					await tribeone.issueTribes(issuedTribesPt1, { from: account1 });
+					await tribeone.issueTribes(issuedTribesPt2, { from: account1 });
+					await tribeone.issueTribes(toUnit('1000'), { from: account2 });
 
 					const debt = await tribeone.debtBalanceOf(account1, hUSD);
 					assert.bnClose(debt, toUnit('4000'));
@@ -2137,29 +2137,29 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					const issuedSynthsPt1 = toUnit('2000');
-					const burntSynthsPt1 = toUnit('1500');
-					const issuedSynthsPt2 = toUnit('1600');
-					const burntSynthsPt2 = toUnit('500');
+					const issuedTribesPt1 = toUnit('2000');
+					const burntTribesPt1 = toUnit('1500');
+					const issuedTribesPt2 = toUnit('1600');
+					const burntTribesPt2 = toUnit('500');
 
-					await tribeone.issueSynths(issuedSynthsPt1, { from: account1 });
-					await tribeone.burnSynths(burntSynthsPt1, { from: account1 });
-					await tribeone.issueSynths(issuedSynthsPt2, { from: account1 });
+					await tribeone.issueTribes(issuedTribesPt1, { from: account1 });
+					await tribeone.burnTribes(burntTribesPt1, { from: account1 });
+					await tribeone.issueTribes(issuedTribesPt2, { from: account1 });
 
-					await tribeone.issueSynths(toUnit('100'), { from: account2 });
-					await tribeone.issueSynths(toUnit('51'), { from: account2 });
-					await tribeone.burnSynths(burntSynthsPt2, { from: account1 });
+					await tribeone.issueTribes(toUnit('100'), { from: account2 });
+					await tribeone.issueTribes(toUnit('51'), { from: account2 });
+					await tribeone.burnTribes(burntTribesPt2, { from: account1 });
 
 					const debt = await tribeone.debtBalanceOf(account1, toBytes32('hUSD'));
-					const expectedDebt = issuedSynthsPt1
-						.add(issuedSynthsPt2)
-						.sub(burntSynthsPt1)
-						.sub(burntSynthsPt2);
+					const expectedDebt = issuedTribesPt1
+						.add(issuedTribesPt2)
+						.sub(burntTribesPt1)
+						.sub(burntTribesPt2);
 
 					assert.bnClose(debt, expectedDebt, '100000');
 				});
 
-				it("should allow me to burn all synths I've issued when there are other issuers", async () => {
+				it("should allow me to burn all tribes I've issued when there are other issuers", async () => {
 					const totalSupply = await tribeone.totalSupply();
 					const account2Tribeones = toUnit('120000');
 					const account1Tribeones = totalSupply.sub(account2Tribeones);
@@ -2172,20 +2172,20 @@ contract('Issuer (via Tribeone)', async accounts => {
 					}); // Issue a small amount to account2
 
 					// Issue from account1
-					const account1AmountToIssue = await tribeone.maxIssuableSynths(account1);
-					await tribeone.issueMaxSynths({ from: account1 });
+					const account1AmountToIssue = await tribeone.maxIssuableTribes(account1);
+					await tribeone.issueMaxTribes({ from: account1 });
 					const debtBalance1 = await tribeone.debtBalanceOf(account1, hUSD);
 					assert.bnClose(debtBalance1, account1AmountToIssue);
 
 					// Issue and burn from account 2 all debt
-					await tribeone.issueSynths(toUnit('43'), { from: account2 });
+					await tribeone.issueTribes(toUnit('43'), { from: account2 });
 					let debt = await tribeone.debtBalanceOf(account2, hUSD);
 
-					// due to rounding it may be necessary to supply higher than originally issued synths
-					await sUSDContract.transfer(account2, toUnit('1'), {
+					// due to rounding it may be necessary to supply higher than originally issued tribes
+					await hUSDContract.transfer(account2, toUnit('1'), {
 						from: account1,
 					});
-					await tribeone.burnSynths(toUnit('44'), { from: account2 });
+					await tribeone.burnTribes(toUnit('44'), { from: account2 });
 					debt = await tribeone.debtBalanceOf(account2, hUSD);
 
 					assert.bnEqual(debt, 0);
@@ -2211,8 +2211,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 						from: owner,
 					}); // Issue a small amount to account2
 
-					const account1AmountToIssue = await tribeone.maxIssuableSynths(account1);
-					await tribeone.issueMaxSynths({ from: account1 });
+					const account1AmountToIssue = await tribeone.maxIssuableTribes(account1);
+					await tribeone.issueMaxTribes({ from: account1 });
 					const debtBalance1 = await tribeone.debtBalanceOf(account1, hUSD);
 					assert.bnClose(debtBalance1, account1AmountToIssue);
 
@@ -2221,14 +2221,14 @@ contract('Issuer (via Tribeone)', async accounts => {
 					for (let i = 0; i < totalTimesToIssue; i++) {
 						// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
 						const amount = toUnit('43');
-						await tribeone.issueSynths(amount, { from: account2 });
+						await tribeone.issueTribes(amount, { from: account2 });
 						expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
 
 						const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(4, 14)));
 						const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
 							? desiredAmountToBurn
 							: expectedDebtForAccount2;
-						await tribeone.burnSynths(amountToBurn, { from: account2 });
+						await tribeone.burnTribes(amountToBurn, { from: account2 });
 						expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
 
 						// Useful debug logging
@@ -2263,8 +2263,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 						from: owner,
 					}); // Issue a small amount to account2
 
-					const account1AmountToIssue = await tribeone.maxIssuableSynths(account1);
-					await tribeone.issueMaxSynths({ from: account1 });
+					const account1AmountToIssue = await tribeone.maxIssuableTribes(account1);
+					await tribeone.issueMaxTribes({ from: account1 });
 					const debtBalance1 = await tribeone.debtBalanceOf(account1, hUSD);
 					assert.bnClose(debtBalance1, account1AmountToIssue);
 
@@ -2273,14 +2273,14 @@ contract('Issuer (via Tribeone)', async accounts => {
 					for (let i = 0; i < totalTimesToIssue; i++) {
 						// Seems that in this case, issuing 43 each time leads to increasing the variance regularly each time.
 						const amount = toUnit(web3.utils.toBN(getRandomInt(40, 49)));
-						await tribeone.issueSynths(amount, { from: account2 });
+						await tribeone.issueTribes(amount, { from: account2 });
 						expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
 
 						const desiredAmountToBurn = toUnit(web3.utils.toBN(getRandomInt(37, 46)));
 						const amountToBurn = desiredAmountToBurn.lte(expectedDebtForAccount2)
 							? desiredAmountToBurn
 							: expectedDebtForAccount2;
-						await tribeone.burnSynths(amountToBurn, { from: account2 });
+						await tribeone.burnTribes(amountToBurn, { from: account2 });
 						expectedDebtForAccount2 = expectedDebtForAccount2.sub(amountToBurn);
 
 						// Useful debug logging
@@ -2315,8 +2315,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 						from: owner,
 					}); // Issue a small amount to account2
 
-					const account1AmountToIssue = await tribeone.maxIssuableSynths(account1);
-					await tribeone.issueMaxSynths({ from: account1 });
+					const account1AmountToIssue = await tribeone.maxIssuableTribes(account1);
+					await tribeone.issueMaxTribes({ from: account1 });
 					const debtBalance1 = await tribeone.debtBalanceOf(account1, hUSD);
 					assert.bnEqual(debtBalance1, account1AmountToIssue);
 
@@ -2324,7 +2324,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 					const totalTimesToIssue = 40;
 					for (let i = 0; i < totalTimesToIssue; i++) {
 						const amount = toUnit('0.000000000000000002');
-						await tribeone.issueSynths(amount, { from: account2 });
+						await tribeone.issueTribes(amount, { from: account2 });
 						expectedDebtForAccount2 = expectedDebtForAccount2.add(amount);
 					}
 					const debtBalance2 = await tribeone.debtBalanceOf(account2, hUSD);
@@ -2352,22 +2352,22 @@ contract('Issuer (via Tribeone)', async accounts => {
 					from: owner,
 				});
 
-				const maxIssuableSynths = await tribeone.maxIssuableSynths(account1);
+				const maxIssuableTribes = await tribeone.maxIssuableTribes(account1);
 
 				// Issue
-				const synthsToNotIssueYet = web3.utils.toBN('2000');
-				const issuedSynths = maxIssuableSynths.sub(synthsToNotIssueYet);
-				await tribeone.issueSynths(issuedSynths, { from: account1 });
+				const tribesToNotIssueYet = web3.utils.toBN('2000');
+				const issuedTribes = maxIssuableTribes.sub(tribesToNotIssueYet);
+				await tribeone.issueTribes(issuedTribes, { from: account1 });
 
 				// exchange into sEUR
-				await tribeone.exchange(hUSD, issuedSynths, sEUR, { from: account1 });
+				await tribeone.exchange(hUSD, issuedTribes, sEUR, { from: account1 });
 
 				// Increase the value of sEUR relative to tribeone
 				await updateAggregatorRates(exchangeRates, null, [sEUR], [toUnit('1.1')]);
 				await updateDebtMonitors();
 
 				await assert.revert(
-					tribeone.issueSynths(synthsToNotIssueYet, { from: account1 }),
+					tribeone.issueTribes(tribesToNotIssueYet, { from: account1 }),
 					'Amount too large'
 				);
 			});
@@ -2397,8 +2397,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					const issuedSynths = toUnit(web3.utils.toBN('6400'));
-					await tribeone.issueSynths(issuedSynths, { from: account1 });
+					const issuedTribes = toUnit(web3.utils.toBN('6400'));
+					await tribeone.issueTribes(issuedTribes, { from: account1 });
 
 					await tribeone.collateralisationRatio(account1, { from: account2 });
 				});
@@ -2420,15 +2420,15 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					const issuedSynths = toUnit(web3.utils.toBN('6400'));
-					await tribeone.issueSynths(issuedSynths, { from: account1 });
+					const issuedTribes = toUnit(web3.utils.toBN('6400'));
+					await tribeone.issueTribes(issuedTribes, { from: account1 });
 
 					const ratio = await tribeone.collateralisationRatio(account1, { from: account2 });
 					assert.unitEqual(ratio, '0.2');
 				});
 
 				it("should not include escrowed tribeone when calculating a user's collaterisation ratio", async () => {
-					const haka2usdRate = await exchangeRates.rateForCurrency(HAKA);
+					const snx2usdRate = await exchangeRates.rateForCurrency(HAKA);
 					const transferredTribeones = toUnit('60000');
 					await tribeone.transfer(account1, transferredTribeones, {
 						from: owner,
@@ -2452,20 +2452,20 @@ contract('Issuer (via Tribeone)', async accounts => {
 					);
 
 					// Issue
-					const maxIssuable = await tribeone.maxIssuableSynths(account1);
-					await tribeone.issueSynths(maxIssuable, { from: account1 });
+					const maxIssuable = await tribeone.maxIssuableTribes(account1);
+					await tribeone.issueTribes(maxIssuable, { from: account1 });
 
 					// Compare
 					const collaterisationRatio = await tribeone.collateralisationRatio(account1);
 					const expectedCollaterisationRatio = divideDecimal(
 						maxIssuable,
-						multiplyDecimal(transferredTribeones, haka2usdRate)
+						multiplyDecimal(transferredTribeones, snx2usdRate)
 					);
 					assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 				});
 
 				it("should include escrowed reward tribeone when calculating a user's collateralisation ratio", async () => {
-					const haka2usdRate = await exchangeRates.rateForCurrency(HAKA);
+					const snx2usdRate = await exchangeRates.rateForCurrency(HAKA);
 					const transferredTribeones = toUnit('60000');
 					await tribeone.transfer(account1, transferredTribeones, {
 						from: owner,
@@ -2480,14 +2480,14 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					// Issue
-					const maxIssuable = await tribeone.maxIssuableSynths(account1);
-					await tribeone.issueSynths(maxIssuable, { from: account1 });
+					const maxIssuable = await tribeone.maxIssuableTribes(account1);
+					await tribeone.issueTribes(maxIssuable, { from: account1 });
 
 					// Compare
 					const collaterisationRatio = await tribeone.collateralisationRatio(account1);
 					const expectedCollaterisationRatio = divideDecimal(
 						maxIssuable,
-						multiplyDecimal(escrowedTribeones.add(transferredTribeones), haka2usdRate)
+						multiplyDecimal(escrowedTribeones.add(transferredTribeones), snx2usdRate)
 					);
 					assert.bnEqual(collaterisationRatio, expectedCollaterisationRatio);
 				});
@@ -2498,8 +2498,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 					assert.bnEqual(collateral, 0);
 
 					// ensure account1 has no HAKA balance
-					const hakaBalance = await tribeone.balanceOf(account1);
-					assert.bnEqual(hakaBalance, 0);
+					const snxBalance = await tribeone.balanceOf(account1);
+					assert.bnEqual(snxBalance, 0);
 
 					// Append escrow amount to account1
 					const escrowedAmount = toUnit('15000');
@@ -2514,8 +2514,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 					collateral = await tribeone.collateral(account1, { from: account1 });
 					assert.bnEqual(collateral, escrowedAmount);
 
-					// Issue max synths. (300 hUSD)
-					await tribeone.issueMaxSynths({ from: account1 });
+					// Issue max tribes. (300 hUSD)
+					await tribeone.issueMaxTribes({ from: account1 });
 
 					// There should be 300 hUSD of value for account1
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('300'));
@@ -2527,8 +2527,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 					assert.bnEqual(collateral, 0);
 
 					// ensure account1 has no HAKA balance
-					const hakaBalance = await tribeone.balanceOf(account1);
-					assert.bnEqual(hakaBalance, 0);
+					const snxBalance = await tribeone.balanceOf(account1);
+					assert.bnEqual(snxBalance, 0);
 
 					// Append escrow amount to account1
 					const escrowedAmount = toUnit('15000');
@@ -2543,8 +2543,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 					collateral = await tribeone.collateral(account1, { from: account1 });
 					assert.bnEqual(collateral, escrowedAmount);
 
-					// Issue max synths. (300 hUSD)
-					await tribeone.issueMaxSynths({ from: account1 });
+					// Issue max tribes. (300 hUSD)
+					await tribeone.issueMaxTribes({ from: account1 });
 
 					// There should be 300 hUSD of value for account1
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('300'));
@@ -2594,23 +2594,23 @@ contract('Issuer (via Tribeone)', async accounts => {
 					assert.bnEqual(collateral, amount.add(escrowedAmount));
 				});
 
-				it("should calculate a user's remaining issuable synths", async () => {
+				it("should calculate a user's remaining issuable tribes", async () => {
 					const transferredTribeones = toUnit('60000');
 					await tribeone.transfer(account1, transferredTribeones, {
 						from: owner,
 					});
 
 					// Issue
-					const maxIssuable = await tribeone.maxIssuableSynths(account1);
+					const maxIssuable = await tribeone.maxIssuableTribes(account1);
 					const issued = maxIssuable.div(web3.utils.toBN(3));
-					await tribeone.issueSynths(issued, { from: account1 });
+					await tribeone.issueTribes(issued, { from: account1 });
 					const expectedRemaining = maxIssuable.sub(issued);
-					const issuableSynths = await issuer.remainingIssuableSynths(account1);
-					assert.bnEqual(expectedRemaining, issuableSynths.maxIssuable);
+					const issuableTribes = await issuer.remainingIssuableTribes(account1);
+					assert.bnEqual(expectedRemaining, issuableTribes.maxIssuable);
 				});
 
-				it("should correctly calculate a user's max issuable synths with escrowed tribeone", async () => {
-					const haka2usdRate = await exchangeRates.rateForCurrency(HAKA);
+				it("should correctly calculate a user's max issuable tribes with escrowed tribeone", async () => {
+					const snx2usdRate = await exchangeRates.rateForCurrency(HAKA);
 					const transferredTribeones = toUnit('60000');
 					await tribeone.transfer(account1, transferredTribeones, {
 						from: owner,
@@ -2625,13 +2625,13 @@ contract('Issuer (via Tribeone)', async accounts => {
 						from: account6,
 					});
 
-					const maxIssuable = await tribeone.maxIssuableSynths(account1);
-					// await tribeone.issueSynths(maxIssuable, { from: account1 });
+					const maxIssuable = await tribeone.maxIssuableTribes(account1);
+					// await tribeone.issueTribes(maxIssuable, { from: account1 });
 
 					// Compare
 					const issuanceRatio = await systemSettings.issuanceRatio();
 					const expectedMaxIssuable = multiplyDecimal(
-						multiplyDecimal(escrowedTribeones.add(transferredTribeones), haka2usdRate),
+						multiplyDecimal(escrowedTribeones.add(transferredTribeones), snx2usdRate),
 						issuanceRatio
 					);
 					assert.bnEqual(maxIssuable, expectedMaxIssuable);
@@ -2651,33 +2651,33 @@ contract('Issuer (via Tribeone)', async accounts => {
 					await updateDebtMonitors();
 				});
 				describe('when not approved it should revert on', async () => {
-					it('issueMaxSynthsOnBehalf', async () => {
+					it('issueMaxTribesOnBehalf', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: tribeone.issueMaxSynthsOnBehalf,
+							fnc: tribeone.issueMaxTribesOnBehalf,
 							args: [authoriser],
 							accounts,
 							reason: 'Not approved to act on behalf',
 						});
 					});
-					it('issueSynthsOnBehalf', async () => {
+					it('issueTribesOnBehalf', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: tribeone.issueSynthsOnBehalf,
+							fnc: tribeone.issueTribesOnBehalf,
 							args: [authoriser, toUnit('1')],
 							accounts,
 							reason: 'Not approved to act on behalf',
 						});
 					});
-					it('burnSynthsOnBehalf', async () => {
+					it('burnTribesOnBehalf', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: tribeone.burnSynthsOnBehalf,
+							fnc: tribeone.burnTribesOnBehalf,
 							args: [authoriser, toUnit('1')],
 							accounts,
 							reason: 'Not approved to act on behalf',
 						});
 					});
-					it('burnSynthsToTargetOnBehalf', async () => {
+					it('burnTribesToTargetOnBehalf', async () => {
 						await onlyGivenAddressCanInvoke({
-							fnc: tribeone.burnSynthsToTargetOnBehalf,
+							fnc: tribeone.burnTribesToTargetOnBehalf,
 							args: [authoriser],
 							accounts,
 							reason: 'Not approved to act on behalf',
@@ -2688,33 +2688,33 @@ contract('Issuer (via Tribeone)', async accounts => {
 				['System', 'Issuance'].forEach(section => {
 					describe(`when ${section} is suspended`, () => {
 						beforeEach(async () => {
-							// ensure user has synths to burn
-							await tribeone.issueSynths(toUnit('1000'), { from: authoriser });
+							// ensure user has tribes to burn
+							await tribeone.issueTribes(toUnit('1000'), { from: authoriser });
 							await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
 							await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
 							await setStatus({ owner, systemStatus, section, suspend: true });
 						});
-						it('then calling issueSynthsOnBehalf() reverts', async () => {
+						it('then calling issueTribesOnBehalf() reverts', async () => {
 							await assert.revert(
-								tribeone.issueSynthsOnBehalf(authoriser, toUnit('1'), { from: delegate }),
+								tribeone.issueTribesOnBehalf(authoriser, toUnit('1'), { from: delegate }),
 								'Operation prohibited'
 							);
 						});
-						it('and calling issueMaxSynthsOnBehalf() reverts', async () => {
+						it('and calling issueMaxTribesOnBehalf() reverts', async () => {
 							await assert.revert(
-								tribeone.issueMaxSynthsOnBehalf(authoriser, { from: delegate }),
+								tribeone.issueMaxTribesOnBehalf(authoriser, { from: delegate }),
 								'Operation prohibited'
 							);
 						});
-						it('and calling burnSynthsOnBehalf() reverts', async () => {
+						it('and calling burnTribesOnBehalf() reverts', async () => {
 							await assert.revert(
-								tribeone.burnSynthsOnBehalf(authoriser, toUnit('1'), { from: delegate }),
+								tribeone.burnTribesOnBehalf(authoriser, toUnit('1'), { from: delegate }),
 								'Operation prohibited'
 							);
 						});
-						it('and calling burnSynthsToTargetOnBehalf() reverts', async () => {
+						it('and calling burnTribesToTargetOnBehalf() reverts', async () => {
 							await assert.revert(
-								tribeone.burnSynthsToTargetOnBehalf(authoriser, { from: delegate }),
+								tribeone.burnTribesToTargetOnBehalf(authoriser, { from: delegate }),
 								'Operation prohibited'
 							);
 						});
@@ -2723,16 +2723,16 @@ contract('Issuer (via Tribeone)', async accounts => {
 							beforeEach(async () => {
 								await setStatus({ owner, systemStatus, section, suspend: false });
 							});
-							it('then calling issueSynthsOnBehalf() succeeds', async () => {
-								await tribeone.issueSynthsOnBehalf(authoriser, toUnit('1'), { from: delegate });
+							it('then calling issueTribesOnBehalf() succeeds', async () => {
+								await tribeone.issueTribesOnBehalf(authoriser, toUnit('1'), { from: delegate });
 							});
-							it('and calling issueMaxSynthsOnBehalf() succeeds', async () => {
-								await tribeone.issueMaxSynthsOnBehalf(authoriser, { from: delegate });
+							it('and calling issueMaxTribesOnBehalf() succeeds', async () => {
+								await tribeone.issueMaxTribesOnBehalf(authoriser, { from: delegate });
 							});
-							it('and calling burnSynthsOnBehalf() succeeds', async () => {
-								await tribeone.burnSynthsOnBehalf(authoriser, toUnit('1'), { from: delegate });
+							it('and calling burnTribesOnBehalf() succeeds', async () => {
+								await tribeone.burnTribesOnBehalf(authoriser, toUnit('1'), { from: delegate });
 							});
-							it('and calling burnSynthsToTargetOnBehalf() succeeds', async () => {
+							it('and calling burnTribesToTargetOnBehalf() succeeds', async () => {
 								// need the user to be undercollaterized for this to succeed
 								await updateAggregatorRates(
 									exchangeRates,
@@ -2742,7 +2742,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 								);
 								await updateDebtMonitors();
 
-								await tribeone.burnSynthsToTargetOnBehalf(authoriser, { from: delegate });
+								await tribeone.burnTribesToTargetOnBehalf(authoriser, { from: delegate });
 							});
 						});
 					});
@@ -2760,56 +2760,56 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					assert.isTrue(result);
 				});
-				it('should approveIssueOnBehalf and IssueMaxSynths', async () => {
+				it('should approveIssueOnBehalf and IssueMaxTribes', async () => {
 					await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
 
-					const sUSDBalanceBefore = await sUSDContract.balanceOf(account1);
-					const issuableSynths = await tribeone.maxIssuableSynths(account1);
+					const hUSDBalanceBefore = await hUSDContract.balanceOf(account1);
+					const issuableTribes = await tribeone.maxIssuableTribes(account1);
 
-					await tribeone.issueMaxSynthsOnBehalf(authoriser, { from: delegate });
-					const sUSDBalanceAfter = await sUSDContract.balanceOf(account1);
-					assert.bnEqual(sUSDBalanceAfter, sUSDBalanceBefore.add(issuableSynths));
+					await tribeone.issueMaxTribesOnBehalf(authoriser, { from: delegate });
+					const hUSDBalanceAfter = await hUSDContract.balanceOf(account1);
+					assert.bnEqual(hUSDBalanceAfter, hUSDBalanceBefore.add(issuableTribes));
 				});
-				it('should approveIssueOnBehalf and IssueSynths', async () => {
+				it('should approveIssueOnBehalf and IssueTribes', async () => {
 					await delegateApprovals.approveIssueOnBehalf(delegate, { from: authoriser });
 
-					await tribeone.issueSynthsOnBehalf(authoriser, toUnit('100'), { from: delegate });
+					await tribeone.issueTribesOnBehalf(authoriser, toUnit('100'), { from: delegate });
 
-					const sUSDBalance = await sUSDContract.balanceOf(account1);
-					assert.bnEqual(sUSDBalance, toUnit('100'));
+					const hUSDBalance = await hUSDContract.balanceOf(account1);
+					assert.bnEqual(hUSDBalance, toUnit('100'));
 				});
-				it('should approveBurnOnBehalf and BurnSynths', async () => {
-					await tribeone.issueMaxSynths({ from: authoriser });
+				it('should approveBurnOnBehalf and BurnTribes', async () => {
+					await tribeone.issueMaxTribes({ from: authoriser });
 					await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
 
-					const sUSDBalanceBefore = await sUSDContract.balanceOf(account1);
-					await tribeone.burnSynthsOnBehalf(authoriser, sUSDBalanceBefore, { from: delegate });
+					const hUSDBalanceBefore = await hUSDContract.balanceOf(account1);
+					await tribeone.burnTribesOnBehalf(authoriser, hUSDBalanceBefore, { from: delegate });
 
-					const sUSDBalance = await sUSDContract.balanceOf(account1);
-					assert.bnEqual(sUSDBalance, toUnit('0'));
+					const hUSDBalance = await hUSDContract.balanceOf(account1);
+					assert.bnEqual(hUSDBalance, toUnit('0'));
 				});
-				it('should approveBurnOnBehalf and burnSynthsToTarget', async () => {
-					await tribeone.issueMaxSynths({ from: authoriser });
+				it('should approveBurnOnBehalf and burnTribesToTarget', async () => {
+					await tribeone.issueMaxTribes({ from: authoriser });
 					await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], [toUnit('0.01')]);
 					await updateDebtMonitors();
 
 					await delegateApprovals.approveBurnOnBehalf(delegate, { from: authoriser });
 
-					await tribeone.burnSynthsToTargetOnBehalf(authoriser, { from: delegate });
+					await tribeone.burnTribesToTargetOnBehalf(authoriser, { from: delegate });
 
-					const sUSDBalanceAfter = await sUSDContract.balanceOf(account1);
-					assert.bnEqual(sUSDBalanceAfter, toUnit('40'));
+					const hUSDBalanceAfter = await hUSDContract.balanceOf(account1);
+					assert.bnEqual(hUSDBalanceAfter, toUnit('40'));
 				});
 			});
 
 			describe('when Wrapper is set', async () => {
-				it('should have zero totalIssuedSynths', async () => {
+				it('should have zero totalIssuedTribes', async () => {
 					assert.bnEqual(
-						await tribeone.totalIssuedSynths(hUSD),
-						await tribeone.totalIssuedSynthsExcludeOtherCollateral(hUSD)
+						await tribeone.totalIssuedTribes(hUSD),
+						await tribeone.totalIssuedTribesExcludeOtherCollateral(hUSD)
 					);
 				});
-				describe('depositing WETH on the Wrapper to issue sETH', async () => {
+				describe('depositing WETH on the Wrapper to issue hETH', async () => {
 					let etherWrapper;
 					beforeEach(async () => {
 						// mock etherWrapper
@@ -2824,23 +2824,23 @@ contract('Issuer (via Tribeone)', async accounts => {
 						await debtCache.rebuildCache();
 					});
 
-					it('should be able to exclude sETH issued by EtherWrapper from totalIssuedSynths', async () => {
-						const totalSupplyBefore = await tribeone.totalIssuedSynths(sETH);
+					it('should be able to exclude hETH issued by EtherWrapper from totalIssuedTribes', async () => {
+						const totalSupplyBefore = await tribeone.totalIssuedTribes(hETH);
 
 						const amount = toUnit('10');
 
-						await etherWrapper.setTotalIssuedSynths(amount, { from: account1 });
+						await etherWrapper.setTotalIssuedTribes(amount, { from: account1 });
 
-						// totalSupply of synths should exclude Wrapper issued sETH
+						// totalSupply of tribes should exclude Wrapper issued hETH
 						assert.bnEqual(
 							totalSupplyBefore,
-							await tribeone.totalIssuedSynthsExcludeOtherCollateral(sETH)
+							await tribeone.totalIssuedTribesExcludeOtherCollateral(hETH)
 						);
 
-						// totalIssuedSynths after includes amount issued
-						const { rate } = await exchangeRates.rateAndInvalid(sETH);
+						// totalIssuedTribes after includes amount issued
+						const { rate } = await exchangeRates.rateAndInvalid(hETH);
 						assert.bnEqual(
-							await tribeone.totalIssuedSynths(sETH),
+							await tribeone.totalIssuedTribes(hETH),
 							totalSupplyBefore.add(divideDecimalRound(amount, rate))
 						);
 					});
@@ -2848,34 +2848,34 @@ contract('Issuer (via Tribeone)', async accounts => {
 			});
 
 			describe('burnForRedemption', () => {
-				it('only allowed by the synth redeemer', async () => {
+				it('only allowed by the tribe redeemer', async () => {
 					await onlyGivenAddressCanInvoke({
 						fnc: issuer.burnForRedemption,
 						args: [ZERO_ADDRESS, ZERO_ADDRESS, toUnit('1')],
 						accounts,
-						reason: 'Only SynthRedeemer',
+						reason: 'Only TribeRedeemer',
 					});
 				});
-				describe('when a user has 100 sETH', () => {
+				describe('when a user has 100 hETH', () => {
 					beforeEach(async () => {
-						await sETHContract.issue(account1, toUnit('100'));
+						await hETHContract.issue(account1, toUnit('100'));
 						await updateDebtMonitors();
 					});
-					describe('when burnForRedemption is invoked on the user for 75 sETH', () => {
+					describe('when burnForRedemption is invoked on the user for 75 hETH', () => {
 						beforeEach(async () => {
-							// spoof the synth redeemer
-							await addressResolver.importAddresses([toBytes32('SynthRedeemer')], [account6], {
+							// spoof the tribe redeemer
+							await addressResolver.importAddresses([toBytes32('TribeRedeemer')], [account6], {
 								from: owner,
 							});
 							// rebuild the resolver cache in the issuer
 							await issuer.rebuildCache();
 							// now invoke the burn
-							await issuer.burnForRedemption(await sETHContract.proxy(), account1, toUnit('75'), {
+							await issuer.burnForRedemption(await hETHContract.proxy(), account1, toUnit('75'), {
 								from: account6,
 							});
 						});
-						it('then the user has 25 sETH remaining', async () => {
-							assert.bnEqual(await sETHContract.balanceOf(account1), toUnit('25'));
+						it('then the user has 25 hETH remaining', async () => {
+							assert.bnEqual(await hETHContract.balanceOf(account1), toUnit('25'));
 						});
 					});
 				});
@@ -2903,22 +2903,22 @@ contract('Issuer (via Tribeone)', async accounts => {
 					await issuer.rebuildCache();
 
 					// issue some initial debt to work with
-					await tribeone.issueSynths(toUnit('100'), { from: owner });
+					await tribeone.issueTribes(toUnit('100'), { from: owner });
 
-					// send test user some haka so he can mint too
+					// send test user some snx so he can mint too
 					await tribeone.transfer(account1, toUnit('1000000'), { from: owner });
 				});
 
 				it('mints the correct number of debt shares', async () => {
-					// Issue synths
-					await tribeone.issueSynths(toUnit('100'), { from: account1 });
+					// Issue tribes
+					await tribeone.issueTribes(toUnit('100'), { from: account1 });
 					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('250')); // = 100 / 0.4
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('100'));
 				});
 
 				it('burns the correct number of debt shares', async () => {
-					await tribeone.issueSynths(toUnit('300'), { from: account1 });
-					await tribeone.burnSynths(toUnit('30'), { from: account1 });
+					await tribeone.issueTribes(toUnit('300'), { from: account1 });
+					await tribeone.burnTribes(toUnit('30'), { from: account1 });
 					assert.bnEqual(await debtShares.balanceOf(account1), toUnit('675')); // = 270 / 0.4
 					assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('270'));
 				});
@@ -2926,7 +2926,7 @@ contract('Issuer (via Tribeone)', async accounts => {
 				describe('when debt ratio changes', () => {
 					beforeEach(async () => {
 						// user mints and gets 300 husd / 0.4 = 750 debt shares
-						await tribeone.issueSynths(toUnit('300'), { from: account1 });
+						await tribeone.issueTribes(toUnit('300'), { from: account1 });
 
 						// Debt ratio oracle value is updated
 						await aggTDR.setLatestAnswer(toPreciseUnit('0.6'), await currentTime());
@@ -2937,24 +2937,24 @@ contract('Issuer (via Tribeone)', async accounts => {
 					});
 
 					it('mints at adjusted rate', async () => {
-						await tribeone.issueSynths(toUnit('300'), { from: account1 });
+						await tribeone.issueTribes(toUnit('300'), { from: account1 });
 
 						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('1250')); // = 750 (shares from before) + 300 / 0.6
 						assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('750')); // = 450 (hUSD from before ) + 300
 					});
 				});
 
-				describe('issued synths aggregator', async () => {
+				describe('issued tribes aggregator', async () => {
 					let aggTIS;
 					beforeEach(async () => {
 						// create aggregator mocks
 						aggTIS = await MockAggregator.new({ from: owner });
 
-						// Set issued synths oracle value
+						// Set issued tribes oracle value
 						await aggTIS.setLatestAnswer(toPreciseUnit('1234123412341234'), await currentTime());
 
 						await addressResolver.importAddresses(
-							[toBytes32('ext:AggregatorIssuedSynths')],
+							[toBytes32('ext:AggregatorIssuedTribes')],
 							[aggTIS.address],
 							{
 								from: owner,
@@ -2964,9 +2964,9 @@ contract('Issuer (via Tribeone)', async accounts => {
 
 					it('has no effect on mint or burn', async () => {
 						// user mints and gets 300 husd  / 0.4 = 750 debt shares
-						await tribeone.issueSynths(toUnit('300'), { from: account1 });
+						await tribeone.issueTribes(toUnit('300'), { from: account1 });
 						// user burns 30 husd / 0.4 = 75 debt shares
-						await tribeone.burnSynths(toUnit('30'), { from: account1 });
+						await tribeone.burnTribes(toUnit('30'), { from: account1 });
 						assert.bnEqual(await debtShares.balanceOf(account1), toUnit('675')); // 750 - 75 sds
 						assert.bnEqual(await tribeone.debtBalanceOf(account1, hUSD), toUnit('270')); // 300 - 30 husd
 					});
@@ -3003,13 +3003,13 @@ contract('Issuer (via Tribeone)', async accounts => {
 							issuer.upgradeCollateralShort(collateralShortMock, toUnit(0), {
 								from: owner,
 							}),
-							'cannot burn 0 synths'
+							'cannot burn 0 tribes'
 						);
 					});
 				});
 
 				describe('migrates balance', () => {
-					let beforeCurrentDebt, beforeSUSDBalance;
+					let beforeCurrentDebt, beforeHUSDBalance;
 					const amountToBurn = toUnit(10);
 
 					beforeEach(async () => {
@@ -3017,11 +3017,11 @@ contract('Issuer (via Tribeone)', async accounts => {
 						await tribeone.transfer(collateralShortMock, toUnit('1000'), { from: owner });
 
 						// issue max hUSD
-						const maxSynths = await tribeone.maxIssuableSynths(collateralShortMock);
-						await tribeone.issueSynths(maxSynths, { from: collateralShortMock });
+						const maxTribes = await tribeone.maxIssuableTribes(collateralShortMock);
+						await tribeone.issueTribes(maxTribes, { from: collateralShortMock });
 
 						// get before* values
-						beforeSUSDBalance = await sUSDContract.balanceOf(collateralShortMock);
+						beforeHUSDBalance = await hUSDContract.balanceOf(collateralShortMock);
 						const currentDebt = await debtCache.currentDebt();
 						beforeCurrentDebt = currentDebt['0'];
 
@@ -3031,10 +3031,10 @@ contract('Issuer (via Tribeone)', async accounts => {
 						});
 					});
 
-					it('burns synths', async () => {
+					it('burns tribes', async () => {
 						assert.bnEqual(
-							await sUSDContract.balanceOf(collateralShortMock),
-							beforeSUSDBalance.sub(amountToBurn)
+							await hUSDContract.balanceOf(collateralShortMock),
+							beforeHUSDBalance.sub(amountToBurn)
 						);
 					});
 
@@ -3102,8 +3102,8 @@ contract('Issuer (via Tribeone)', async accounts => {
 							await tribeone.transfer(debtMigratorOnEthereumMock, toUnit('1000'), { from: owner });
 
 							// issue max hUSD
-							const maxSynths = await tribeone.maxIssuableSynths(debtMigratorOnEthereumMock);
-							await tribeone.issueSynths(maxSynths, { from: debtMigratorOnEthereumMock });
+							const maxTribes = await tribeone.maxIssuableTribes(debtMigratorOnEthereumMock);
+							await tribeone.issueTribes(maxTribes, { from: debtMigratorOnEthereumMock });
 
 							// get before value
 							beforeDebtShareBalance = await debtShares.balanceOf(debtMigratorOnEthereumMock);

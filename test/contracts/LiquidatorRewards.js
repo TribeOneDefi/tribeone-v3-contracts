@@ -14,7 +14,7 @@ const { artifacts } = require('hardhat');
 const { toUnit, fastForward } = require('../utils')();
 
 contract('LiquidatorRewards', accounts => {
-	const [sAUD, sEUR, HAKA, sETH, ETH] = ['sAUD', 'sEUR', 'HAKA', 'sETH', 'ETH'].map(toBytes32);
+	const [sAUD, sEUR, HAKA, hETH, ETH] = ['sAUD', 'sEUR', 'HAKA', 'hETH', 'ETH'].map(toBytes32);
 	const [, owner, , , stakingAccount1, stakingAccount2, mockTribeone] = accounts;
 
 	let addressResolver,
@@ -22,21 +22,21 @@ contract('LiquidatorRewards', accounts => {
 		circuitBreaker,
 		exchangeRates,
 		liquidatorRewards,
-		synths,
+		tribes,
 		tribeone,
-		tribeoneProxy,
-		tribeoneDebtShare,
+		tribeetixProxy,
+		tribeetixDebtShare,
 		systemSettings;
 
 	const ZERO_BN = toBN(0);
 
 	const setupStakers = async () => {
-		const hakaCollateral = toUnit('1000');
-		await tribeone.transfer(stakingAccount1, hakaCollateral, { from: owner });
-		await tribeone.transfer(stakingAccount2, hakaCollateral, { from: owner });
+		const snxCollateral = toUnit('1000');
+		await tribeone.transfer(stakingAccount1, snxCollateral, { from: owner });
+		await tribeone.transfer(stakingAccount2, snxCollateral, { from: owner });
 
-		await tribeone.issueMaxSynths({ from: stakingAccount1 });
-		await tribeone.issueMaxSynths({ from: stakingAccount2 });
+		await tribeone.issueMaxTribes({ from: stakingAccount1 });
+		await tribeone.issueMaxTribes({ from: stakingAccount2 });
 
 		await addressResolver.importAddresses(['Tribeone'].map(toBytes32), [mockTribeone], {
 			from: owner,
@@ -61,7 +61,7 @@ contract('LiquidatorRewards', accounts => {
 	addSnapshotBeforeRestoreAfterEach();
 
 	before(async () => {
-		synths = ['hUSD', 'sAUD', 'sEUR', 'sETH'];
+		tribes = ['hUSD', 'sAUD', 'sEUR', 'hETH'];
 		({
 			AddressResolver: addressResolver,
 			CircuitBreaker: circuitBreaker,
@@ -69,12 +69,12 @@ contract('LiquidatorRewards', accounts => {
 			ExchangeRates: exchangeRates,
 			LiquidatorRewards: liquidatorRewards,
 			Tribeone: tribeone,
-			ProxyERC20Tribeone: tribeoneProxy,
-			TribeoneDebtShare: tribeoneDebtShare,
+			ProxyERC20Tribeone: tribeetixProxy,
+			TribeoneDebtShare: tribeetixDebtShare,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'AddressResolver',
 				'CollateralManager',
@@ -93,9 +93,9 @@ contract('LiquidatorRewards', accounts => {
 		}));
 
 		// use implementation ABI on the proxy address to simplify calling
-		tribeone = await artifacts.require('Tribeone').at(tribeoneProxy.address);
+		tribeone = await artifacts.require('Tribeone').at(tribeetixProxy.address);
 
-		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, sETH, ETH]);
+		await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, hETH, ETH]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -105,7 +105,7 @@ contract('LiquidatorRewards', accounts => {
 		await updateAggregatorRates(
 			exchangeRates,
 			circuitBreaker,
-			[sAUD, sEUR, HAKA, sETH],
+			[sAUD, sEUR, HAKA, hETH],
 			['0.5', '1.25', '0.1', '200'].map(toUnit)
 		);
 		await debtCache.takeDebtSnapshot();
@@ -202,7 +202,7 @@ contract('LiquidatorRewards', accounts => {
 			assert.bnEqual(
 				accumulatedRewardsAfter,
 				accumulatedRewardsBefore.add(
-					newRewards.mul(toUnit(1)).div(await tribeoneDebtShare.totalSupply())
+					newRewards.mul(toUnit(1)).div(await tribeetixDebtShare.totalSupply())
 				)
 			);
 		});
@@ -221,15 +221,15 @@ contract('LiquidatorRewards', accounts => {
 
 			it('equal after minting', async () => {
 				const beforeEarnedValue = await liquidatorRewards.earned(stakingAccount1);
-				const beforeDebtShareBalance = await tribeoneDebtShare.balanceOf(stakingAccount2);
-				const beforeDebtSharesSupply = await tribeoneDebtShare.totalSupply();
+				const beforeDebtShareBalance = await tribeetixDebtShare.balanceOf(stakingAccount2);
+				const beforeDebtSharesSupply = await tribeetixDebtShare.totalSupply();
 
 				await tribeone.transfer(stakingAccount2, toUnit('1000'), { from: owner });
-				await tribeone.issueMaxSynths({ from: stakingAccount2 });
+				await tribeone.issueMaxTribes({ from: stakingAccount2 });
 
 				const afterEarnedValue = await liquidatorRewards.earned(stakingAccount1);
-				const afterDebtShareBalance = await tribeoneDebtShare.balanceOf(stakingAccount2);
-				const afterDebtSharesSupply = await tribeoneDebtShare.totalSupply();
+				const afterDebtShareBalance = await tribeetixDebtShare.balanceOf(stakingAccount2);
+				const afterDebtSharesSupply = await tribeetixDebtShare.totalSupply();
 
 				assert.bnEqual(afterEarnedValue, beforeEarnedValue);
 				assert.bnGt(afterDebtShareBalance, beforeDebtShareBalance);
@@ -238,18 +238,18 @@ contract('LiquidatorRewards', accounts => {
 
 			it('equal after burning', async () => {
 				const beforeEarnedValue = await liquidatorRewards.earned(stakingAccount1);
-				const beforeDebtShareBalance = await tribeoneDebtShare.balanceOf(stakingAccount2);
-				const beforeDebtSharesSupply = await tribeoneDebtShare.totalSupply();
+				const beforeDebtShareBalance = await tribeetixDebtShare.balanceOf(stakingAccount2);
+				const beforeDebtSharesSupply = await tribeetixDebtShare.totalSupply();
 
-				// skip minimumStakeTime in order to burn synths
+				// skip minimumStakeTime in order to burn tribes
 				await systemSettings.setMinimumStakeTime(10, { from: owner });
 				await fastForward(10);
 
-				await tribeone.burnSynths(toUnit('100'), { from: stakingAccount2 });
+				await tribeone.burnTribes(toUnit('100'), { from: stakingAccount2 });
 
 				const afterEarnedValue = await liquidatorRewards.earned(stakingAccount1);
-				const afterDebtShareBalance = await tribeoneDebtShare.balanceOf(stakingAccount2);
-				const afterDebtSharesSupply = await tribeoneDebtShare.totalSupply();
+				const afterDebtShareBalance = await tribeetixDebtShare.balanceOf(stakingAccount2);
+				const afterDebtSharesSupply = await tribeetixDebtShare.totalSupply();
 
 				assert.bnEqual(afterEarnedValue, beforeEarnedValue);
 				assert.bnLt(afterDebtShareBalance, beforeDebtShareBalance);

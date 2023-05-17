@@ -11,7 +11,7 @@ const {
 	constants: { ZERO_ADDRESS },
 } = require('../..');
 
-const [hUSD, sETH] = ['hUSD', 'sETH'].map(toBytes32);
+const [hUSD, hETH] = ['hUSD', 'hETH'].map(toBytes32);
 
 let ExchangerWithFeeRecAlternatives;
 let DirectIntegrationManager;
@@ -32,7 +32,7 @@ module.exports = function({ accounts }) {
 	});
 
 	beforeEach(async () => {
-		const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
+		const VirtualTribeMastercopy = artifacts.require('VirtualTribeMastercopy');
 
 		({ mocks: this.mocks, resolver: this.resolver } = await prepareSmocks({
 			contracts: [
@@ -50,8 +50,8 @@ module.exports = function({ accounts }) {
 				'TradingRewards',
 			],
 			mocks: {
-				// Use a real VirtualSynthMastercopy so the unit tests can interrogate deployed vSynths
-				VirtualSynthMastercopy: await VirtualSynthMastercopy.new(),
+				// Use a real VirtualTribeMastercopy so the unit tests can interrogate deployed vTribes
+				VirtualTribeMastercopy: await VirtualTribeMastercopy.new(),
 			},
 			accounts: accounts.slice(10), // mock using accounts after the first few
 		}));
@@ -119,7 +119,7 @@ module.exports = function({ accounts }) {
 		whenMockedToAllowExchangeInvocationChecks: cb => {
 			describe(`when mocked to allow invocation checks`, () => {
 				beforeEach(async () => {
-					this.mocks.Tribeone.synthsByAddress.returns(toBytes32());
+					this.mocks.Tribeone.tribesByAddress.returns(toBytes32());
 				});
 				cb();
 			});
@@ -173,17 +173,17 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
-		whenMockedWithSynthUintSystemSetting: ({ setting, synth, value }, cb) => {
-			const settingForSynth = web3.utils.soliditySha3(
+		whenMockedWithTribeUintSystemSetting: ({ setting, tribe, value }, cb) => {
+			const settingForTribe = web3.utils.soliditySha3(
 				{ type: 'bytes32', value: toBytes32(setting) },
-				{ type: 'bytes32', value: synth }
+				{ type: 'bytes32', value: tribe }
 			);
-			const synthName = fromBytes32(synth);
-			describe(`when SystemSetting.${setting} for ${synthName} is mocked to ${value}`, () => {
+			const tribeName = fromBytes32(tribe);
+			describe(`when SystemSetting.${setting} for ${tribeName} is mocked to ${value}`, () => {
 				beforeEach(async () => {
 					this.flexibleStorageMock.mockSystemSetting({
 						value,
-						setting: settingForSynth,
+						setting: settingForTribe,
 						type: 'uint',
 					});
 				});
@@ -235,14 +235,14 @@ module.exports = function({ accounts }) {
 				});
 			});
 		},
-		whenMockedWithVolatileSynth: ({ synth, volatile }, cb) => {
-			describe(`when mocked with ${fromBytes32(synth)} deemed ${
+		whenMockedWithVolatileTribe: ({ tribe, volatile }, cb) => {
+			describe(`when mocked with ${fromBytes32(tribe)} deemed ${
 				volatile ? 'volatile' : 'not volatile'
 			}`, () => {
 				beforeEach(async () => {
 					this.mocks.ExchangeRates[
-						'synthTooVolatileForAtomicExchange((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
-					].returns(synthToCheck => (synthToCheck === synth ? volatile : false));
+						'tribeTooVolatileForAtomicExchange((bytes32,address,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256))'
+					].returns(tribeToCheck => (tribeToCheck === tribe ? volatile : false));
 				});
 			});
 		},
@@ -276,38 +276,38 @@ module.exports = function({ accounts }) {
 				cb();
 			});
 		},
-		whenMockedASingleSynthToIssueAndBurn: cb => {
-			describe(`when mocked a synth to burn`, () => {
+		whenMockedASingleTribeToIssueAndBurn: cb => {
+			describe(`when mocked a tribe to burn`, () => {
 				beforeEach(async () => {
-					// create and share the one synth for all Issuer.synths() calls
-					this.mocks.synth = await smock.fake('Synth');
-					this.mocks.synth.proxy.returns(web3.eth.accounts.create().address);
-					this.mocks.Issuer.synths.returns(currencyKey => {
+					// create and share the one tribe for all Issuer.tribes() calls
+					this.mocks.tribe = await smock.fake('Tribe');
+					this.mocks.tribe.proxy.returns(web3.eth.accounts.create().address);
+					this.mocks.Issuer.tribes.returns(currencyKey => {
 						// but when currency
-						this.mocks.synth.currencyKey.returns(currencyKey);
-						return this.mocks.synth.address;
+						this.mocks.tribe.currencyKey.returns(currencyKey);
+						return this.mocks.tribe.address;
 					});
 				});
 				cb();
 			});
 		},
 		whenMockedSusdAndSethSeparatelyToIssueAndBurn: cb => {
-			describe(`when mocked hUSD and sETH`, () => {
-				async function mockSynth(currencyKey) {
-					const synth = await smock.fake('Synth');
-					synth.currencyKey.returns(currencyKey);
-					synth.proxy.returns(web3.eth.accounts.create().address);
-					return synth;
+			describe(`when mocked hUSD and hETH`, () => {
+				async function mockTribe(currencyKey) {
+					const tribe = await smock.fake('Tribe');
+					tribe.currencyKey.returns(currencyKey);
+					tribe.proxy.returns(web3.eth.accounts.create().address);
+					return tribe;
 				}
 
 				beforeEach(async () => {
-					this.mocks.hUSD = await mockSynth(hUSD);
-					this.mocks.sETH = await mockSynth(sETH);
-					this.mocks.Issuer.synths.returns(currencyKey => {
+					this.mocks.hUSD = await mockTribe(hUSD);
+					this.mocks.hETH = await mockTribe(hETH);
+					this.mocks.Issuer.tribes.returns(currencyKey => {
 						if (currencyKey === hUSD) {
 							return this.mocks.hUSD.address;
-						} else if (currencyKey === sETH) {
-							return this.mocks.sETH.address;
+						} else if (currencyKey === hETH) {
+							return this.mocks.hETH.address;
 						}
 						// mimic on-chain default of 0s
 						return ZERO_ADDRESS;

@@ -14,14 +14,14 @@ const {
 	constants: { ZERO_ADDRESS, ZERO_BYTES32 },
 } = require('../..');
 
-const VirtualSynth = artifacts.require('VirtualSynth');
-const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
+const VirtualTribe = artifacts.require('VirtualTribe');
+const VirtualTribeMastercopy = artifacts.require('VirtualTribeMastercopy');
 
-contract('VirtualSynthMastercopy (unit tests)', async accounts => {
-	const [, owner, mockResolver, mockSynth] = accounts;
+contract('VirtualTribeMastercopy (unit tests)', async accounts => {
+	const [, owner, mockResolver, mockTribe] = accounts;
 
-	it('ensure same functions as VirtualSynth are mutative', () => {
-		for (const abi of [VirtualSynth.abi, VirtualSynthMastercopy.abi]) {
+	it('ensure same functions as VirtualTribe are mutative', () => {
+		for (const abi of [VirtualTribe.abi, VirtualTribeMastercopy.abi]) {
 			ensureOnlyExpectedMutativeFunctions({
 				abi,
 				ignoreParents: ['ERC20'],
@@ -36,7 +36,7 @@ contract('VirtualSynthMastercopy (unit tests)', async accounts => {
 		before(async () => {});
 
 		beforeEach(async () => {
-			instance = await VirtualSynthMastercopy.new();
+			instance = await VirtualTribeMastercopy.new();
 		});
 
 		it('is initialized', async () => {
@@ -45,19 +45,19 @@ contract('VirtualSynthMastercopy (unit tests)', async accounts => {
 
 		it('and the instance cannot be initialized again', async () => {
 			await assert.revert(
-				instance.initialize(mockSynth, mockResolver, owner, '10', toBytes32('hUSD')),
-				'vSynth already initialized'
+				instance.initialize(mockTribe, mockResolver, owner, '10', toBytes32('hUSD')),
+				'vTribe already initialized'
 			);
 		});
 
 		it('and the state is empty', async () => {
-			assert.equal(await instance.synth(), ZERO_ADDRESS);
+			assert.equal(await instance.tribe(), ZERO_ADDRESS);
 			assert.equal(await instance.resolver(), ZERO_ADDRESS);
 			assert.equal(await instance.totalSupply(), '0');
 			assert.equal(await instance.balanceOf(owner), '0');
 			assert.equal(await instance.balanceOfUnderlying(owner), '0');
 			assert.equal(await instance.currencyKey(), ZERO_BYTES32);
-			assert.equal(trimUtf8EscapeChars(await instance.name()), 'Virtual Synth ');
+			assert.equal(trimUtf8EscapeChars(await instance.name()), 'Virtual Tribe ');
 			assert.equal(trimUtf8EscapeChars(await instance.symbol()), 'v');
 		});
 

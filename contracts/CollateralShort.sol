@@ -5,7 +5,6 @@ pragma experimental ABIEncoderV2;
 // Inheritance
 import "./Collateral.sol";
 
-
 contract CollateralShort is Collateral {
     constructor(
         address _owner,
@@ -22,7 +21,7 @@ contract CollateralShort is Collateral {
         bytes32 currency
     ) external returns (uint id) {
         // Transfer from will throw if they didn't set the allowance
-        IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), collateral);
+        IERC20(address(_tribehUSD())).transferFrom(msg.sender, address(this), collateral);
 
         id = _open(collateral, amount, currency, true);
     }
@@ -30,7 +29,7 @@ contract CollateralShort is Collateral {
     function close(uint id) external returns (uint amount, uint collateral) {
         (amount, collateral) = _close(msg.sender, id);
 
-        IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
+        IERC20(address(_tribehUSD())).transfer(msg.sender, collateral);
     }
 
     function deposit(
@@ -38,9 +37,9 @@ contract CollateralShort is Collateral {
         uint id,
         uint amount
     ) external returns (uint principal, uint collateral) {
-        require(amount <= IERC20(address(_synthsUSD())).allowance(msg.sender, address(this)), "Allowance too low");
+        require(amount <= IERC20(address(_tribehUSD())).allowance(msg.sender, address(this)), "Allowance too low");
 
-        IERC20(address(_synthsUSD())).transferFrom(msg.sender, address(this), amount);
+        IERC20(address(_tribehUSD())).transferFrom(msg.sender, address(this), amount);
 
         (principal, collateral) = _deposit(borrower, id, amount);
     }
@@ -48,7 +47,7 @@ contract CollateralShort is Collateral {
     function withdraw(uint id, uint amount) external returns (uint principal, uint collateral) {
         (principal, collateral) = _withdraw(id, amount);
 
-        IERC20(address(_synthsUSD())).transfer(msg.sender, amount);
+        IERC20(address(_tribehUSD())).transfer(msg.sender, amount);
     }
 
     function repay(
@@ -63,7 +62,7 @@ contract CollateralShort is Collateral {
         (amount, collateral) = _closeWithCollateral(msg.sender, id);
 
         if (collateral > 0) {
-            IERC20(address(_synthsUSD())).transfer(msg.sender, collateral);
+            IERC20(address(_tribehUSD())).transfer(msg.sender, collateral);
         }
     }
 
@@ -91,7 +90,7 @@ contract CollateralShort is Collateral {
     ) external {
         uint collateralLiquidated = _liquidate(borrower, id, amount);
 
-        IERC20(address(_synthsUSD())).transfer(msg.sender, collateralLiquidated);
+        IERC20(address(_tribehUSD())).transfer(msg.sender, collateralLiquidated);
     }
 
     function _repayWithCollateral(
@@ -113,18 +112,18 @@ contract CollateralShort is Collateral {
         // 3. Get the equivalent payment amount in hUSD, and also distinguish
         // the fee that would be charged for both principal and interest.
         (uint expectedAmount, uint exchangeFee, ) = _exchanger().getAmountsForExchange(payment, loan.currency, hUSD);
-        uint paymentSUSD = expectedAmount.add(exchangeFee);
+        uint paymentHUSD = expectedAmount.add(exchangeFee);
 
         // 4. Reduce the collateral by the equivalent (total) payment amount in hUSD,
         // but add the fee instead of deducting it.
-        uint collateralToRemove = paymentSUSD.add(exchangeFee);
+        uint collateralToRemove = paymentHUSD.add(exchangeFee);
         loan.collateral = loan.collateral.sub(collateralToRemove);
 
         // 5. Pay exchange fees.
         _payFees(exchangeFee, hUSD);
 
         // 6. Burn hUSD held in the contract.
-        _synthsUSD().burn(address(this), collateralToRemove);
+        _tribehUSD().burn(address(this), collateralToRemove);
 
         // 7. Update the last interaction time.
         loan.lastInteraction = block.timestamp;

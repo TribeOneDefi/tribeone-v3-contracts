@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinSystemSettings.sol";
@@ -421,11 +420,11 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         return false;
     }
 
-    function synthTooVolatileForAtomicExchange(bytes32) public view returns (bool) {
+    function tribeTooVolatileForAtomicExchange(bytes32) public view returns (bool) {
         _notImplemented();
     }
 
-    function synthTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory)
+    function tribeTooVolatileForAtomicExchange(IDirectIntegrationManager.ParameterIntegrationSettings memory)
         public
         view
         returns (bool)

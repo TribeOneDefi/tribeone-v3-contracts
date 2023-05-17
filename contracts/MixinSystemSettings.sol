@@ -19,7 +19,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_LIQUIDATION_RATIO = "liquidationRatio";
     bytes32 internal constant SETTING_LIQUIDATION_ESCROW_DURATION = "liquidationEscrowDuration";
     bytes32 internal constant SETTING_LIQUIDATION_PENALTY = "liquidationPenalty";
-    bytes32 internal constant SETTING_HAKA_LIQUIDATION_PENALTY = "hakaLiquidationPenalty";
+    bytes32 internal constant SETTING_HAKA_LIQUIDATION_PENALTY = "snxLiquidationPenalty";
     bytes32 internal constant SETTING_SELF_LIQUIDATION_PENALTY = "selfLiquidationPenalty";
     bytes32 internal constant SETTING_FLAG_REWARD = "flagReward";
     bytes32 internal constant SETTING_LIQUIDATE_REWARD = "liquidateReward";
@@ -56,7 +56,7 @@ contract MixinSystemSettings is MixinResolver {
     bytes32 internal constant SETTING_ATOMIC_VOLATILITY_CONSIDERATION_WINDOW = "atomicVolConsiderationWindow";
     bytes32 internal constant SETTING_ATOMIC_VOLATILITY_UPDATE_THRESHOLD = "atomicVolUpdateThreshold";
     bytes32 internal constant SETTING_PURE_CHAINLINK_PRICE_FOR_ATOMIC_SWAPS_ENABLED = "pureChainlinkForAtomicsEnabled";
-    bytes32 internal constant SETTING_CROSS_SYNTH_TRANSFER_ENABLED = "crossChainSynthTransferEnabled";
+    bytes32 internal constant SETTING_CROSS_TRIBEONE_TRANSFER_ENABLED = "crossChainTribeTransferEnabled";
 
     bytes32 internal constant CONTRACT_FLEXIBLESTORAGE = "FlexibleStorage";
 
@@ -145,7 +145,7 @@ contract MixinSystemSettings is MixinResolver {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_LIQUIDATION_PENALTY);
     }
 
-    function getHakaLiquidationPenalty() internal view returns (uint) {
+    function getSnxLiquidationPenalty() internal view returns (uint) {
         return flexibleStorage().getUIntValue(SETTING_CONTRACT_NAME, SETTING_HAKA_LIQUIDATION_PENALTY);
     }
 
@@ -300,11 +300,11 @@ contract MixinSystemSettings is MixinResolver {
             );
     }
 
-    function getCrossChainSynthTransferEnabled(bytes32 currencyKey) internal view returns (uint) {
+    function getCrossChainTribeTransferEnabled(bytes32 currencyKey) internal view returns (uint) {
         return
             flexibleStorage().getUIntValue(
                 SETTING_CONTRACT_NAME,
-                keccak256(abi.encodePacked(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, currencyKey))
+                keccak256(abi.encodePacked(SETTING_CROSS_TRIBEONE_TRANSFER_ENABLED, currencyKey))
             );
     }
 

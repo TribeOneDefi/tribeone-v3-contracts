@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./Owned.sol";
 import "./MixinResolver.sol";
@@ -27,7 +26,7 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
     bytes32 private constant CONTRACT_EXT_MESSENGER = "ext:Messenger";
-    bytes32 internal constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 internal constant CONTRACT_TRIBEONEETIX = "Tribeone";
     bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrowV2";
     bytes32 private constant CONTRACT_ISSUER = "Issuer";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
@@ -40,9 +39,9 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
 
     bool public initiationActive;
 
-    bytes32 private constant SYNTH_TRANSFER_NAMESPACE = "SynthTransfer";
-    bytes32 private constant SYNTH_TRANSFER_SENT = "Sent";
-    bytes32 private constant SYNTH_TRANSFER_RECV = "Recv";
+    bytes32 private constant TRIBEONE_TRANSFER_NAMESPACE = "TribeTransfer";
+    bytes32 private constant TRIBEONE_TRANSFER_SENT = "Sent";
+    bytes32 private constant TRIBEONE_TRANSFER_RECV = "Recv";
 
     // ========== CONSTRUCTOR ==========
 
@@ -57,7 +56,7 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
     }
 
     function tribeone() internal view returns (ITribeone) {
-        return ITribeone(requireAndGetAddress(CONTRACT_TRIBEONE));
+        return ITribeone(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function rewardEscrowV2() internal view returns (IRewardEscrowV2) {
@@ -103,7 +102,7 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](8);
         newAddresses[0] = CONTRACT_EXT_MESSENGER;
-        newAddresses[1] = CONTRACT_TRIBEONE;
+        newAddresses[1] = CONTRACT_TRIBEONEETIX;
         newAddresses[2] = CONTRACT_REWARDESCROW;
         newAddresses[3] = CONTRACT_ISSUER;
         newAddresses[4] = CONTRACT_FEEPOOL;
@@ -113,12 +112,12 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
-    function synthTransferSent() external view returns (uint) {
-        return _sumTransferAmounts(SYNTH_TRANSFER_SENT);
+    function tribeTransferSent() external view returns (uint) {
+        return _sumTransferAmounts(TRIBEONE_TRANSFER_SENT);
     }
 
-    function synthTransferReceived() external view returns (uint) {
-        return _sumTransferAmounts(SYNTH_TRANSFER_RECV);
+    function tribeTransferReceived() external view returns (uint) {
+        return _sumTransferAmounts(TRIBEONE_TRANSFER_RECV);
     }
 
     // ========== MODIFIERS ============
@@ -147,23 +146,23 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
         emit InitiationResumed();
     }
 
-    function initiateSynthTransfer(
+    function initiateTribeTransfer(
         bytes32 currencyKey,
         address destination,
         uint amount
     ) external requireInitiationActive {
         require(destination != address(0), "Cannot send to zero address");
-        require(getCrossChainSynthTransferEnabled(currencyKey) > 0, "Synth not enabled for cross chain transfer");
-        systemStatus().requireSynthActive(currencyKey);
+        require(getCrossChainTribeTransferEnabled(currencyKey) > 0, "Tribe not enabled for cross chain transfer");
+        systemStatus().requireTribeActive(currencyKey);
 
-        _incrementSynthsTransferCounter(SYNTH_TRANSFER_SENT, currencyKey, amount);
+        _incrementTribesTransferCounter(TRIBEONE_TRANSFER_SENT, currencyKey, amount);
 
-        bool rateInvalid = issuer().burnSynthsWithoutDebt(currencyKey, msg.sender, amount);
-        require(!rateInvalid, "Cannot initiate if synth rate is invalid");
+        bool rateInvalid = issuer().burnTribesWithoutDebt(currencyKey, msg.sender, amount);
+        require(!rateInvalid, "Cannot initiate if tribe rate is invalid");
 
         // create message payload
         bytes memory messageData =
-            abi.encodeWithSelector(this.finalizeSynthTransfer.selector, currencyKey, destination, amount);
+            abi.encodeWithSelector(this.finalizeTribeTransfer.selector, currencyKey, destination, amount);
 
         // relay the message to Bridge on L1 via L2 Messenger
         messenger().sendMessage(
@@ -172,40 +171,40 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
             uint32(getCrossDomainMessageGasLimit(CrossDomainMessageGasLimits.Withdrawal))
         );
 
-        emit InitiateSynthTransfer(currencyKey, destination, amount);
+        emit InitiateTribeTransfer(currencyKey, destination, amount);
     }
 
-    function finalizeSynthTransfer(
+    function finalizeTribeTransfer(
         bytes32 currencyKey,
         address destination,
         uint amount
     ) external onlyCounterpart {
-        _incrementSynthsTransferCounter(SYNTH_TRANSFER_RECV, currencyKey, amount);
+        _incrementTribesTransferCounter(TRIBEONE_TRANSFER_RECV, currencyKey, amount);
 
-        issuer().issueSynthsWithoutDebt(currencyKey, destination, amount);
+        issuer().issueTribesWithoutDebt(currencyKey, destination, amount);
 
-        emit FinalizeSynthTransfer(currencyKey, destination, amount);
+        emit FinalizeTribeTransfer(currencyKey, destination, amount);
     }
 
     // ==== INTERNAL FUNCTIONS ====
 
-    function _incrementSynthsTransferCounter(
+    function _incrementTribesTransferCounter(
         bytes32 group,
         bytes32 currencyKey,
         uint amount
     ) internal {
-        bytes32 key = keccak256(abi.encodePacked(SYNTH_TRANSFER_NAMESPACE, group, currencyKey));
+        bytes32 key = keccak256(abi.encodePacked(TRIBEONE_TRANSFER_NAMESPACE, group, currencyKey));
 
-        uint currentSynths = flexibleStorage().getUIntValue(CONTRACT_NAME(), key);
+        uint currentTribes = flexibleStorage().getUIntValue(CONTRACT_NAME(), key);
 
-        flexibleStorage().setUIntValue(CONTRACT_NAME(), key, currentSynths.add(amount));
+        flexibleStorage().setUIntValue(CONTRACT_NAME(), key, currentTribes.add(amount));
     }
 
     function _sumTransferAmounts(bytes32 group) internal view returns (uint sum) {
-        // get list of synths from issuer
+        // get list of tribes from issuer
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
 
-        // get all synth rates
+        // get all tribe rates
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
         require(!isInvalid, "Rates are invalid");
@@ -213,7 +212,7 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
         // get all values
         bytes32[] memory transferAmountKeys = new bytes32[](currencyKeys.length);
         for (uint i = 0; i < currencyKeys.length; i++) {
-            transferAmountKeys[i] = keccak256(abi.encodePacked(SYNTH_TRANSFER_NAMESPACE, group, currencyKeys[i]));
+            transferAmountKeys[i] = keccak256(abi.encodePacked(TRIBEONE_TRANSFER_NAMESPACE, group, currencyKeys[i]));
         }
 
         uint[] memory transferAmounts = flexibleStorage().getUIntValues(CONTRACT_NAME(), transferAmountKeys);
@@ -229,6 +228,6 @@ contract BaseTribeoneBridge is Owned, MixinSystemSettings, IBaseTribeoneBridge {
 
     event InitiationResumed();
 
-    event InitiateSynthTransfer(bytes32 indexed currencyKey, address indexed destination, uint256 amount);
-    event FinalizeSynthTransfer(bytes32 indexed currencyKey, address indexed destination, uint256 amount);
+    event InitiateTribeTransfer(bytes32 indexed currencyKey, address indexed destination, uint256 amount);
+    event FinalizeTribeTransfer(bytes32 indexed currencyKey, address indexed destination, uint256 amount);
 }

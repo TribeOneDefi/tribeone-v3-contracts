@@ -18,14 +18,14 @@ const {
 
 const { divideDecimal } = require('../utils')();
 
-const VirtualSynth = artifacts.require('VirtualSynth');
+const VirtualTribe = artifacts.require('VirtualTribe');
 
-contract('VirtualSynth (unit tests)', async accounts => {
+contract('VirtualTribe (unit tests)', async accounts => {
 	const [, owner, alice] = accounts;
 
 	it('ensure only known functions are mutative', () => {
 		ensureOnlyExpectedMutativeFunctions({
-			abi: VirtualSynth.abi,
+			abi: VirtualTribe.abi,
 			ignoreParents: ['ERC20'],
 			expected: ['initialize', 'settle'],
 		});
@@ -33,17 +33,17 @@ contract('VirtualSynth (unit tests)', async accounts => {
 
 	describe('with common setup', () => {
 		// ensure all of the behaviors are bound to "this" for sharing test state
-		const behaviors = require('./VirtualSynth.behaviors').call(this, { accounts });
+		const behaviors = require('./VirtualTribe.behaviors').call(this, { accounts });
 		describe('initialize', () => {
 			const amount = '1001';
-			behaviors.whenInstantiated({ amount, user: owner, synth: 'sBTC' }, () => {
+			behaviors.whenInstantiated({ amount, user: owner, tribe: 'hBTC' }, () => {
 				it('is initialized', async () => {
 					assert.isTrue(await this.instance.initialized());
 				});
 
 				it('and each initialize arg is set correctly', async () => {
-					assert.equal(trimUtf8EscapeChars(await this.instance.name()), 'Virtual Synth sBTC');
-					assert.equal(trimUtf8EscapeChars(await this.instance.symbol()), 'vsBTC');
+					assert.equal(trimUtf8EscapeChars(await this.instance.name()), 'Virtual Tribe hBTC');
+					assert.equal(trimUtf8EscapeChars(await this.instance.symbol()), 'vhBTC');
 					assert.equal(await this.instance.decimals(), '18');
 				});
 
@@ -64,13 +64,13 @@ contract('VirtualSynth (unit tests)', async accounts => {
 				it('and it cannot be initialized again', async () => {
 					await assert.revert(
 						this.instance.initialize(
-							this.mocks.Synth.address,
+							this.mocks.Tribe.address,
 							this.resolver.address,
 							owner,
 							amount,
 							toBytes32('hUSD')
 						),
-						'vSynth already initialized'
+						'vTribe already initialized'
 					);
 				});
 			});
@@ -81,12 +81,12 @@ contract('VirtualSynth (unit tests)', async accounts => {
 			behaviors.whenInstantiated({ amount, user: owner }, () => {
 				// when nothing to be settled
 				behaviors.whenMockedSettlementOwing({}, () => {
-					behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+					behaviors.whenMockedTribeBalance({ balanceOf: amount }, () => {
 						it('then balance underlying must match the balance', async () => {
 							assert.equal(await this.instance.balanceOfUnderlying(owner), amount);
 						});
 					});
-					behaviors.whenMockedSynthBalance({ balanceOf: amount / 2 }, () => {
+					behaviors.whenMockedTribeBalance({ balanceOf: amount / 2 }, () => {
 						it('then balance underlying must be half the balance', async () => {
 							assert.equal((await this.instance.balanceOfUnderlying(owner)).toString(), amount / 2);
 						});
@@ -117,7 +117,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 					});
 				});
 
-				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+				behaviors.whenMockedTribeBalance({ balanceOf: amount }, () => {
 					behaviors.whenMockedSettlementOwing({ reclaim: 200 }, () => {
 						it('then balance underlying must match the balance after the reclaim', async () => {
 							assert.equal(await this.instance.balanceOfUnderlying(owner), +amount - 200);
@@ -177,7 +177,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 				});
 			});
 			behaviors.whenInstantiated({ amount, user: owner }, () => {
-				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+				behaviors.whenMockedTribeBalance({ balanceOf: amount }, () => {
 					describe('pre-settlement', () => {
 						behaviors.whenMockedSettlementOwing({}, () => {
 							it('then the rate must be even', async () => {
@@ -242,7 +242,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 		});
 
 		describe('secsLeftInWaitingPeriod()', () => {
-			behaviors.whenInstantiated({ amount: '1000', user: owner, synth: 'sBTC' }, () => {
+			behaviors.whenInstantiated({ amount: '1000', user: owner, tribe: 'hBTC' }, () => {
 				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 100 }, () => {
 					it('then secs left in waiting period returns 100', async () => {
 						assert.equal(await this.instance.secsLeftInWaitingPeriod(), '100');
@@ -262,7 +262,7 @@ contract('VirtualSynth (unit tests)', async accounts => {
 		});
 
 		describe('readyToSettle()', () => {
-			behaviors.whenInstantiated({ amount: '999', user: owner, synth: 'sBTC' }, () => {
+			behaviors.whenInstantiated({ amount: '999', user: owner, tribe: 'hBTC' }, () => {
 				behaviors.whenMockedWithMaxSecsLeft({ maxSecsLeft: 100 }, () => {
 					it('then ready to settle is false', async () => {
 						assert.equal(await this.instance.readyToSettle(), false);
@@ -283,8 +283,8 @@ contract('VirtualSynth (unit tests)', async accounts => {
 
 		describe('settlement', () => {
 			const amount = '999';
-			behaviors.whenInstantiated({ amount, user: owner, synth: 'sBTC' }, () => {
-				behaviors.whenMockedSynthBalance({ balanceOf: amount }, () => {
+			behaviors.whenInstantiated({ amount, user: owner, tribe: 'hBTC' }, () => {
+				behaviors.whenMockedTribeBalance({ balanceOf: amount }, () => {
 					describe('settled()', () => {
 						it('is false by default', async () => {
 							assert.equal(await this.instance.settled(), false);
@@ -300,18 +300,18 @@ contract('VirtualSynth (unit tests)', async accounts => {
 							it('then Exchanger.settle() is invoked with the correct params', async () => {
 								expect(this.mocks.Exchanger.settle).to.have.length(0);
 								this.mocks.Exchanger.settle.returnsAtCall(0, this.instance.address);
-								this.mocks.Exchanger.settle.returndAtCall(1, toBytes32('sBTC'));
+								this.mocks.Exchanger.settle.returndAtCall(1, toBytes32('hBTC'));
 							});
 							it('then Exchanger.settle() emits a Settled event with the supply and balance params', () => {
 								assert.eventEqual(this.txn, 'Settled', [amount, amount]);
 							});
-							it('then the balance of the users vSynth is 0', async () => {
+							it('then the balance of the users vTribe is 0', async () => {
 								assert.equal(await this.instance.balanceOf(owner), '0');
 							});
-							it('then the user is transferred the balance of the synth', async () => {
-								expect(this.mocks.Synth.transfer).to.have.length(0);
-								await this.mocks.Synth.transfer.returnsAtCall(0, owner);
-								await this.mocks.Synth.transfer.returnsAtCall(1, amount);
+							it('then the user is transferred the balance of the tribe', async () => {
+								expect(this.mocks.Tribe.transfer).to.have.length(0);
+								await this.mocks.Tribe.transfer.returnsAtCall(0, owner);
+								await this.mocks.Tribe.transfer.returnsAtCall(1, amount);
 							});
 							behaviors.whenSettlementCalled({ user: owner }, () => {
 								it('then Exchanger.settle() does not emit another settlement', () => {
@@ -325,40 +325,40 @@ contract('VirtualSynth (unit tests)', async accounts => {
 
 						behaviors.whenMockedSettlementOwing({ reclaim: 333 }, () => {
 							behaviors.whenSettlementCalled({ user: owner }, () => {
-								it('then the user is transferred the remaining balance of the synths', async () => {
-									expect(this.mocks.Synth.transfer).to.have.length(0);
-									await this.mocks.Synth.transfer.returnsAtCall(0, owner);
-									await this.mocks.Synth.transfer.returnsAtCall(1, '666');
+								it('then the user is transferred the remaining balance of the tribes', async () => {
+									expect(this.mocks.Tribe.transfer).to.have.length(0);
+									await this.mocks.Tribe.transfer.returnsAtCall(0, owner);
+									await this.mocks.Tribe.transfer.returnsAtCall(1, '666');
 								});
 							});
 						});
 
 						behaviors.whenMockedSettlementOwing({ rebate: 1 }, () => {
 							behaviors.whenSettlementCalled({ user: owner }, () => {
-								it('then the user is transferred the entire balance of the synths', async () => {
-									expect(this.mocks.Synth.transfer).to.have.length(0);
-									await this.mocks.Synth.transfer.returnsAtCall(0, owner);
-									await this.mocks.Synth.transfer.returnsAtCall(1, '1000');
+								it('then the user is transferred the entire balance of the tribes', async () => {
+									expect(this.mocks.Tribe.transfer).to.have.length(0);
+									await this.mocks.Tribe.transfer.returnsAtCall(0, owner);
+									await this.mocks.Tribe.transfer.returnsAtCall(1, '1000');
 								});
 							});
 						});
 
 						behaviors.whenUserTransfersAwayTokens({ amount: '666', from: owner }, () => {
 							behaviors.whenSettlementCalled({ user: owner }, () => {
-								it('then the user is transferred their portion balance of the synths', async () => {
-									expect(this.mocks.Synth.transfer).to.have.length(0);
-									await this.mocks.Synth.transfer.returnsAtCall(0, owner);
-									await this.mocks.Synth.transfer.returnsAtCall(1, '333');
+								it('then the user is transferred their portion balance of the tribes', async () => {
+									expect(this.mocks.Tribe.transfer).to.have.length(0);
+									await this.mocks.Tribe.transfer.returnsAtCall(0, owner);
+									await this.mocks.Tribe.transfer.returnsAtCall(1, '333');
 								});
 							});
 
 							behaviors.whenMockedSettlementOwing({ reclaim: 300 }, () => {
-								// total synths is 999 - 300 = 699. User has 1/3 of the vSynth supply
+								// total tribes is 999 - 300 = 699. User has 1/3 of the vTribe supply
 								behaviors.whenSettlementCalled({ user: owner }, () => {
-									it('then the user is transferred their portion balance of the synths', async () => {
-										expect(this.mocks.Synth.transfer).to.have.length(0);
-										await this.mocks.Synth.transfer.returnsAtCall(0, owner);
-										await this.mocks.Synth.transfer.returnsAtCall(1, '233');
+									it('then the user is transferred their portion balance of the tribes', async () => {
+										expect(this.mocks.Tribe.transfer).to.have.length(0);
+										await this.mocks.Tribe.transfer.returnsAtCall(0, owner);
+										await this.mocks.Tribe.transfer.returnsAtCall(1, '233');
 									});
 								});
 							});

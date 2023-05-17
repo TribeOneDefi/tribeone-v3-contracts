@@ -38,7 +38,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     uint public maxInflationAmount = 3e6 * 1e18; // max inflation amount 3,000,000
 
     // Address of the TribeoneProxy for the onlyTribeone modifier
-    address payable public tribeoneProxy;
+    address payable public tribeetixProxy;
 
     // Max HAKA rewards for minter
     uint public constant MAX_MINTER_REWARD = 200 * 1e18;
@@ -140,10 +140,10 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * SupplySchedule requires Tribeone address as it has the authority
      * to record mint event.
      * */
-    function setTribeoneProxy(ITribeone _tribeoneProxy) external onlyOwner {
-        require(address(_tribeoneProxy) != address(0), "Address cannot be 0");
-        tribeoneProxy = address(uint160(address(_tribeoneProxy)));
-        emit TribeoneProxyUpdated(tribeoneProxy);
+    function setTribeoneProxy(ITribeone _tribeetixProxy) external onlyOwner {
+        require(address(_tribeetixProxy) != address(0), "Address cannot be 0");
+        tribeetixProxy = address(uint160(address(_tribeetixProxy)));
+        emit TribeoneProxyUpdated(tribeetixProxy);
     }
 
     /**
@@ -169,7 +169,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * */
     modifier onlyTribeone() {
         require(
-            msg.sender == address(Proxy(address(tribeoneProxy)).target()),
+            msg.sender == address(Proxy(address(tribeetixProxy)).target()),
             "Only the tribeone contract can perform this action"
         );
         _;

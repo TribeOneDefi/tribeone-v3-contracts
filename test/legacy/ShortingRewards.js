@@ -31,9 +31,9 @@ contract('ShortingRewards', accounts => {
 	] = accounts;
 
 	const hUSD = toBytes32('hUSD');
-	const sETH = toBytes32('sETH');
+	const hETH = toBytes32('hETH');
 	const iETH = toBytes32('iETH');
-	const sBTC = toBytes32('sBTC');
+	const hBTC = toBytes32('hBTC');
 	const iBTC = toBytes32('iBTC');
 
 	// Tribeone is the rewardsToken
@@ -44,11 +44,11 @@ contract('ShortingRewards', accounts => {
 		rewardsDistribution,
 		systemSettings,
 		feePool,
-		synths,
+		tribes,
 		short,
-		sUSDSynth,
-		sBTCSynth,
-		sETHSynth,
+		hUSDTribe,
+		hBTCTribe,
+		hETHTribe,
 		issuer,
 		debtCache,
 		managerState,
@@ -78,19 +78,19 @@ contract('ShortingRewards', accounts => {
 		assert.equal(await exchangeRates.rateIsStale(toBytes32(rewardsTokenIdentifier)), false);
 	};
 
-	const issuesUSDToAccount = async (issueAmount, receiver) => {
-		// Set up the depositor with an amount of synths to deposit.
-		await sUSDSynth.issue(receiver, issueAmount, {
+	const issuehUSDToAccount = async (issueAmount, receiver) => {
+		// Set up the depositor with an amount of tribes to deposit.
+		await hUSDTribe.issue(receiver, issueAmount, {
 			from: owner,
 		});
 	};
 
-	const issuesBTCtoAccount = async (issueAmount, receiver) => {
-		await sBTCSynth.issue(receiver, issueAmount, { from: owner });
+	const issuehBTCtoAccount = async (issueAmount, receiver) => {
+		await hBTCTribe.issue(receiver, issueAmount, { from: owner });
 	};
 
-	const issuesETHToAccount = async (issueAmount, receiver) => {
-		await sETHSynth.issue(receiver, issueAmount, { from: owner });
+	const issuehETHToAccount = async (issueAmount, receiver) => {
+		await hETHTribe.issue(receiver, issueAmount, { from: owner });
 	};
 
 	const deployShort = async ({ owner, manager, resolver, collatKey, minColat, minSize }) => {
@@ -109,12 +109,12 @@ contract('ShortingRewards', accounts => {
 	});
 
 	before(async () => {
-		synths = ['hUSD', 'sBTC', 'sETH', 'iBTC', 'iETH'];
+		tribes = ['hUSD', 'hBTC', 'hETH', 'iBTC', 'iETH'];
 		({
 			ExchangeRates: exchangeRates,
-			SynthsUSD: sUSDSynth,
-			SynthsBTC: sBTCSynth,
-			SynthsETH: sETHSynth,
+			TribehUSD: hUSDTribe,
+			TribehBTC: hBTCTribe,
+			TribehETH: hETHTribe,
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
@@ -125,7 +125,7 @@ contract('ShortingRewards', accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'Tribeone',
 				'FeePool',
@@ -145,7 +145,7 @@ contract('ShortingRewards', accounts => {
 		// use implementation ABI on the proxy address to simplify calling
 		rewardsToken = await artifacts.require('Tribeone').at(rewardsTokenProxy.address);
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, iBTC, sETH, iETH]);
+		await setupPriceAggregators(exchangeRates, owner, [hBTC, iBTC, hETH, iETH]);
 
 		managerState = await CollateralManagerState.new(owner, ZERO_ADDRESS, { from: deployerAccount });
 
@@ -190,19 +190,19 @@ contract('ShortingRewards', accounts => {
 
 		await manager.addCollaterals([short.address], { from: owner });
 
-		await short.addSynths(
-			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+		await short.addTribes(
+			['TribehBTC', 'TribehETH'].map(toBytes32),
+			['hBTC', 'hETH'].map(toBytes32),
 			{ from: owner }
 		);
 
-		await manager.addShortableSynths(
-			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+		await manager.addShortableTribes(
+			['TribehBTC', 'TribehETH'].map(toBytes32),
+			['hBTC', 'hETH'].map(toBytes32),
 			{ from: owner }
 		);
 
-		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
+		await hUSDTribe.approve(short.address, toUnit(100000), { from: account1 });
 
 		shortingRewards = await setupContract({
 			accounts,
@@ -223,21 +223,21 @@ contract('ShortingRewards', accounts => {
 			from: owner,
 		});
 
-		await short.addRewardsContracts(shortingRewards.address, sBTC, { from: owner });
+		await short.addRewardsContracts(shortingRewards.address, hBTC, { from: owner });
 
 		await setRewardsTokenExchangeRate();
 	});
 
 	beforeEach(async () => {
-		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [hETH, hBTC], [100, 10000].map(toUnit));
 
-		await issuesUSDToAccount(toUnit(100000), owner);
-		await issuesBTCtoAccount(toUnit(10), owner);
-		await issuesETHToAccount(toUnit(100), owner);
+		await issuehUSDToAccount(toUnit(100000), owner);
+		await issuehBTCtoAccount(toUnit(10), owner);
+		await issuehETHToAccount(toUnit(100), owner);
 
-		await issuesUSDToAccount(toUnit(20000), account1);
-		await issuesBTCtoAccount(toUnit(2), account1);
-		await issuesETHToAccount(toUnit(10), account1);
+		await issuehUSDToAccount(toUnit(20000), account1);
+		await issuehBTCtoAccount(toUnit(2), account1);
+		await issuehETHToAccount(toUnit(10), account1);
 
 		await debtCache.takeDebtSnapshot();
 	});
@@ -320,14 +320,14 @@ contract('ShortingRewards', accounts => {
 		});
 		it('should revert calling enrol() when paused', async () => {
 			await assert.revert(
-				short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 }),
+				short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 }),
 				'This action cannot be performed while the contract is paused'
 			);
 		});
 		it('should not revert calling stake() when unpaused', async () => {
 			await shortingRewards.setPaused(false, { from: owner });
 
-			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 		});
 	});
 
@@ -356,7 +356,7 @@ contract('ShortingRewards', accounts => {
 		});
 
 		it('should be > 0', async () => {
-			tx = await short.open(toUnit(20000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(20000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			const totalSupply = await shortingRewards.totalSupply();
@@ -402,7 +402,7 @@ contract('ShortingRewards', accounts => {
 		it('opening a short increases staking balance', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
-			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 
 			const postStakeBal = await shortingRewards.balanceOf(account1);
 
@@ -412,7 +412,7 @@ contract('ShortingRewards', accounts => {
 		it('drawing on a short increases the staking balance', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
-			tx = await short.open(toUnit(20000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(20000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			const postOpenBal = await shortingRewards.balanceOf(account1);
@@ -434,16 +434,16 @@ contract('ShortingRewards', accounts => {
 		it('closing reduces the balance to 0', async () => {
 			const initialStakeBal = await shortingRewards.balanceOf(account1);
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await fastForward(DAY);
 
 			// Make the short so underwater it must get closed.
-			await updateAggregatorRates(exchangeRates, null, [sBTC], ['20000'].map(toUnit));
+			await updateAggregatorRates(exchangeRates, null, [hBTC], ['20000'].map(toUnit));
 
 			// close the loan via liquidation
-			await issuesBTCtoAccount(toUnit(1), account2);
+			await issuehBTCtoAccount(toUnit(1), account2);
 			await short.liquidate(account1, id, toUnit(1), { from: account2 });
 
 			const postStakeBal = await shortingRewards.balanceOf(account1);
@@ -453,16 +453,16 @@ contract('ShortingRewards', accounts => {
 		});
 
 		it('partial liquidation reduces the balannce', async () => {
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await fastForward(DAY);
 
 			// Make the short so underwater it must get closed.
-			await updateAggregatorRates(exchangeRates, null, [sBTC], ['20000'].map(toUnit));
+			await updateAggregatorRates(exchangeRates, null, [hBTC], ['20000'].map(toUnit));
 
 			// close the loan via liquidation
-			await issuesBTCtoAccount(toUnit(1), account2);
+			await issuehBTCtoAccount(toUnit(1), account2);
 			await short.liquidate(account1, id, toUnit(0.1), { from: account2 });
 
 			const postStakeBal = await shortingRewards.balanceOf(account1);
@@ -478,7 +478,7 @@ contract('ShortingRewards', accounts => {
 		});
 
 		it('should be > 0 when staking', async () => {
-			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 
 			const rewardValue = toUnit(5000.0);
 			await rewardsToken.transfer(shortingRewards.address, rewardValue, { from: owner });
@@ -517,7 +517,7 @@ contract('ShortingRewards', accounts => {
 		it('rewards token balance should rollover after DURATION', async () => {
 			const totalToDistribute = toUnit('5000');
 
-			await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 
 			await rewardsToken.transfer(shortingRewards.address, totalToDistribute, { from: owner });
 			await shortingRewards.notifyRewardAmount(totalToDistribute, {
@@ -544,7 +544,7 @@ contract('ShortingRewards', accounts => {
 		it('should increase rewards token balance', async () => {
 			const totalToDistribute = toUnit('5000');
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await rewardsToken.transfer(shortingRewards.address, totalToDistribute, { from: owner });
@@ -557,7 +557,7 @@ contract('ShortingRewards', accounts => {
 			const initialRewardBal = await rewardsToken.balanceOf(account1);
 			const initialEarnedBal = await shortingRewards.earned(account1);
 
-			await issuesBTCtoAccount(toUnit(1), account1);
+			await issuehBTCtoAccount(toUnit(1), account1);
 			await short.close(id, { from: account1 });
 			await shortingRewards.getReward(account1);
 
@@ -583,7 +583,7 @@ contract('ShortingRewards', accounts => {
 		it('should revert when setting setRewardsDuration before the period has finished', async () => {
 			const totalToDistribute = toUnit('5000');
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await rewardsToken.transfer(shortingRewards.address, totalToDistribute, { from: owner });
@@ -601,7 +601,7 @@ contract('ShortingRewards', accounts => {
 		it('should update when setting setRewardsDuration after the period has finished', async () => {
 			const totalToDistribute = toUnit('5000');
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await rewardsToken.transfer(shortingRewards.address, totalToDistribute, { from: owner });
@@ -627,7 +627,7 @@ contract('ShortingRewards', accounts => {
 		it('should update when setting setRewardsDuration after the period has finished', async () => {
 			const totalToDistribute = toUnit('5000');
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await rewardsToken.transfer(shortingRewards.address, totalToDistribute, { from: owner });
@@ -680,7 +680,7 @@ contract('ShortingRewards', accounts => {
 		it('should increases lp token balance and decreases staking balance', async () => {
 			const totalToStake = toUnit(1);
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await fastForward(300);
@@ -699,7 +699,7 @@ contract('ShortingRewards', accounts => {
 		it('should retrieve all earned and increase rewards bal', async () => {
 			const totalToDistribute = toUnit('5000');
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			await rewardsToken.transfer(shortingRewards.address, totalToDistribute, { from: owner });
@@ -780,7 +780,7 @@ contract('ShortingRewards', accounts => {
 			// Transfer some LP Tokens to user
 			const totalToStake = toUnit(1);
 
-			tx = await short.open(toUnit(15000), toUnit(1), sBTC, { from: account1 });
+			tx = await short.open(toUnit(15000), toUnit(1), hBTC, { from: account1 });
 			id = await getid(tx);
 
 			// Distribute some rewards

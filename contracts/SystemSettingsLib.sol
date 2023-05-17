@@ -16,7 +16,7 @@ library SystemSettingsLib {
 
     bytes32 public constant SETTINGS_CONTRACT_NAME = "SystemSettings";
 
-    // No more synths may be issued than the value of HAKA backing them.
+    // No more tribes may be issued than the value of HAKA backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
     // The fee period must be between 1 day and 60 days.
@@ -145,11 +145,11 @@ library SystemSettingsLib {
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
         uint _liquidationRatio,
-        uint getHakaLiquidationPenalty,
+        uint getSnxLiquidationPenalty,
         uint getIssuanceRatio
     ) external {
         require(
-            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getHakaLiquidationPenalty)),
+            _liquidationRatio <= MAX_LIQUIDATION_RATIO.divideDecimal(SafeDecimalMath.unit().add(getSnxLiquidationPenalty)),
             "liquidationRatio > MAX_LIQUIDATION_RATIO / (1 + penalty)"
         );
 
@@ -169,7 +169,7 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, duration);
     }
 
-    function setHakaLiquidationPenalty(
+    function setSnxLiquidationPenalty(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
         uint penalty
@@ -224,18 +224,18 @@ library SystemSettingsLib {
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, period);
     }
 
-    function setExchangeFeeRateForSynths(
+    function setExchangeFeeRateForTribes(
         IFlexibleStorage flexibleStorage,
         bytes32 settingExchangeFeeRate,
-        bytes32[] calldata synthKeys,
+        bytes32[] calldata tribeKeys,
         uint256[] calldata exchangeFeeRates
     ) external {
-        require(synthKeys.length == exchangeFeeRates.length, "Array lengths dont match");
-        for (uint i = 0; i < synthKeys.length; i++) {
+        require(tribeKeys.length == exchangeFeeRates.length, "Array lengths dont match");
+        for (uint i = 0; i < tribeKeys.length; i++) {
             require(exchangeFeeRates[i] <= MAX_EXCHANGE_FEE_RATE, "MAX_EXCHANGE_FEE_RATE exceeded");
             flexibleStorage.setUIntValue(
                 SETTINGS_CONTRACT_NAME,
-                keccak256(abi.encodePacked(settingExchangeFeeRate, synthKeys[i])),
+                keccak256(abi.encodePacked(settingExchangeFeeRate, tribeKeys[i])),
                 exchangeFeeRates[i]
             );
         }
@@ -467,7 +467,7 @@ library SystemSettingsLib {
         );
     }
 
-    function setCrossChainSynthTransferEnabled(
+    function setCrossChainTribeTransferEnabled(
         IFlexibleStorage flexibleStorage,
         bytes32 settingName,
         bytes32 _currencyKey,

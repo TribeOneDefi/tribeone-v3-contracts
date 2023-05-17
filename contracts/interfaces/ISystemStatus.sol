@@ -29,13 +29,13 @@ interface ISystemStatus {
 
     function requireFuturesMarketActive(bytes32 marketKey) external view;
 
-    function requireExchangeBetweenSynthsAllowed(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
+    function requireExchangeBetweenTribesAllowed(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 
-    function requireSynthActive(bytes32 currencyKey) external view;
+    function requireTribeActive(bytes32 currencyKey) external view;
 
-    function synthSuspended(bytes32 currencyKey) external view returns (bool);
+    function tribeSuspended(bytes32 currencyKey) external view returns (bool);
 
-    function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
+    function requireTribesActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view;
 
     function systemSuspension() external view returns (bool suspended, uint248 reason);
 
@@ -45,18 +45,18 @@ interface ISystemStatus {
 
     function futuresSuspension() external view returns (bool suspended, uint248 reason);
 
-    function synthExchangeSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
+    function tribeExchangeSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
 
-    function synthSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
+    function tribeSuspension(bytes32 currencyKey) external view returns (bool suspended, uint248 reason);
 
     function futuresMarketSuspension(bytes32 marketKey) external view returns (bool suspended, uint248 reason);
 
-    function getSynthExchangeSuspensions(bytes32[] calldata synths)
+    function getTribeExchangeSuspensions(bytes32[] calldata tribes)
         external
         view
         returns (bool[] memory exchangeSuspensions, uint256[] memory reasons);
 
-    function getSynthSuspensions(bytes32[] calldata synths)
+    function getTribeSuspensions(bytes32[] calldata tribes)
         external
         view
         returns (bool[] memory suspensions, uint256[] memory reasons);
@@ -69,7 +69,7 @@ interface ISystemStatus {
     // Restricted functions
     function suspendIssuance(uint256 reason) external;
 
-    function suspendSynth(bytes32 currencyKey, uint256 reason) external;
+    function suspendTribe(bytes32 currencyKey, uint256 reason) external;
 
     function suspendFuturesMarket(bytes32 marketKey, uint256 reason) external;
 

@@ -24,7 +24,7 @@ async function prepareDeploy(...args) {
 }
 
 async function deployInstance({
-	addNewSynths,
+	addNewTribes,
 	buildPath,
 	deploymentPath,
 	freshDeploy = true,
@@ -41,7 +41,7 @@ async function deployInstance({
 	const privateKey = network === 'local' ? getLocalPrivateKey({ index: 0 }) : undefined;
 
 	await commands.deploy({
-		addNewSynths,
+		addNewTribes,
 		buildPath,
 		deploymentPath,
 		concurrency: 1,

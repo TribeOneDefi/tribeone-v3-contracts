@@ -10,19 +10,19 @@ contract('DebtMigratorOnEthereum', accounts => {
 	const owner = accounts[1];
 	const user = accounts[2];
 
-	let debtMigratorOnEthereum, resolver, rewardEscrowV2, synths, tribeone, tribeoneDebtShare;
+	let debtMigratorOnEthereum, resolver, rewardEscrowV2, tribes, tribeone, tribeetixDebtShare;
 
 	before(async () => {
-		synths = ['hUSD', 'sETH'];
+		tribes = ['hUSD', 'hETH'];
 		({
 			AddressResolver: resolver,
 			DebtMigratorOnEthereum: debtMigratorOnEthereum,
 			RewardEscrowV2: rewardEscrowV2,
 			Tribeone: tribeone,
-			TribeoneDebtShare: tribeoneDebtShare,
+			TribeoneDebtShare: tribeetixDebtShare,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'AddressResolver',
 				'DebtMigratorOnEthereum',
@@ -160,13 +160,13 @@ contract('DebtMigratorOnEthereum', accounts => {
 		});
 
 		before('issue some debt', async () => {
-			await tribeone.issueSynths(amountToIssue, { from: owner });
+			await tribeone.issueTribes(amountToIssue, { from: owner });
 		});
 
 		before('record balances', async () => {
 			liquidHAKABalance = await tribeone.balanceOf(owner);
 			escrowedHAKABalance = await rewardEscrowV2.balanceOf(owner);
-			debtShareBalance = await tribeoneDebtShare.balanceOf(owner);
+			debtShareBalance = await tribeetixDebtShare.balanceOf(owner);
 			debtTransferSentBefore = await debtMigratorOnEthereum.debtTransferSent();
 		});
 
@@ -200,7 +200,7 @@ contract('DebtMigratorOnEthereum', accounts => {
 				assert.bnEqual(await tribeone.balanceOf(owner), 0);
 				assert.bnEqual(await tribeone.debtBalanceOf(owner, hUSD), 0);
 				assert.bnEqual(await rewardEscrowV2.balanceOf(owner), 0);
-				assert.bnEqual(await tribeoneDebtShare.balanceOf(owner), 0);
+				assert.bnEqual(await tribeetixDebtShare.balanceOf(owner), 0);
 			});
 
 			it('emits a MigrationInitiated event', async () => {

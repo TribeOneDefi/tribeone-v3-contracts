@@ -62,13 +62,13 @@
 	"SystemStatus": {
 		"deploy": false
 	},
-	"SynthUtil": {
+	"TribeUtil": {
 		"deploy": false
 	},
 	"DappMaintenance": {
 		"deploy": false
 	},
-	"SynthsUSD": {
+	"TribehUSD": {
 		"deploy": false
 	},
 	"ProxyFeePool": {
@@ -77,7 +77,7 @@
 	"ProxyTribeone": {
 		"deploy": false
 	},
-	"ProxysUSD": {
+	"ProxyhUSD": {
 		"deploy": false
 	},
 	"SafeDecimalMath": {
@@ -89,16 +89,16 @@
 	"TokenStateTribeone": {
 		"deploy": false
 	},
-	"TokenStatesUSD": {
+	"TokenStatehUSD": {
 		"deploy": false
 	},
-	"TokenStatesETH": {
+	"TokenStatehETH": {
 		"deploy": false
 	},
-	"ProxysETH": {
+	"ProxyhETH": {
 		"deploy": false
 	},
-	"SynthsETH": {
+	"TribehETH": {
 		"deploy": false
 	},
 	"FlexibleStorage": {
@@ -134,7 +134,7 @@
 	"TribeoneBridgeToOptimism": {
 		"deploy": false
 	},
-	"VirtualSynthMastercopy": {
+	"VirtualTribeMastercopy": {
 		"deploy": false
 	},
 	"TribeoneBridgeEscrow": {
@@ -152,7 +152,7 @@
 	"OwnerRelayOnEthereum": {
 		"deploy": false
 	},
-	"SynthRedeemer": {
+	"TribeRedeemer": {
 		"deploy": false
 	},
 	"SystemSettingsLib": {
@@ -170,7 +170,7 @@
 	"FuturesMarketManager": {
 		"deploy": false
 	},
-	"OneNetAggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedTribes": {
 		"deploy": false
 	},
 	"OneNetAggregatorDebtRatio": {
@@ -185,13 +185,13 @@
 	"OneNetAggregatorsDEFI": {
 		"deploy": false
 	},
-	"TokenStatesBTC": {
+	"TokenStatehBTC": {
 		"deploy": false
 	},
-	"ProxysBTC": {
+	"ProxyhBTC": {
 		"deploy": false
 	},
-	"SynthsBTC": {
+	"TribehBTC": {
 		"deploy": false
 	},
 	"CircuitBreaker": {
@@ -207,15 +207,6 @@
 		"deploy": false
 	},
 	"DebtMigratorOnEthereum": {
-		"deploy": false
-	},
-	"TokenStatehUSD": {
-		"deploy": false
-	},
-	"ProxyhUSD": {
-		"deploy": false
-	},
-	"SynthhUSD": {
 		"deploy": false
 	}
 }

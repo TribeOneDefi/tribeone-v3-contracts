@@ -1,9 +1,9 @@
 pragma solidity ^0.5.16;
 
 interface IFuturesMarketManagerInternal {
-    function issueSUSD(address account, uint amount) external;
+    function issueHUSD(address account, uint amount) external;
 
-    function burnSUSD(address account, uint amount) external;
+    function burnHUSD(address account, uint amount) external;
 }
 
 contract MockFuturesMarket {
@@ -51,11 +51,11 @@ contract MockFuturesMarket {
         return (debt, invalid);
     }
 
-    function issueSUSD(address account, uint amount) external {
-        manager.issueSUSD(account, amount);
+    function issueHUSD(address account, uint amount) external {
+        manager.issueHUSD(account, amount);
     }
 
-    function burnSUSD(address account, uint amount) external {
-        manager.burnSUSD(account, amount);
+    function burnHUSD(address account, uint amount) external {
+        manager.burnHUSD(account, amount);
     }
 }

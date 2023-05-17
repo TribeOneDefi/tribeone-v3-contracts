@@ -51,20 +51,20 @@ const MockDexPriceAggregator = artifacts.require('MockDexPriceAggregator');
 const MockToken = artifacts.require('MockToken');
 
 contract('Exchanger (spec tests)', async accounts => {
-	const [hUSD, sAUD, sEUR, HAKA, sBTC, iBTC, sETH, iETH] = [
+	const [hUSD, sAUD, sEUR, HAKA, hBTC, iBTC, hETH, iETH] = [
 		'hUSD',
 		'sAUD',
 		'sEUR',
 		'HAKA',
-		'sBTC',
+		'hBTC',
 		'iBTC',
-		'sETH',
+		'hETH',
 		'iETH',
 	].map(toBytes32);
 
 	const trackingCode = toBytes32('1INCH');
 
-	const synthKeys = [hUSD, sAUD, sEUR, sBTC, iBTC, sETH, iETH];
+	const tribeKeys = [hUSD, sAUD, sEUR, hBTC, iBTC, hETH, iETH];
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -73,11 +73,11 @@ contract('Exchanger (spec tests)', async accounts => {
 		feePool,
 		delegateApprovals,
 		directIntegration,
-		sUSDContract,
+		hUSDContract,
 		sAUDContract,
 		sEURContract,
-		sBTCContract,
-		sETHContract,
+		hBTCContract,
+		hETHContract,
 		exchanger,
 		exchangeState,
 		exchangeFeeRate,
@@ -93,16 +93,16 @@ contract('Exchanger (spec tests)', async accounts => {
 	async function changeOneDISetting(
 		index,
 		value,
-		synths = [hUSD, sAUD, sEUR, HAKA, sBTC, iBTC, sETH, iETH]
+		tribes = [hUSD, sAUD, sEUR, HAKA, hBTC, iBTC, hETH, iETH]
 	) {
-		for (const synth of synths) {
+		for (const tribe of tribes) {
 			for (const account of [owner, account1, account2]) {
 				const existingParameters = Array.from(
-					await directIntegration.getExchangeParameters(account, synth)
+					await directIntegration.getExchangeParameters(account, tribe)
 				);
 				// the parameter for `exchangeFeeRates` is currently in the 8th position (and probably will be until the end of v2x)
 				existingParameters[index] = value;
-				await directIntegration.setExchangeParameters(account, [synth], existingParameters, {
+				await directIntegration.setExchangeParameters(account, [tribe], existingParameters, {
 					from: owner,
 				});
 			}
@@ -167,18 +167,18 @@ contract('Exchanger (spec tests)', async accounts => {
 		}
 	}
 
-	async function setExchangeFeeRateForSynths({
+	async function setExchangeFeeRateForTribes({
 		owner,
 		systemSettings,
-		synthKeys,
+		tribeKeys,
 		exchangeFeeRates,
 	}) {
 		if (directIntegration) {
-			for (const i in synthKeys) {
-				await changeOneDISetting(8, exchangeFeeRates[i], [synthKeys[i]]);
+			for (const i in tribeKeys) {
+				await changeOneDISetting(8, exchangeFeeRates[i], [tribeKeys[i]]);
 			}
 		} else {
-			await systemSettings.setExchangeFeeRateForSynths(synthKeys, exchangeFeeRates, {
+			await systemSettings.setExchangeFeeRateForTribes(tribeKeys, exchangeFeeRates, {
 				from: owner,
 			});
 		}
@@ -288,14 +288,14 @@ contract('Exchanger (spec tests)', async accounts => {
 
 				beforeEach(async () => {
 					await updateRatesWithDefaults({ exchangeRates, owner, debtCache });
-					await sUSDContract.issue(owner, toUnit('100'));
-					await tribeone.exchange(hUSD, toUnit('10'), sETH, { from: owner });
+					await hUSDContract.issue(owner, toUnit('100'));
+					await tribeone.exchange(hUSD, toUnit('10'), hETH, { from: owner });
 				});
 
 				it('creates no new entries', async () => {
-					let { numEntries } = await exchanger.settlementOwing(owner, sETH);
+					let { numEntries } = await exchanger.settlementOwing(owner, hETH);
 					assert.bnEqual(numEntries, '0');
-					numEntries = await exchangeState.getLengthOfEntries(owner, sETH);
+					numEntries = await exchangeState.getLengthOfEntries(owner, hETH);
 					assert.bnEqual(numEntries, '0');
 				});
 
@@ -303,11 +303,11 @@ contract('Exchanger (spec tests)', async accounts => {
 					const { amountReceived } = await exchanger.getAmountsForExchange(
 						amountOfSrcExchanged,
 						hUSD,
-						sETH,
+						hETH,
 						{ from: owner }
 					);
-					await tribeone.exchange(sETH, amountReceived, hUSD, { from: owner });
-					assert.bnEqual(await sETHContract.balanceOf(owner), '0');
+					await tribeone.exchange(hETH, amountReceived, hUSD, { from: owner });
+					assert.bnEqual(await hETHContract.balanceOf(owner), '0');
 				});
 
 				describe('When the waiting period is switched on again', () => {
@@ -324,13 +324,13 @@ contract('Exchanger (spec tests)', async accounts => {
 
 						beforeEach(async () => {
 							await fastForward(await systemSettings.waitingPeriodSecs());
-							exchangeTransaction = await tribeone.exchange(hUSD, amountOfSrcExchanged, sETH, {
+							exchangeTransaction = await tribeone.exchange(hUSD, amountOfSrcExchanged, hETH, {
 								from: owner,
 							});
 						});
 
 						it('creates a new entry', async () => {
-							const { numEntries } = await exchanger.settlementOwing(owner, sETH);
+							const { numEntries } = await exchanger.settlementOwing(owner, hETH);
 							assert.bnEqual(numEntries, '1');
 						});
 
@@ -338,14 +338,14 @@ contract('Exchanger (spec tests)', async accounts => {
 							const { amountReceived, exchangeFeeRate } = await exchanger.getAmountsForExchange(
 								amountOfSrcExchanged,
 								hUSD,
-								sETH,
+								hETH,
 								{
 									from: owner,
 								}
 							);
 							const logs = await getDecodedLogs({
 								hash: exchangeTransaction.tx,
-								contracts: [tribeone, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+								contracts: [tribeone, exchanger, hUSDContract, issuer, flexibleStorage, debtCache],
 							});
 							decodedEventEqual({
 								log: logs.find(({ name }) => name === 'ExchangeEntryAppended'),
@@ -355,7 +355,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									owner,
 									hUSD,
 									amountOfSrcExchanged,
-									sETH,
+									hETH,
 									amountReceived,
 									exchangeFeeRate,
 									new web3.utils.BN(1),
@@ -367,7 +367,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 						it('reverts if the user tries to settle before the waiting period has expired', async () => {
 							await assert.revert(
-								tribeone.settle(sETH, {
+								tribeone.settle(hETH, {
 									from: owner,
 								}),
 								'Cannot settle during waiting period'
@@ -379,8 +379,8 @@ contract('Exchanger (spec tests)', async accounts => {
 								await systemSettings.setWaitingPeriodSecs('0', { from: owner });
 							});
 
-							it('there should be only one sETH entry', async () => {
-								let numEntries = await exchangeState.getLengthOfEntries(owner, sETH);
+							it('there should be only one hETH entry', async () => {
+								let numEntries = await exchangeState.getLengthOfEntries(owner, hETH);
 								assert.bnEqual(numEntries, '1');
 								numEntries = await exchangeState.getLengthOfEntries(owner, sEUR);
 								assert.bnEqual(numEntries, '0');
@@ -389,14 +389,14 @@ contract('Exchanger (spec tests)', async accounts => {
 							describe('new trades take place', () => {
 								beforeEach(async () => {
 									// await fastForward(await systemSettings.waitingPeriodSecs());
-									const sEthBalance = await sETHContract.balanceOf(owner);
-									await tribeone.exchange(sETH, sEthBalance, hUSD, { from: owner });
+									const sEthBalance = await hETHContract.balanceOf(owner);
+									await tribeone.exchange(hETH, sEthBalance, hUSD, { from: owner });
 									await tribeone.exchange(hUSD, toUnit('10'), sEUR, { from: owner });
 								});
 
 								it('should settle the pending exchanges and remove all entries', async () => {
-									assert.bnEqual(await sETHContract.balanceOf(owner), '0');
-									const { numEntries } = await exchanger.settlementOwing(owner, sETH);
+									assert.bnEqual(await hETHContract.balanceOf(owner), '0');
+									const { numEntries } = await exchanger.settlementOwing(owner, hETH);
 									assert.bnEqual(numEntries, '0');
 								});
 
@@ -421,13 +421,13 @@ contract('Exchanger (spec tests)', async accounts => {
 					PRICE_DEVIATION_THRESHOLD_FACTOR
 				);
 			});
-			describe('when a user exchanges into sETH over the default threshold factor', () => {
+			describe('when a user exchanges into hETH over the default threshold factor', () => {
 				let logs;
 				beforeEach(async () => {
 					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
-					await updateRates([sETH], [toUnit('300')]);
-					const { tx: hash } = await tribeone.exchange(hUSD, toUnit('1'), sETH, {
+					// base rate of hETH is 100 from shared setup above
+					await updateRates([hETH], [toUnit('300')]);
+					const { tx: hash } = await tribeone.exchange(hUSD, toUnit('1'), hETH, {
 						from: account1,
 					});
 
@@ -437,16 +437,16 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 				});
 				it('no exchange took place', async () => {
-					assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+					assert.ok(!logs.some(({ name } = {}) => name === 'TribeExchange'));
 				});
 			});
-			describe('when a user exchanges into sETH under the default threshold factor', () => {
+			describe('when a user exchanges into hETH under the default threshold factor', () => {
 				let logs;
 				beforeEach(async () => {
 					await fastForward(10);
-					// base rate of sETH is 100 from shared setup above
-					await updateRates([sETH], [toUnit('33')]);
-					const { tx: hash } = await tribeone.exchange(hUSD, toUnit('1'), sETH, {
+					// base rate of hETH is 100 from shared setup above
+					await updateRates([hETH], [toUnit('33')]);
+					const { tx: hash } = await tribeone.exchange(hUSD, toUnit('1'), hETH, {
 						from: account1,
 					});
 
@@ -456,7 +456,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 				});
 				it('no exchange took place', async () => {
-					assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+					assert.ok(!logs.some(({ name } = {}) => name === 'TribeExchange'));
 				});
 			});
 			describe('changing the factor works', () => {
@@ -464,28 +464,28 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						await systemSettings.setPriceDeviationThresholdFactor(toUnit('3.1'), { from: owner });
 					});
-					describe('when a user exchanges into sETH over the default threshold factor, but under the new one', () => {
+					describe('when a user exchanges into hETH over the default threshold factor, but under the new one', () => {
 						beforeEach(async () => {
 							await fastForward(10);
-							// base rate of sETH is 100 from shared setup above
-							await updateRates([sETH], [toUnit('300')]);
-							await tribeone.exchange(hUSD, toUnit('1'), sETH, { from: account1 });
+							// base rate of hETH is 100 from shared setup above
+							await updateRates([hETH], [toUnit('300')]);
+							await tribeone.exchange(hUSD, toUnit('1'), hETH, { from: account1 });
 						});
-						it('then the synth is not suspended', async () => {
-							const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+						it('then the tribe is not suspended', async () => {
+							const { suspended, reason } = await systemStatus.tribeSuspension(hETH);
 							assert.ok(!suspended);
 							assert.equal(reason, '0');
 						});
 					});
-					describe('when a user exchanges into sETH under the default threshold factor, but under the new one', () => {
+					describe('when a user exchanges into hETH under the default threshold factor, but under the new one', () => {
 						beforeEach(async () => {
 							await fastForward(10);
-							// base rate of sETH is 100 from shared setup above
-							await updateRates([sETH], [toUnit('33')]);
-							await tribeone.exchange(hUSD, toUnit('1'), sETH, { from: account1 });
+							// base rate of hETH is 100 from shared setup above
+							await updateRates([hETH], [toUnit('33')]);
+							await tribeone.exchange(hUSD, toUnit('1'), hETH, { from: account1 });
 						});
-						it('then the synth is not suspended', async () => {
-							const { suspended, reason } = await systemStatus.synthSuspension(sETH);
+						it('then the tribe is not suspended', async () => {
+							const { suspended, reason } = await systemStatus.tribeSuspension(hETH);
 							assert.ok(!suspended);
 							assert.equal(reason, '0');
 						});
@@ -520,34 +520,34 @@ contract('Exchanger (spec tests)', async accounts => {
 						const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sEUR);
 						timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
 					});
-					it('and fetching maxSecs for that user into the source synth returns 0', async () => {
+					it('and fetching maxSecs for that user into the source tribe returns 0', async () => {
 						const maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, hUSD);
-						assert.equal(maxSecs, '0', 'No waiting period for src synth');
+						assert.equal(maxSecs, '0', 'No waiting period for src tribe');
 					});
-					it('and fetching maxSecs for that user into other synths returns 0', async () => {
-						let maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, sBTC);
-						assert.equal(maxSecs, '0', 'No waiting period for other synth sBTC');
+					it('and fetching maxSecs for that user into other tribes returns 0', async () => {
+						let maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, hBTC);
+						assert.equal(maxSecs, '0', 'No waiting period for other tribe hBTC');
 						maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account1, iBTC);
-						assert.equal(maxSecs, '0', 'No waiting period for other synth iBTC');
+						assert.equal(maxSecs, '0', 'No waiting period for other tribe iBTC');
 					});
-					it('and fetching maxSec for other users into that synth are unaffected', async () => {
+					it('and fetching maxSec for other users into that tribe are unaffected', async () => {
 						let maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account2, sEUR);
 						assert.equal(
 							maxSecs,
 							'0',
-							'Other user: account2 has no waiting period on dest synth of account 1'
+							'Other user: account2 has no waiting period on dest tribe of account 1'
 						);
 						maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account2, hUSD);
 						assert.equal(
 							maxSecs,
 							'0',
-							'Other user: account2 has no waiting period on src synth of account 1'
+							'Other user: account2 has no waiting period on src tribe of account 1'
 						);
 						maxSecs = await exchanger.maxSecsLeftInWaitingPeriod(account3, sEUR);
 						assert.equal(
 							maxSecs,
 							'0',
-							'Other user: account3 has no waiting period on dest synth of acccount 1'
+							'Other user: account3 has no waiting period on dest tribe of acccount 1'
 						);
 					});
 
@@ -590,7 +590,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 							});
 						});
-						describe('when the same user exchanges into the new synth', () => {
+						describe('when the same user exchanges into the new tribe', () => {
 							beforeEach(async () => {
 								await tribeone.exchange(hUSD, toUnit('100'), sEUR, { from: account1 });
 							});
@@ -607,8 +607,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	const itCalculatesFeeRateForExchange = () => {
 		describe('Given exchangeFeeRates are configured and when calling feeRateForExchange()', () => {
-			it('for two long synths, returns double the regular exchange fee', async () => {
-				const actualFeeRate = await exchanger.feeRateForExchange(sEUR, sBTC, { from: owner });
+			it('for two long tribes, returns double the regular exchange fee', async () => {
+				const actualFeeRate = await exchanger.feeRateForExchange(sEUR, hBTC, { from: owner });
 				assert.bnEqual(
 					actualFeeRate,
 					exchangeFeeRate.mul(toBN('2')),
@@ -620,51 +620,51 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	const itCalculatesFeeRateForExchange2 = () => {
 		describe('given exchange fee rates are configured into categories', () => {
-			const bipsUSD = toUnit('0');
+			const biphUSD = toUnit('0');
 			const bipsFX = toUnit('0.01');
 			const bipsCrypto = toUnit('0.02');
 			const bipsInverse = toUnit('0.03');
 			beforeEach(async () => {
-				await setExchangeFeeRateForSynths({
+				await setExchangeFeeRateForTribes({
 					owner,
 					systemSettings,
-					synthKeys: [hUSD, sAUD, sEUR, sETH, sBTC, iBTC],
-					exchangeFeeRates: [bipsUSD, bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
+					tribeKeys: [hUSD, sAUD, sEUR, hETH, hBTC, iBTC],
+					exchangeFeeRates: [biphUSD, bipsFX, bipsFX, bipsCrypto, bipsCrypto, bipsInverse],
 				});
 			});
 			describe('when calling getAmountsForExchange', () => {
-				describe('and the destination is a crypto synth', () => {
+				describe('and the destination is a crypto tribe', () => {
 					let received;
 					let destinationFee;
 					let feeRate;
 					beforeEach(async () => {
-						await tribeone.exchange(hUSD, amountIssued, sBTC, { from: account1 });
+						await tribeone.exchange(hUSD, amountIssued, hBTC, { from: account1 });
 						const {
 							amountReceived,
 							fee,
 							exchangeFeeRate,
-						} = await exchanger.getAmountsForExchange(amountIssued, hUSD, sBTC, { from: account1 });
+						} = await exchanger.getAmountsForExchange(amountIssued, hUSD, hBTC, { from: account1 });
 						received = amountReceived;
 						destinationFee = fee;
 						feeRate = exchangeFeeRate;
 					});
 					it('then return the amountReceived', async () => {
-						const sBTCBalance = await sBTCContract.balanceOf(account1);
-						assert.bnEqual(received, sBTCBalance);
+						const hBTCBalance = await hBTCContract.balanceOf(account1);
+						assert.bnEqual(received, hBTCBalance);
 					});
 					it('then return the fee', async () => {
-						const effectiveValue = await exchangeRates.effectiveValue(hUSD, amountIssued, sBTC);
+						const effectiveValue = await exchangeRates.effectiveValue(hUSD, amountIssued, hBTC);
 						assert.bnEqual(destinationFee, exchangeFeeIncurred(effectiveValue, bipsCrypto));
 					});
 					it('then return the feeRate', async () => {
-						const exchangeFeeRate = await exchanger.feeRateForExchange(hUSD, sBTC, {
+						const exchangeFeeRate = await exchanger.feeRateForExchange(hUSD, hBTC, {
 							from: account1,
 						});
 						assert.bnEqual(feeRate, exchangeFeeRate);
 					});
 				});
 
-				describe('and the destination is a fiat synth', () => {
+				describe('and the destination is a fiat tribe', () => {
 					let received;
 					let destinationFee;
 					let feeRate;
@@ -699,25 +699,25 @@ contract('Exchanger (spec tests)', async accounts => {
 					const amount = toUnit('1000');
 
 					it('updates exchange fee amounts appropriately', async () => {
-						await setExchangeFeeRateForSynths({
+						await setExchangeFeeRateForTribes({
 							owner,
 							systemSettings,
-							synthKeys: [hUSD],
+							tribeKeys: [hUSD],
 							exchangeFeeRates: [toUnit(0)],
 						});
 
-						await setExchangeFeeRateForSynths({
+						await setExchangeFeeRateForTribes({
 							owner,
 							systemSettings,
-							synthKeys: [sAUD],
+							tribeKeys: [sAUD],
 							exchangeFeeRates: [toUnit(0)],
 						});
 
 						// need to also set it here because rates are 0
-						await setExchangeFeeRateForSynths({
+						await setExchangeFeeRateForTribes({
 							owner,
 							systemSettings,
-							synthKeys: [hUSD, sAUD],
+							tribeKeys: [hUSD, sAUD],
 							exchangeFeeRates: [toUnit(0), toUnit(0)],
 						});
 
@@ -726,10 +726,10 @@ contract('Exchanger (spec tests)', async accounts => {
 						} = await exchanger.getAmountsForExchange(amount, hUSD, sAUD, { from: account1 });
 						assert.bnEqual(exchangeFeeRate1, 0);
 
-						await setExchangeFeeRateForSynths({
+						await setExchangeFeeRateForTribes({
 							owner,
 							systemSettings,
-							synthKeys: [hUSD],
+							tribeKeys: [hUSD],
 							exchangeFeeRates: [toUnit(0.1)],
 						});
 						const {
@@ -737,10 +737,10 @@ contract('Exchanger (spec tests)', async accounts => {
 						} = await exchanger.getAmountsForExchange(amount, hUSD, sAUD, { from: account1 });
 						assert.bnEqual(exchangeFeeRate2, toUnit(0.1));
 
-						await setExchangeFeeRateForSynths({
+						await setExchangeFeeRateForTribes({
 							owner,
 							systemSettings,
-							synthKeys: [sAUD],
+							tribeKeys: [sAUD],
 							exchangeFeeRates: [toUnit(0.01)],
 						});
 						const {
@@ -766,10 +766,10 @@ contract('Exchanger (spec tests)', async accounts => {
 						orgininalFee = fee;
 						orginalFeeRate = exchangeFeeRate;
 
-						await setExchangeFeeRateForSynths({
+						await setExchangeFeeRateForTribes({
 							owner,
 							systemSettings,
-							synthKeys: [sAUD],
+							tribeKeys: [sAUD],
 							exchangeFeeRates: [multiplyDecimal(bipsFX, factor)],
 						});
 					});
@@ -801,320 +801,320 @@ contract('Exchanger (spec tests)', async accounts => {
 
 					it('initial fee is correct', async () => {
 						assert.bnEqual(
-							await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+							await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 							bipsCrypto
 						);
 						assert.deepEqual(
-							await exchanger.dynamicFeeRateForExchange(hUSD, sBTC, { from: owner }),
+							await exchanger.dynamicFeeRateForExchange(hUSD, hBTC, { from: owner }),
 							[0, false]
 						);
 					});
 
 					describe('fee is calculated correctly when rates spike or drop', () => {
 						it('.3% spike is below threshold', async () => {
-							await updateRates([sETH], [toUnit(100.3)]);
+							await updateRates([hETH], [toUnit(100.3)]);
 							// spike
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								bipsCrypto
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[0, false]
 							);
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(sBTC, sBTC, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hBTC, hBTC, { from: owner }),
 								[0, false]
 							);
 						});
 
 						it('.3% drop is below threshold', async () => {
-							await updateRates([sETH], [toUnit(99.7)]);
+							await updateRates([hETH], [toUnit(99.7)]);
 							// spike
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								bipsCrypto
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[0, false]
 							);
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(sBTC, sBTC, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hBTC, hBTC, { from: owner }),
 								[0, false]
 							);
 						});
 
 						it('1% spike result in correct dynamic fee', async () => {
-							await updateRates([sETH], [toUnit(101)]);
+							await updateRates([hETH], [toUnit(101)]);
 							// price diff ratio (1%)- threshold
 							const expectedDynamicFee = toUnit(0.01).sub(threshold);
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								bipsCrypto.add(expectedDynamicFee)
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[expectedDynamicFee, false]
 							);
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 						});
 
 						it('1% drop result in correct dynamic fee', async () => {
-							await updateRates([sETH], [toUnit(99)]);
+							await updateRates([hETH], [toUnit(99)]);
 							// price diff ratio (1%)- threshold
 							const expectedDynamicFee = toUnit(0.01).sub(threshold);
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								bipsCrypto.add(expectedDynamicFee)
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[expectedDynamicFee, false]
 							);
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 						});
 
 						it('5% spike result in correct dynamic fee', async () => {
-							await updateRates([sETH], [toUnit(105)]);
+							await updateRates([hETH], [toUnit(105)]);
 							// price diff ratio (5%)- threshold
 							const expectedDynamicFee = toUnit(0.05).sub(threshold);
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								bipsCrypto.add(expectedDynamicFee)
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[expectedDynamicFee, false]
 							);
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 						});
 
 						it('5% drop result in correct dynamic fee', async () => {
-							await updateRates([sETH], [toUnit(95)]);
+							await updateRates([hETH], [toUnit(95)]);
 							// price diff ratio (5%)- threshold
 							const expectedDynamicFee = toUnit(0.05).sub(threshold);
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								bipsCrypto.add(expectedDynamicFee)
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[expectedDynamicFee, false]
 							);
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 						});
 
 						it('10% spike is over the max and is too volatile', async () => {
-							await updateRates([sETH], [toUnit(110)]);
+							await updateRates([hETH], [toUnit(110)]);
 							await assert.revert(
-								exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								'too volatile'
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[maxDynamicFeeRate, true]
 							);
 
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 						});
 
 						it('10% drop result in correct dynamic fee', async () => {
-							await updateRates([sETH], [toUnit(90)]);
+							await updateRates([hETH], [toUnit(90)]);
 							await assert.revert(
-								exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+								exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 								'too volatile'
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 								[maxDynamicFeeRate, true]
 							);
 							// view reverts
 							await assert.revert(
-								exchanger.getAmountsForExchange(toUnit('1'), hUSD, sETH, { from: owner }),
+								exchanger.getAmountsForExchange(toUnit('1'), hUSD, hETH, { from: owner }),
 								'too volatile'
 							);
 							// control
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(hUSD, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hUSD, hBTC, { from: owner }),
 								bipsCrypto
 							);
 						});
 
 						it('trading between two spiked rates is correctly calculated ', async () => {
-							await updateRates([sETH, sBTC], [toUnit(102), toUnit(5100)]);
+							await updateRates([hETH, hBTC], [toUnit(102), toUnit(5100)]);
 							// base fee + (price diff ratio (2%)- threshold) * 2
 							const expectedDynamicFee = toUnit(0.02)
 								.sub(threshold)
 								.mul(toBN(2));
 
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(sBTC, sETH, { from: owner }),
+								await exchanger.feeRateForExchange(hBTC, hETH, { from: owner }),
 								bipsCrypto.add(bipsCrypto).add(expectedDynamicFee)
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(sBTC, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hBTC, hETH, { from: owner }),
 								[expectedDynamicFee, false]
 							);
 							// reverse direction is the same
 							assert.bnEqual(
-								await exchanger.feeRateForExchange(sETH, sBTC, { from: owner }),
+								await exchanger.feeRateForExchange(hETH, hBTC, { from: owner }),
 								bipsCrypto.add(bipsCrypto).add(expectedDynamicFee)
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(sETH, sBTC, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hETH, hBTC, { from: owner }),
 								[expectedDynamicFee, false]
 							);
 						});
 
 						it('trading between two spiked respects max fee and volatility flag', async () => {
 							// spike each 3% so that total dynamic fee is 6% which is more than the max
-							await updateRates([sETH, sBTC], [toUnit(103), toUnit(5150)]);
+							await updateRates([hETH, hBTC], [toUnit(103), toUnit(5150)]);
 							await assert.revert(
-								exchanger.feeRateForExchange(sBTC, sETH, { from: owner }),
+								exchanger.feeRateForExchange(hBTC, hETH, { from: owner }),
 								'too volatile'
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(sBTC, sETH, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hBTC, hETH, { from: owner }),
 								[maxDynamicFeeRate, true]
 							);
 							// reverse direction is the same
 							await assert.revert(
-								exchanger.feeRateForExchange(sETH, sBTC, { from: owner }),
+								exchanger.feeRateForExchange(hETH, hBTC, { from: owner }),
 								'too volatile'
 							);
 							assert.deepEqual(
-								await exchanger.dynamicFeeRateForExchange(sETH, sBTC, { from: owner }),
+								await exchanger.dynamicFeeRateForExchange(hETH, hBTC, { from: owner }),
 								[maxDynamicFeeRate, true]
 							);
 							// view reverts
 							await assert.revert(
-								exchanger.getAmountsForExchange(toUnit('1'), sETH, sBTC, { from: owner }),
+								exchanger.getAmountsForExchange(toUnit('1'), hETH, hBTC, { from: owner }),
 								'too volatile'
 							);
 							await assert.revert(
-								exchanger.getAmountsForExchange(toUnit('1'), sBTC, sETH, { from: owner }),
+								exchanger.getAmountsForExchange(toUnit('1'), hBTC, hETH, { from: owner }),
 								'too volatile'
 							);
 						});
 					});
 
 					it('no exchange happens when dynamic fee is too high', async () => {
-						await sETHContract.issue(account1, toUnit('10'));
+						await hETHContract.issue(account1, toUnit('10'));
 
 						async function echangeSuccessful() {
 							// this should work
-							const txn = await tribeone.exchange(sETH, toUnit('1'), hUSD, { from: account1 });
+							const txn = await tribeone.exchange(hETH, toUnit('1'), hUSD, { from: account1 });
 							const logs = await getDecodedLogs({
 								hash: txn.tx,
 								contracts: [tribeone, exchanger, systemStatus],
 							});
 							// some exchange took place (this is just to control for correct assertion)
-							return logs.some(({ name } = {}) => name === 'SynthExchange');
+							return logs.some(({ name } = {}) => name === 'TribeExchange');
 						}
 
 						// should work for no change
 						assert.ok(await echangeSuccessful());
 						// view doesn't revert
-						await exchanger.getAmountsForExchange(toUnit('1'), sETH, hUSD, { from: account1 });
+						await exchanger.getAmountsForExchange(toUnit('1'), hETH, hUSD, { from: account1 });
 
 						// spike the rate a little
-						await updateRates([sETH], [toUnit(103)]);
+						await updateRates([hETH], [toUnit(103)]);
 						// should still work
 						assert.ok(await echangeSuccessful());
 						// view doesn't revert
-						await exchanger.getAmountsForExchange(toUnit('1'), sETH, hUSD, { from: account1 });
+						await exchanger.getAmountsForExchange(toUnit('1'), hETH, hUSD, { from: account1 });
 
 						// spike the rate too much
-						await updateRates([sETH], [toUnit(110)]);
+						await updateRates([hETH], [toUnit(110)]);
 						// should not work now
 						assert.notOk(await echangeSuccessful());
 						// view reverts
 						await assert.revert(
-							exchanger.getAmountsForExchange(toUnit('1'), sETH, hUSD, { from: account1 }),
+							exchanger.getAmountsForExchange(toUnit('1'), hETH, hUSD, { from: account1 }),
 							'too volatile'
 						);
 					});
 
 					it('dynamic fee decays with time', async () => {
-						await updateRates([sETH], [toUnit(105)]);
+						await updateRates([hETH], [toUnit(105)]);
 						// (price diff ratio (5%)- threshold)
 						let expectedDynamicFee = toUnit(0.05).sub(threshold);
 						assert.bnEqual(
-							await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 							bipsCrypto.add(expectedDynamicFee)
 						);
 						assert.deepEqual(
-							await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 							[expectedDynamicFee, false]
 						);
 
 						const decay = toBN(EXCHANGE_DYNAMIC_FEE_WEIGHT_DECAY);
 
 						// next round
-						await updateRates([sETH], [toUnit(105)]);
+						await updateRates([hETH], [toUnit(105)]);
 						expectedDynamicFee = multiplyDecimal(expectedDynamicFee, decay);
 						assert.bnEqual(
-							await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 							bipsCrypto.add(expectedDynamicFee)
 						);
 						assert.deepEqual(
-							await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 							[expectedDynamicFee, false]
 						);
 
 						// another round
-						await updateRates([sETH], [toUnit(105)]);
+						await updateRates([hETH], [toUnit(105)]);
 						expectedDynamicFee = multiplyDecimal(expectedDynamicFee, decay);
 						assert.bnEqual(
-							await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 							bipsCrypto.add(expectedDynamicFee)
 						);
 						assert.deepEqual(
-							await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 							[expectedDynamicFee, false]
 						);
 
 						// EXCHANGE_DYNAMIC_FEE_ROUNDS after spike dynamic fee is 0
 						for (let i = 0; i < EXCHANGE_DYNAMIC_FEE_ROUNDS - 3; i++) {
-							await updateRates([sETH], [toUnit(105)]);
+							await updateRates([hETH], [toUnit(105)]);
 						}
 						assert.bnEqual(
-							await exchanger.feeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.feeRateForExchange(hUSD, hETH, { from: owner }),
 							bipsCrypto
 						);
 						assert.deepEqual(
-							await exchanger.dynamicFeeRateForExchange(hUSD, sETH, { from: owner }),
+							await exchanger.dynamicFeeRateForExchange(hUSD, hETH, { from: owner }),
 							[0, false]
 						);
 					});
@@ -1128,7 +1128,7 @@ contract('Exchanger (spec tests)', async accounts => {
 	};
 
 	const amountAfterExchangeFee = ({ amount }) => {
-		// exchange fee is applied twice, because we assume it is the same one used for both synths in the exchange
+		// exchange fee is applied twice, because we assume it is the same one used for both tribes in the exchange
 		return multiplyDecimal(
 			amount,
 			toUnit('1')
@@ -1150,11 +1150,11 @@ contract('Exchanger (spec tests)', async accounts => {
 	/**
 	 * Ensure a settle() transaction emits the expected events
 	 */
-	const ensureTxnEmitsSettlementEvents = async ({ hash, synth, expected }) => {
+	const ensureTxnEmitsSettlementEvents = async ({ hash, tribe, expected }) => {
 		// Get receipt to collect all transaction events
-		const logs = await getDecodedLogs({ hash, contracts: [tribeone, exchanger, sUSDContract] });
+		const logs = await getDecodedLogs({ hash, contracts: [tribeone, exchanger, hUSDContract] });
 
-		const currencyKey = await synth.currencyKey();
+		const currencyKey = await tribe.currencyKey();
 		// Can only either be reclaim or rebate - not both
 		const isReclaim = !expected.reclaimAmount.isZero();
 		const expectedAmount = isReclaim ? expected.reclaimAmount : expected.rebateAmount;
@@ -1175,58 +1175,58 @@ contract('Exchanger (spec tests)', async accounts => {
 	const itSettles = () => {
 		describe('settlement', () => {
 			describe('suspension conditions', () => {
-				const synth = sETH;
-				['System', 'Synth'].forEach(section => {
+				const tribe = hETH;
+				['System', 'Tribe'].forEach(section => {
 					describe(`when ${section} is suspended`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, systemStatus, section, suspend: true, synth });
+							await setStatus({ owner, systemStatus, section, suspend: true, tribe });
 							// Disable Dynamic Fee here as settlement is L1 and Dynamic fee is on L2
 							await setExchangeDynamicFeeRounds('1');
 						});
 						it('then calling settle() reverts', async () => {
 							await assert.revert(
-								tribeone.settle(sETH, { from: account1 }),
+								tribeone.settle(hETH, { from: account1 }),
 								'Operation prohibited'
 							);
 						});
 						describe(`when ${section} is resumed`, () => {
 							beforeEach(async () => {
-								await setStatus({ owner, systemStatus, section, suspend: false, synth });
+								await setStatus({ owner, systemStatus, section, suspend: false, tribe });
 							});
 							it('then calling exchange() succeeds', async () => {
-								await tribeone.settle(sETH, { from: account1 });
+								await tribeone.settle(hETH, { from: account1 });
 							});
 						});
 					});
 				});
-				describe('when Synth(sBTC) is suspended', () => {
+				describe('when Tribe(hBTC) is suspended', () => {
 					beforeEach(async () => {
-						await setStatus({ owner, systemStatus, section: 'Synth', suspend: true, synth: sBTC });
+						await setStatus({ owner, systemStatus, section: 'Tribe', suspend: true, tribe: hBTC });
 					});
-					it('then settling other synths still works', async () => {
-						await tribeone.settle(sETH, { from: account1 });
+					it('then settling other tribes still works', async () => {
+						await tribeone.settle(hETH, { from: account1 });
 						await tribeone.settle(sAUD, { from: account2 });
 					});
 				});
-				describe('when Synth(sBTC) is suspended for exchanging', () => {
+				describe('when Tribe(hBTC) is suspended for exchanging', () => {
 					beforeEach(async () => {
 						await setStatus({
 							owner,
 							systemStatus,
-							section: 'SynthExchange',
+							section: 'TribeExchange',
 							suspend: true,
-							synth: sBTC,
+							tribe: hBTC,
 						});
 					});
 					it('then settling it still works', async () => {
-						await tribeone.settle(sBTC, { from: account1 });
+						await tribeone.settle(hBTC, { from: account1 });
 					});
 				});
 			});
-			describe('given the sEUR rate is 2, and sETH is 100, sBTC is 9000', () => {
+			describe('given the sEUR rate is 2, and hETH is 100, hBTC is 9000', () => {
 				beforeEach(async () => {
-					// set hUSD:sEUR as 2:1, hUSD:sETH at 100:1, hUSD:sBTC at 9000:1
-					await updateRates([sEUR, sETH, sBTC], ['2', '100', '9000'].map(toUnit));
+					// set hUSD:sEUR as 2:1, hUSD:hETH at 100:1, hUSD:hBTC at 9000:1
+					await updateRates([sEUR, hETH, hBTC], ['2', '100', '9000'].map(toUnit));
 					// Disable Dynamic Fee by setting rounds to 1
 					await setExchangeDynamicFeeRounds('1');
 				});
@@ -1234,11 +1234,11 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						// Warning: this is mutating the global exchangeFeeRate for this test block and will be reset when out of scope
 						exchangeFeeRate = toUnit('0.01');
-						await setExchangeFeeRateForSynths({
+						await setExchangeFeeRateForTribes({
 							owner,
 							systemSettings,
-							synthKeys,
-							exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+							tribeKeys,
+							exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 						});
 					});
 					describe('and the waitingPeriodSecs is set to 60', () => {
@@ -1291,7 +1291,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												contracts: [
 													tribeone,
 													exchanger,
-													sUSDContract,
+													hUSDContract,
 													issuer,
 													flexibleStorage,
 													debtCache,
@@ -1349,7 +1349,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												it('then it completes with one settlement', async () => {
 													const logs = await getDecodedLogs({
 														hash: txn.tx,
-														contracts: [tribeone, exchanger, sUSDContract],
+														contracts: [tribeone, exchanger, hUSDContract],
 													});
 
 													assert.equal(
@@ -1376,18 +1376,18 @@ contract('Exchanger (spec tests)', async accounts => {
 													});
 												});
 												it('and the debt cache sync is not called', async () => {
-													expect(debtCacheSpy.updateCachedSynthDebts).to.have.length(0);
+													expect(debtCacheSpy.updateCachedTribeDebts).to.have.length(0);
 												});
 											});
 										});
 										it('when sEUR is attempted to be exchanged away by the user, it reverts', async () => {
 											await assert.revert(
-												tribeone.exchange(sEUR, toUnit('1'), sBTC, { from: account1 }),
+												tribeone.exchange(sEUR, toUnit('1'), hBTC, { from: account1 }),
 												'Cannot settle during waiting period'
 											);
 										});
 
-										describe('when settle() is invoked on the src synth - hUSD', () => {
+										describe('when settle() is invoked on the src tribe - hUSD', () => {
 											it('then it completes with no reclaim or rebate', async () => {
 												const txn = await tribeone.settle(hUSD, {
 													from: account1,
@@ -1461,7 +1461,7 @@ contract('Exchanger (spec tests)', async accounts => {
 															await exchanger.getAmountsForExchange(
 																srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
 																sEUR,
-																sBTC,
+																hBTC,
 																{ from: account1 }
 															)
 														)[0];
@@ -1469,7 +1469,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														await tribeone.exchange(
 															sEUR,
 															await sEURContract.balanceOf(account1),
-															sBTC,
+															hBTC,
 															{
 																from: account1,
 															}
@@ -1477,7 +1477,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													});
 													it('then exchanges with settled amount', async () => {
 														assert.bnEqual(
-															await sBTCContract.balanceOf(account1),
+															await hBTCContract.balanceOf(account1),
 															expectedAmountReceived
 														);
 													});
@@ -1493,14 +1493,14 @@ contract('Exchanger (spec tests)', async accounts => {
 													it('then it settles with a reclaim', async () => {
 														await ensureTxnEmitsSettlementEvents({
 															hash: transaction.tx,
-															synth: sEURContract,
+															tribe: sEURContract,
 															expected: expectedSettlement,
 														});
 													});
 													it('then it settles with a ExchangeEntrySettled event with reclaim', async () => {
 														const logs = await getDecodedLogs({
 															hash: transaction.tx,
-															contracts: [tribeone, exchanger, sUSDContract],
+															contracts: [tribeone, exchanger, hUSDContract],
 														});
 
 														decodedEventEqual({
@@ -1522,16 +1522,16 @@ contract('Exchanger (spec tests)', async accounts => {
 														});
 													});
 													it('and the debt cache is called', async () => {
-														expect(debtCacheSpy.updateCachedSynthDebts).to.have.length(0);
-														debtCacheSpy.updateCachedSynthDebts.returnsAtCall(0, sEUR);
+														expect(debtCacheSpy.updateCachedTribeDebts).to.have.length(0);
+														debtCacheSpy.updateCachedTribeDebts.returnsAtCall(0, sEUR);
 													});
 												});
 												describe('when settle() is invoked and the exchange fee rate has changed', () => {
 													beforeEach(async () => {
-														await setExchangeFeeRateForSynths({
+														await setExchangeFeeRateForTribes({
 															owner,
 															systemSettings,
-															synthKeys: [sBTC],
+															tribeKeys: [hBTC],
 															exchangeFeeRates: [toUnit('0.1')],
 														});
 													});
@@ -1541,7 +1541,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														});
 														await ensureTxnEmitsSettlementEvents({
 															hash,
-															synth: sEURContract,
+															tribe: sEURContract,
 															expected: expectedSettlement,
 														});
 													});
@@ -1554,7 +1554,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													() => {
 														let txn;
 														beforeEach(async () => {
-															txn = await tribeone.exchange(sEUR, toUnit('30'), sBTC, {
+															txn = await tribeone.exchange(sEUR, toUnit('30'), hBTC, {
 																from: account1,
 															});
 														});
@@ -1566,19 +1566,19 @@ contract('Exchanger (spec tests)', async accounts => {
 
 															const decodedLogs = await ensureTxnEmitsSettlementEvents({
 																hash: txn.tx,
-																synth: sEURContract,
+																tribe: sEURContract,
 																expected: expectedSettlement,
 															});
 
 															decodedEventEqual({
-																log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
-																event: 'SynthExchange',
+																log: decodedLogs.find(({ name }) => name === 'TribeExchange'),
+																event: 'TribeExchange',
 																emittedFrom: await tribeone.proxy(),
 																args: [
 																	account1,
 																	sEUR,
 																	srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
-																	sBTC,
+																	hBTC,
 																],
 															});
 														});
@@ -1591,13 +1591,13 @@ contract('Exchanger (spec tests)', async accounts => {
 													() => {
 														let txn;
 														beforeEach(async () => {
-															txn = await tribeone.exchange(sEUR, toUnit('50'), sBTC, {
+															txn = await tribeone.exchange(sEUR, toUnit('50'), hBTC, {
 																from: account1,
 															});
-															await setExchangeFeeRateForSynths({
+															await setExchangeFeeRateForTribes({
 																owner,
 																systemSettings,
-																synthKeys: [sBTC],
+																tribeKeys: [hBTC],
 																exchangeFeeRates: [toUnit('0.1')],
 															});
 														});
@@ -1609,19 +1609,19 @@ contract('Exchanger (spec tests)', async accounts => {
 
 															const decodedLogs = await ensureTxnEmitsSettlementEvents({
 																hash: txn.tx,
-																synth: sEURContract,
+																tribe: sEURContract,
 																expected: expectedSettlement,
 															});
 
 															decodedEventEqual({
-																log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
-																event: 'SynthExchange',
+																log: decodedLogs.find(({ name }) => name === 'TribeExchange'),
+																event: 'TribeExchange',
 																emittedFrom: await tribeone.proxy(),
 																args: [
 																	account1,
 																	sEUR,
 																	srcBalanceBeforeExchange.sub(expectedSettlement.reclaimAmount),
-																	sBTC,
+																	hBTC,
 																],
 															});
 														});
@@ -1633,7 +1633,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													let txn;
 													beforeEach(async () => {
 														newAmountToExchange = toUnit('10');
-														txn = await tribeone.exchange(sEUR, newAmountToExchange, sBTC, {
+														txn = await tribeone.exchange(sEUR, newAmountToExchange, hBTC, {
 															from: account1,
 														});
 													});
@@ -1649,15 +1649,15 @@ contract('Exchanger (spec tests)', async accounts => {
 
 														const decodedLogs = await ensureTxnEmitsSettlementEvents({
 															hash: txn.tx,
-															synth: sEURContract,
+															tribe: sEURContract,
 															expected: expectedSettlement,
 														});
 
 														decodedEventEqual({
-															log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
-															event: 'SynthExchange',
+															log: decodedLogs.find(({ name }) => name === 'TribeExchange'),
+															event: 'TribeExchange',
 															emittedFrom: await tribeone.proxy(),
-															args: [account1, sEUR, newAmountToExchange, sBTC], // amount to exchange must be the reclaim amount
+															args: [account1, sEUR, newAmountToExchange, hBTC], // amount to exchange must be the reclaim amount
 														});
 													});
 												});
@@ -1703,7 +1703,7 @@ contract('Exchanger (spec tests)', async accounts => {
 															await exchanger.getAmountsForExchange(
 																srcBalanceBeforeExchange.add(expectedSettlement.rebateAmount),
 																sEUR,
-																sBTC,
+																hBTC,
 																{ from: account1 }
 															)
 														)[0];
@@ -1711,7 +1711,7 @@ contract('Exchanger (spec tests)', async accounts => {
 														await tribeone.exchange(
 															sEUR,
 															await sEURContract.balanceOf(account1),
-															sBTC,
+															hBTC,
 															{
 																from: account1,
 															}
@@ -1719,7 +1719,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													});
 													it('then exchanges with settled amount', async () => {
 														assert.bnEqual(
-															await sBTCContract.balanceOf(account1),
+															await hBTCContract.balanceOf(account1),
 															expectedAmountReceived
 														);
 													});
@@ -1771,7 +1771,7 @@ contract('Exchanger (spec tests)', async accounts => {
 																it('then it settles with two ExchangeEntrySettled events one for reclaim and one for rebate', async () => {
 																	const logs = await getDecodedLogs({
 																		hash: transaction.tx,
-																		contracts: [tribeone, exchanger, sUSDContract],
+																		contracts: [tribeone, exchanger, hUSDContract],
 																	});
 
 																	// check the rebate event first
@@ -1852,14 +1852,14 @@ contract('Exchanger (spec tests)', async accounts => {
 														it('then it settles with a rebate', async () => {
 															await ensureTxnEmitsSettlementEvents({
 																hash: transaction.tx,
-																synth: sEURContract,
+																tribe: sEURContract,
 																expected: expectedSettlement,
 															});
 														});
 														it('then it settles with a ExchangeEntrySettled event with rebate', async () => {
 															const logs = await getDecodedLogs({
 																hash: transaction.tx,
-																contracts: [tribeone, exchanger, sUSDContract],
+																contracts: [tribeone, exchanger, hUSDContract],
 															});
 
 															decodedEventEqual({
@@ -1886,7 +1886,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													describe('when an exchange out of sEUR for their expected balance before exchange', () => {
 														let txn;
 														beforeEach(async () => {
-															txn = await tribeone.exchange(sEUR, toUnit('49'), sBTC, {
+															txn = await tribeone.exchange(sEUR, toUnit('49'), hBTC, {
 																from: account1,
 															});
 														});
@@ -1898,19 +1898,19 @@ contract('Exchanger (spec tests)', async accounts => {
 
 															const decodedLogs = await ensureTxnEmitsSettlementEvents({
 																hash: txn.tx,
-																synth: sEURContract,
+																tribe: sEURContract,
 																expected: expectedSettlement,
 															});
 
 															decodedEventEqual({
-																log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
-																event: 'SynthExchange',
+																log: decodedLogs.find(({ name }) => name === 'TribeExchange'),
+																event: 'TribeExchange',
 																emittedFrom: await tribeone.proxy(),
 																args: [
 																	account1,
 																	sEUR,
 																	srcBalanceBeforeExchange.add(expectedSettlement.rebateAmount),
-																	sBTC,
+																	hBTC,
 																],
 															});
 														});
@@ -1919,26 +1919,26 @@ contract('Exchanger (spec tests)', async accounts => {
 													describe('when an exchange out of sEUR for some amount less than their balance before exchange', () => {
 														let txn;
 														beforeEach(async () => {
-															txn = await tribeone.exchange(sEUR, toUnit('10'), sBTC, {
+															txn = await tribeone.exchange(sEUR, toUnit('10'), hBTC, {
 																from: account1,
 															});
 														});
 														it('then it succeeds, exchanging the amount plus the rebate', async () => {
 															const decodedLogs = await ensureTxnEmitsSettlementEvents({
 																hash: txn.tx,
-																synth: sEURContract,
+																tribe: sEURContract,
 																expected: expectedSettlement,
 															});
 
 															decodedEventEqual({
-																log: decodedLogs.find(({ name }) => name === 'SynthExchange'),
-																event: 'SynthExchange',
+																log: decodedLogs.find(({ name }) => name === 'TribeExchange'),
+																event: 'TribeExchange',
 																emittedFrom: await tribeone.proxy(),
 																args: [
 																	account1,
 																	sEUR,
 																	toUnit('10').add(expectedSettlement.rebateAmount),
-																	sBTC,
+																	hBTC,
 																],
 															});
 														});
@@ -1959,7 +1959,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													);
 													assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 												});
-												describe('when another minute elapses and the sETH price changes', () => {
+												describe('when another minute elapses and the hETH price changes', () => {
 													beforeEach(async () => {
 														await fastForward(60);
 														await updateRates([sEUR], ['3'].map(toUnit));
@@ -1997,16 +1997,16 @@ contract('Exchanger (spec tests)', async accounts => {
 										beforeEach(async () => {
 											await sEURContract.issue(account1, toUnit('1000'));
 										});
-										describe('when the first user exchanges 100 sEUR into sEUR:sBTC at 9000:2', () => {
+										describe('when the first user exchanges 100 sEUR into sEUR:hBTC at 9000:2', () => {
 											let amountOfSrcExchanged;
 											beforeEach(async () => {
 												amountOfSrcExchanged = toUnit('100');
-												await tribeone.exchange(sEUR, amountOfSrcExchanged, sBTC, {
+												await tribeone.exchange(sEUR, amountOfSrcExchanged, hBTC, {
 													from: account1,
 												});
 											});
 											it('then settlement reclaimAmount shows 0 reclaim and 0 refund', async () => {
-												const settlement = await exchanger.settlementOwing(account1, sBTC);
+												const settlement = await exchanger.settlementOwing(account1, hBTC);
 												assert.equal(settlement.reclaimAmount, '0', 'Nothing can be reclaimAmount');
 												assert.equal(settlement.rebateAmount, '0', 'Nothing can be rebateAmount');
 												assert.equal(
@@ -2023,7 +2023,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												it('then settlement shows a rebate rebateAmount', async () => {
 													const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
 														account1,
-														sBTC
+														hBTC
 													);
 
 													const expected = calculateExpectedSettlementAmount({
@@ -2038,19 +2038,19 @@ contract('Exchanger (spec tests)', async accounts => {
 												describe('when settlement is invoked', () => {
 													it('then it reverts as the waiting period has not ended', async () => {
 														await assert.revert(
-															tribeone.settle(sBTC, { from: account1 }),
+															tribeone.settle(hBTC, { from: account1 }),
 															'Cannot settle during waiting period'
 														);
 													});
 												});
-												describe('when the price gains for sBTC more than the loss of the sEUR change', () => {
+												describe('when the price gains for hBTC more than the loss of the sEUR change', () => {
 													beforeEach(async () => {
-														await updateRates([sBTC], ['20000'].map(toUnit));
+														await updateRates([hBTC], ['20000'].map(toUnit));
 													});
 													it('then the reclaimAmount is whats left when subtracting the rebate', async () => {
 														const { reclaimAmount, rebateAmount } = await exchanger.settlementOwing(
 															account1,
-															sBTC
+															hBTC
 														);
 
 														const expected = calculateExpectedSettlementAmount({
@@ -2062,11 +2062,11 @@ contract('Exchanger (spec tests)', async accounts => {
 														assert.bnEqual(rebateAmount, expected.rebateAmount);
 														assert.bnClose(reclaimAmount, expected.reclaimAmount, bnCloseVariance);
 													});
-													describe('when the same user exchanges some hUSD into sBTC - the same destination', () => {
+													describe('when the same user exchanges some hUSD into hBTC - the same destination', () => {
 														let amountOfSrcExchangedSecondary;
 														beforeEach(async () => {
 															amountOfSrcExchangedSecondary = toUnit('10');
-															await tribeone.exchange(hUSD, amountOfSrcExchangedSecondary, sBTC, {
+															await tribeone.exchange(hUSD, amountOfSrcExchangedSecondary, hBTC, {
 																from: account1,
 															});
 														});
@@ -2075,7 +2075,7 @@ contract('Exchanger (spec tests)', async accounts => {
 																reclaimAmount,
 																rebateAmount,
 																numEntries,
-															} = await exchanger.settlementOwing(account1, sBTC);
+															} = await exchanger.settlementOwing(account1, hBTC);
 
 															const expected = calculateExpectedSettlementAmount({
 																amount: amountOfSrcExchanged,
@@ -2095,13 +2095,13 @@ contract('Exchanger (spec tests)', async accounts => {
 																'Must be two entries in the settlement queue'
 															);
 														});
-														describe('when the price of sBTC lowers, turning the profit to a loss', () => {
+														describe('when the price of hBTC lowers, turning the profit to a loss', () => {
 															let expectedFromFirst;
 															let expectedFromSecond;
 															beforeEach(async () => {
 																await fastForward(5);
 
-																await updateRates([sBTC], ['10000'].map(toUnit));
+																await updateRates([hBTC], ['10000'].map(toUnit));
 
 																expectedFromFirst = calculateExpectedSettlementAmount({
 																	amount: amountOfSrcExchanged,
@@ -2114,11 +2114,11 @@ contract('Exchanger (spec tests)', async accounts => {
 																	newRate: divideDecimal(1, 10000),
 																});
 															});
-															it('then the rebateAmount calculation of settlementOwing on sBTC includes both exchanges', async () => {
+															it('then the rebateAmount calculation of settlementOwing on hBTC includes both exchanges', async () => {
 																const {
 																	reclaimAmount,
 																	rebateAmount,
-																} = await exchanger.settlementOwing(account1, sBTC);
+																} = await exchanger.settlementOwing(account1, hBTC);
 
 																assert.equal(reclaimAmount, '0');
 
@@ -2134,15 +2134,15 @@ contract('Exchanger (spec tests)', async accounts => {
 																beforeEach(async () => {
 																	await fastForward(60);
 																});
-																describe('when settle() is invoked for sBTC', () => {
+																describe('when settle() is invoked for hBTC', () => {
 																	it('then it settles with a rebate @gasprofile', async () => {
-																		const txn = await tribeone.settle(sBTC, {
+																		const txn = await tribeone.settle(hBTC, {
 																			from: account1,
 																		});
 
 																		await ensureTxnEmitsSettlementEvents({
 																			hash: txn.tx,
-																			synth: sBTCContract,
+																			tribe: hBTCContract,
 																			expected: {
 																				reclaimAmount: new web3.utils.BN(0),
 																				rebateAmount: expectedFromFirst.rebateAmount.add(
@@ -2156,22 +2156,22 @@ contract('Exchanger (spec tests)', async accounts => {
 															describe('when another minute passes and the exchange fee rate has increased', () => {
 																beforeEach(async () => {
 																	await fastForward(60);
-																	await setExchangeFeeRateForSynths({
+																	await setExchangeFeeRateForTribes({
 																		owner,
 																		systemSettings,
-																		synthKeys: [sBTC],
+																		tribeKeys: [hBTC],
 																		exchangeFeeRates: [toUnit('0.1')],
 																	});
 																});
-																describe('when settle() is invoked for sBTC', () => {
+																describe('when settle() is invoked for hBTC', () => {
 																	it('then it settles with a rebate using the exchange fee rate at time of trade', async () => {
-																		const { tx: hash } = await tribeone.settle(sBTC, {
+																		const { tx: hash } = await tribeone.settle(hBTC, {
 																			from: account1,
 																		});
 
 																		await ensureTxnEmitsSettlementEvents({
 																			hash,
-																			synth: sBTCContract,
+																			tribe: hBTCContract,
 																			expected: {
 																				reclaimAmount: new web3.utils.BN(0),
 																				rebateAmount: expectedFromFirst.rebateAmount.add(
@@ -2192,12 +2192,12 @@ contract('Exchanger (spec tests)', async accounts => {
 											beforeEach(async () => {
 												await exchangeState.setMaxEntriesInQueue('5', { from: owner });
 											});
-											describe('when a user tries to exchange 100 sEUR into sBTC 5 times', () => {
+											describe('when a user tries to exchange 100 sEUR into hBTC 5 times', () => {
 												beforeEach(async () => {
 													const txns = [];
 													for (let i = 0; i < 5; i++) {
 														txns.push(
-															await tribeone.exchange(sEUR, toUnit('100'), sBTC, {
+															await tribeone.exchange(sEUR, toUnit('100'), hBTC, {
 																from: account1,
 															})
 														);
@@ -2206,7 +2206,7 @@ contract('Exchanger (spec tests)', async accounts => {
 												it('then all succeed', () => {});
 												it('when one more is tried, then if fails', async () => {
 													await assert.revert(
-														tribeone.exchange(sEUR, toUnit('100'), sBTC, { from: account1 }),
+														tribeone.exchange(sEUR, toUnit('100'), hBTC, { from: account1 }),
 														'Max queue length reached'
 													);
 												});
@@ -2214,13 +2214,13 @@ contract('Exchanger (spec tests)', async accounts => {
 													beforeEach(async () => {
 														await fastForward(70);
 													});
-													describe('and the user invokes settle() on the dest synth', () => {
+													describe('and the user invokes settle() on the dest tribe', () => {
 														beforeEach(async () => {
-															await tribeone.settle(sBTC, { from: account1 });
+															await tribeone.settle(hBTC, { from: account1 });
 														});
-														it('then when the user performs 5 more exchanges into the same synth, it succeeds', async () => {
+														it('then when the user performs 5 more exchanges into the same tribe, it succeeds', async () => {
 															for (let i = 0; i < 5; i++) {
-																await tribeone.exchange(sEUR, toUnit('100'), sBTC, {
+																await tribeone.exchange(sEUR, toUnit('100'), hBTC, {
 																	from: account1,
 																});
 															}
@@ -2322,43 +2322,43 @@ contract('Exchanger (spec tests)', async accounts => {
 						account1,
 						toBytes32(''),
 					],
-					reason: 'Only tribeone or a synth contract can perform this action',
+					reason: 'Only tribeone or a tribe contract can perform this action',
 				});
 			});
 
 			describe('suspension conditions on Tribeone.exchange()', () => {
-				const synth = sETH;
-				['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
+				const tribe = hETH;
+				['System', 'Exchange', 'TribeExchange', 'Tribe'].forEach(section => {
 					describe(`when ${section} is suspended`, () => {
 						beforeEach(async () => {
-							await setStatus({ owner, systemStatus, section, suspend: true, synth });
+							await setStatus({ owner, systemStatus, section, suspend: true, tribe });
 						});
 						it('then calling exchange() reverts', async () => {
 							await assert.revert(
-								tribeone.exchange(hUSD, toUnit('1'), sETH, { from: account1 }),
+								tribeone.exchange(hUSD, toUnit('1'), hETH, { from: account1 }),
 								'Operation prohibited'
 							);
 						});
 						describe(`when ${section} is resumed`, () => {
 							beforeEach(async () => {
-								await setStatus({ owner, systemStatus, section, suspend: false, synth });
+								await setStatus({ owner, systemStatus, section, suspend: false, tribe });
 							});
 							it('then calling exchange() succeeds', async () => {
-								await tribeone.exchange(hUSD, toUnit('1'), sETH, { from: account1 });
+								await tribeone.exchange(hUSD, toUnit('1'), hETH, { from: account1 });
 							});
 						});
 					});
 				});
-				describe('when Synth(sBTC) is suspended', () => {
+				describe('when Tribe(hBTC) is suspended', () => {
 					beforeEach(async () => {
 						// issue sAUD to test non-hUSD exchanges
 						await sAUDContract.issue(account2, toUnit('100'));
 
-						await setStatus({ owner, systemStatus, section: 'Synth', suspend: true, synth: sBTC });
+						await setStatus({ owner, systemStatus, section: 'Tribe', suspend: true, tribe: hBTC });
 					});
-					it('then exchanging other synths still works', async () => {
-						await tribeone.exchange(hUSD, toUnit('1'), sETH, { from: account1 });
-						await tribeone.exchange(sAUD, toUnit('1'), sETH, { from: account2 });
+					it('then exchanging other tribes still works', async () => {
+						await tribeone.exchange(hUSD, toUnit('1'), hETH, { from: account1 });
+						await tribeone.exchange(sAUD, toUnit('1'), hETH, { from: account2 });
 					});
 				});
 			});
@@ -2367,7 +2367,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				describe('when a user has 1000 hUSD', () => {
 					// already issued in the top-level beforeEach
 
-					it('should allow a user to exchange the synths they hold in one flavour for another', async () => {
+					it('should allow a user to exchange the tribes they hold in one flavour for another', async () => {
 						// Exchange hUSD to sAUD
 						await tribeone.exchange(hUSD, amountIssued, sAUD, { from: account1 });
 
@@ -2393,7 +2393,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						assert.bnEqual(feeRate, exchangeFeeRate.add(exchangeFeeRate));
 					});
 
-					it('should emit a SynthExchange event @gasprofile', async () => {
+					it('should emit a TribeExchange event @gasprofile', async () => {
 						// Exchange hUSD to sAUD
 						const txn = await tribeone.exchange(hUSD, amountIssued, sAUD, {
 							from: account1,
@@ -2401,8 +2401,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 						const sAUDBalance = await sAUDContract.balanceOf(account1);
 
-						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-						assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+						const tribeExchangeEvent = txn.logs.find(log => log.event === 'TribeExchange');
+						assert.eventEqual(tribeExchangeEvent, 'TribeExchange', {
 							account: account1,
 							fromCurrencyKey: toBytes32('hUSD'),
 							fromAmount: amountIssued,
@@ -2432,8 +2432,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 						const sAUDBalance = await sAUDContract.balanceOf(account1);
 
-						const synthExchangeEvent = txn.logs.find(log => log.event === 'SynthExchange');
-						assert.eventEqual(synthExchangeEvent, 'SynthExchange', {
+						const tribeExchangeEvent = txn.logs.find(log => log.event === 'TribeExchange');
+						assert.eventEqual(tribeExchangeEvent, 'TribeExchange', {
 							account: account1,
 							fromCurrencyKey: toBytes32('hUSD'),
 							fromAmount: amountIssued,
@@ -2500,7 +2500,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							beforeEach(async () => {
 								await delegateApprovals.approveExchangeOnBehalf(account2, { from: account1 });
 							});
-							describe('when rates have gone stale for all synths', () => {
+							describe('when rates have gone stale for all tribes', () => {
 								beforeEach(async () => {
 									await fastForward(
 										(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
@@ -2520,15 +2520,15 @@ contract('Exchanger (spec tests)', async accounts => {
 								it('settling still works ', async () => {
 									await tribeone.settle(sAUD, { from: account1 });
 								});
-								describe('when that synth has a fresh rate', () => {
+								describe('when that tribe has a fresh rate', () => {
 									beforeEach(async () => {
 										await updateRates([sAUD], ['0.75'].map(toUnit));
 									});
-									describe(`when the user ${type} into that synth`, () => {
+									describe(`when the user ${type} into that tribe`, () => {
 										beforeEach(async () => {
 											await exchange({ from: hUSD, amount: amountIssued, to: sAUD });
 										});
-										describe('after the waiting period expires and the synth has gone stale', () => {
+										describe('after the waiting period expires and the tribe has gone stale', () => {
 											beforeEach(async () => {
 												await fastForward(
 													(await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300'))
@@ -2566,11 +2566,11 @@ contract('Exchanger (spec tests)', async accounts => {
 								await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
 							});
 							describe('suspension conditions on Tribeone.exchangeOnBehalf()', () => {
-								const synth = sAUD;
-								['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
+								const tribe = sAUD;
+								['System', 'Exchange', 'TribeExchange', 'Tribe'].forEach(section => {
 									describe(`when ${section} is suspended`, () => {
 										beforeEach(async () => {
-											await setStatus({ owner, systemStatus, section, suspend: true, synth });
+											await setStatus({ owner, systemStatus, section, suspend: true, tribe });
 										});
 										it('then calling exchange() reverts', async () => {
 											await assert.revert(
@@ -2582,7 +2582,7 @@ contract('Exchanger (spec tests)', async accounts => {
 										});
 										describe(`when ${section} is resumed`, () => {
 											beforeEach(async () => {
-												await setStatus({ owner, systemStatus, section, suspend: false, synth });
+												await setStatus({ owner, systemStatus, section, suspend: false, tribe });
 											});
 											it('then calling exchange() succeeds', async () => {
 												await tribeone.exchangeOnBehalf(authoriser, hUSD, amountIssued, sAUD, {
@@ -2592,17 +2592,17 @@ contract('Exchanger (spec tests)', async accounts => {
 										});
 									});
 								});
-								describe('when Synth(sBTC) is suspended', () => {
+								describe('when Tribe(hBTC) is suspended', () => {
 									beforeEach(async () => {
 										await setStatus({
 											owner,
 											systemStatus,
-											section: 'Synth',
+											section: 'Tribe',
 											suspend: true,
-											synth: sBTC,
+											tribe: hBTC,
 										});
 									});
-									it('then exchanging other synths on behalf still works', async () => {
+									it('then exchanging other tribes on behalf still works', async () => {
 										await tribeone.exchangeOnBehalf(authoriser, hUSD, amountIssued, sAUD, {
 											from: delegate,
 										});
@@ -2621,7 +2621,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									reason: 'Not approved to act on behalf',
 								});
 							});
-							it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
+							it('should exchangeOnBehalf and authoriser recieves the destTribe', async () => {
 								// Exchange hUSD to sAUD
 								await tribeone.exchangeOnBehalf(authoriser, hUSD, amountIssued, sAUD, {
 									from: delegate,
@@ -2672,11 +2672,11 @@ contract('Exchanger (spec tests)', async accounts => {
 								await delegateApprovals.approveExchangeOnBehalf(delegate, { from: authoriser });
 							});
 							describe('suspension conditions on Tribeone.exchangeOnBehalfWithTracking()', () => {
-								const synth = sAUD;
-								['System', 'Exchange', 'SynthExchange', 'Synth'].forEach(section => {
+								const tribe = sAUD;
+								['System', 'Exchange', 'TribeExchange', 'Tribe'].forEach(section => {
 									describe(`when ${section} is suspended`, () => {
 										beforeEach(async () => {
-											await setStatus({ owner, systemStatus, section, suspend: true, synth });
+											await setStatus({ owner, systemStatus, section, suspend: true, tribe });
 										});
 										it('then calling exchange() reverts', async () => {
 											await assert.revert(
@@ -2696,7 +2696,7 @@ contract('Exchanger (spec tests)', async accounts => {
 										});
 										describe(`when ${section} is resumed`, () => {
 											beforeEach(async () => {
-												await setStatus({ owner, systemStatus, section, suspend: false, synth });
+												await setStatus({ owner, systemStatus, section, suspend: false, tribe });
 											});
 											it('then calling exchange() succeeds', async () => {
 												await tribeone.exchangeOnBehalfWithTracking(
@@ -2714,17 +2714,17 @@ contract('Exchanger (spec tests)', async accounts => {
 										});
 									});
 								});
-								describe('when Synth(sBTC) is suspended', () => {
+								describe('when Tribe(hBTC) is suspended', () => {
 									beforeEach(async () => {
 										await setStatus({
 											owner,
 											systemStatus,
-											section: 'Synth',
+											section: 'Tribe',
 											suspend: true,
-											synth: sBTC,
+											tribe: hBTC,
 										});
 									});
-									it('then exchanging other synths on behalf still works', async () => {
+									it('then exchanging other tribes on behalf still works', async () => {
 										await tribeone.exchangeOnBehalfWithTracking(
 											authoriser,
 											hUSD,
@@ -2751,7 +2751,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									reason: 'Not approved to act on behalf',
 								});
 							});
-							it('should exchangeOnBehalf and authoriser recieves the destSynth', async () => {
+							it('should exchangeOnBehalf and authoriser recieves the destTribe', async () => {
 								// Exchange hUSD to sAUD
 								const txn = await tribeone.exchangeOnBehalfWithTracking(
 									authoriser,
@@ -2801,21 +2801,21 @@ contract('Exchanger (spec tests)', async accounts => {
 
 					beforeEach(async () => {
 						aggregator = await MockAggregator.new({ from: owner });
-						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
+						await exchangeRates.addAggregator(hETH, aggregator.address, { from: owner });
 						// set a 0 rate to prevent invalid rate from causing a revert on exchange
 						await aggregator.setLatestAnswer('0', await currentTime());
 					});
 
-					describe('when exchanging into that synth', () => {
+					describe('when exchanging into that tribe', () => {
 						it('getAmountsForExchange reverts due to invalid rate', async () => {
 							await assert.revert(
-								exchanger.getAmountsForExchange(toUnit('1'), hUSD, sETH),
-								'synth rate invalid'
+								exchanger.getAmountsForExchange(toUnit('1'), hUSD, hETH),
+								'tribe rate invalid'
 							);
 						});
 
 						it('then it causes a breaker trip from price deviation as the price is 9', async () => {
-							const { tx: hash } = await tribeone.exchange(hUSD, toUnit('1'), sETH, {
+							const { tx: hash } = await tribeone.exchange(hUSD, toUnit('1'), hETH, {
 								from: account1,
 							});
 
@@ -2826,29 +2826,29 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							// assert no exchange
 							console.log(logs);
-							assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+							assert.ok(!logs.some(({ name } = {}) => name === 'TribeExchange'));
 
 							// check view reverts since breaker has tripped
 							await assert.revert(
-								exchanger.getAmountsForExchange(toUnit('1'), hUSD, sETH),
+								exchanger.getAmountsForExchange(toUnit('1'), hUSD, hETH),
 								'rate invalid'
 							);
 						});
 					});
-					describe('when exchanging out of that synth', () => {
+					describe('when exchanging out of that tribe', () => {
 						beforeEach(async () => {
-							// give the user some sETH
-							await sETHContract.issue(account1, toUnit('1'));
+							// give the user some hETH
+							await hETHContract.issue(account1, toUnit('1'));
 						});
 						it('getAmountsForExchange reverts due to invalid rate', async () => {
 							await assert.revert(
-								exchanger.getAmountsForExchange(toUnit('1'), sETH, hUSD),
-								'synth rate invalid'
+								exchanger.getAmountsForExchange(toUnit('1'), hETH, hUSD),
+								'tribe rate invalid'
 							);
 						});
 						it('then it causes a breaker trip from price deviation', async () => {
 							// await assert.revert(
-							const { tx: hash } = await tribeone.exchange(sETH, toUnit('1'), hUSD, {
+							const { tx: hash } = await tribeone.exchange(hETH, toUnit('1'), hUSD, {
 								from: account1,
 							});
 
@@ -2858,11 +2858,11 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 
 							// assert no exchange
-							assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+							assert.ok(!logs.some(({ name } = {}) => name === 'TribeExchange'));
 
 							// check view reverts since breaker has tripped
 							await assert.revert(
-								exchanger.getAmountsForExchange(toUnit('1'), sETH, hUSD),
+								exchanger.getAmountsForExchange(toUnit('1'), hETH, hUSD),
 								'rate invalid'
 							);
 						});
@@ -2879,12 +2879,12 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						await systemSettings.setWaitingPeriodSecs('60', { from: owner });
 					});
-					describe('when a user exchanges into sAUD using virtual synths with a tracking code', () => {
+					describe('when a user exchanges into sAUD using virtual tribes with a tracking code', () => {
 						let logs;
 						let amountReceived;
 						let exchangeFeeRate;
 						let findNamedEventValue;
-						let vSynthAddress;
+						let vTribeAddress;
 
 						beforeEach(async () => {
 							const txn = await tribeone.exchangeWithVirtual(
@@ -2904,22 +2904,22 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							logs = await getDecodedLogs({
 								hash: txn.tx,
-								contracts: [tribeone, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+								contracts: [tribeone, exchanger, hUSDContract, issuer, flexibleStorage, debtCache],
 							});
-							const vSynthCreatedEvent = logs.find(({ name }) => name === 'VirtualSynthCreated');
-							assert.ok(vSynthCreatedEvent, 'Found VirtualSynthCreated event');
+							const vTribeCreatedEvent = logs.find(({ name }) => name === 'VirtualTribeCreated');
+							assert.ok(vTribeCreatedEvent, 'Found VirtualTribeCreated event');
 							findNamedEventValue = param =>
-								vSynthCreatedEvent.events.find(({ name }) => name === param);
-							vSynthAddress = findNamedEventValue('vSynth').value;
+								vTribeCreatedEvent.events.find(({ name }) => name === param);
+							vTribeAddress = findNamedEventValue('vTribe').value;
 						});
 
-						it('then it emits an ExchangeEntryAppended for the new Virtual Synth', async () => {
+						it('then it emits an ExchangeEntryAppended for the new Virtual Tribe', async () => {
 							decodedEventEqual({
 								log: logs.find(({ name }) => name === 'ExchangeEntryAppended'),
 								event: 'ExchangeEntryAppended',
 								emittedFrom: exchanger.address,
 								args: [
-									vSynthAddress,
+									vTribeAddress,
 									hUSD,
 									amountIssued,
 									sAUD,
@@ -2932,12 +2932,12 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 						});
 
-						it('then it emits an SynthExchange into the new Virtual Synth', async () => {
+						it('then it emits an TribeExchange into the new Virtual Tribe', async () => {
 							decodedEventEqual({
-								log: logs.find(({ name }) => name === 'SynthExchange'),
-								event: 'SynthExchange',
+								log: logs.find(({ name }) => name === 'TribeExchange'),
+								event: 'TribeExchange',
 								emittedFrom: await tribeone.proxy(),
-								args: [account1, hUSD, amountIssued, sAUD, amountReceived, vSynthAddress],
+								args: [account1, hUSD, amountIssued, sAUD, amountReceived, vTribeAddress],
 								bnCloseVariance: '0',
 							});
 						});
@@ -2950,9 +2950,9 @@ contract('Exchanger (spec tests)', async accounts => {
 							);
 						});
 
-						it('and it emits the VirtualSynthCreated event', async () => {
+						it('and it emits the VirtualTribeCreated event', async () => {
 							assert.equal(
-								findNamedEventValue('synth').value,
+								findNamedEventValue('tribe').value,
 								(await sAUDContract.proxy()).toLowerCase()
 							);
 							assert.equal(findNamedEventValue('currencyKey').value, sAUD);
@@ -2972,25 +2972,25 @@ contract('Exchanger (spec tests)', async accounts => {
 							assert.equal(numEntries, '0');
 						});
 
-						describe('with the new virtual synth', () => {
-							let vSynth;
+						describe('with the new virtual tribe', () => {
+							let vTribe;
 							beforeEach(async () => {
-								vSynth = await artifacts.require('VirtualSynth').at(vSynthAddress);
+								vTribe = await artifacts.require('VirtualTribe').at(vTribeAddress);
 							});
-							it('and the balance of the vSynth is the whole amount', async () => {
-								assert.bnEqual(await sAUDContract.balanceOf(vSynth.address), amountReceived);
+							it('and the balance of the vTribe is the whole amount', async () => {
+								assert.bnEqual(await sAUDContract.balanceOf(vTribe.address), amountReceived);
 							});
 							it('then it is created with the correct parameters', async () => {
-								assert.equal(await vSynth.resolver(), resolver.address);
-								assert.equal(await vSynth.synth(), await sAUDContract.proxy());
-								assert.equal(await vSynth.currencyKey(), sAUD);
-								assert.bnEqual(await vSynth.totalSupply(), amountReceived);
-								assert.bnEqual(await vSynth.balanceOf(account1), amountReceived);
-								assert.notOk(await vSynth.settled());
+								assert.equal(await vTribe.resolver(), resolver.address);
+								assert.equal(await vTribe.tribe(), await sAUDContract.proxy());
+								assert.equal(await vTribe.currencyKey(), sAUD);
+								assert.bnEqual(await vTribe.totalSupply(), amountReceived);
+								assert.bnEqual(await vTribe.balanceOf(account1), amountReceived);
+								assert.notOk(await vTribe.settled());
 							});
-							it('and the vSynth has 1 fee reclamation entries', async () => {
+							it('and the vTribe has 1 fee reclamation entries', async () => {
 								const { reclaimAmount, rebateAmount, numEntries } = await exchanger.settlementOwing(
-									vSynth.address,
+									vTribe.address,
 									sAUD
 								);
 								assert.equal(reclaimAmount, '0');
@@ -2998,7 +2998,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								assert.equal(numEntries, '1');
 							});
 							it('and the secsLeftInWaitingPeriod() returns the waitingPeriodSecs', async () => {
-								const maxSecs = await vSynth.secsLeftInWaitingPeriod();
+								const maxSecs = await vTribe.secsLeftInWaitingPeriod();
 								timeIsClose({ actual: maxSecs, expected: 60, variance: 2 });
 							});
 
@@ -3009,25 +3009,25 @@ contract('Exchanger (spec tests)', async accounts => {
 								});
 
 								it('and the secsLeftInWaitingPeriod() returns 0', async () => {
-									assert.equal(await vSynth.secsLeftInWaitingPeriod(), '0');
+									assert.equal(await vTribe.secsLeftInWaitingPeriod(), '0');
 								});
 
 								it('and readyToSettle() is true', async () => {
-									assert.equal(await vSynth.readyToSettle(), true);
+									assert.equal(await vTribe.readyToSettle(), true);
 								});
 
-								describe('when the vSynth is settled for the holder', () => {
+								describe('when the vTribe is settled for the holder', () => {
 									let txn;
 									let logs;
 									beforeEach(async () => {
-										txn = await vSynth.settle(account1);
+										txn = await vTribe.settle(account1);
 
 										logs = await getDecodedLogs({
 											hash: txn.tx,
 											contracts: [
 												tribeone,
 												exchanger,
-												sUSDContract,
+												hUSDContract,
 												issuer,
 												flexibleStorage,
 												debtCache,
@@ -3035,12 +3035,12 @@ contract('Exchanger (spec tests)', async accounts => {
 										});
 									});
 
-									it('then the user has all the synths', async () => {
+									it('then the user has all the tribes', async () => {
 										assert.bnEqual(await sAUDContract.balanceOf(account1), amountReceived);
 									});
 
-									it('and the vSynth is settled', async () => {
-										assert.equal(await vSynth.settled(), true);
+									it('and the vTribe is settled', async () => {
+										assert.equal(await vTribe.settled(), true);
 									});
 
 									it('and ExchangeEntrySettled is emitted', async () => {
@@ -3048,15 +3048,15 @@ contract('Exchanger (spec tests)', async accounts => {
 
 										const findEvt = param => evt.events.find(({ name }) => name === param);
 
-										assert.equal(findEvt('from').value, vSynth.address.toLowerCase());
+										assert.equal(findEvt('from').value, vTribe.address.toLowerCase());
 									});
 
-									it('and the entry is settled for the vSynth', async () => {
+									it('and the entry is settled for the vTribe', async () => {
 										const {
 											reclaimAmount,
 											rebateAmount,
 											numEntries,
-										} = await exchanger.settlementOwing(vSynth.address, sAUD);
+										} = await exchanger.settlementOwing(vTribe.address, sAUD);
 										assert.equal(reclaimAmount, '0');
 										assert.equal(rebateAmount, '0');
 										assert.equal(numEntries, '0');
@@ -3073,8 +3073,8 @@ contract('Exchanger (spec tests)', async accounts => {
 										assert.equal(numEntries, '0');
 									});
 
-									it('and no more supply exists in the vSynth', async () => {
-										assert.equal(await vSynth.totalSupply(), '0');
+									it('and no more supply exists in the vTribe', async () => {
+										assert.equal(await vTribe.totalSupply(), '0');
 									});
 								});
 							});
@@ -3096,7 +3096,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							logs = await getDecodedLogs({
 								hash: txn.tx,
-								contracts: [tribeone, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+								contracts: [tribeone, exchanger, hUSDContract, issuer, flexibleStorage, debtCache],
 							});
 						});
 						it('then no ExchangeTracking is emitted (as no tracking code supplied)', async () => {
@@ -3151,28 +3151,28 @@ contract('Exchanger (spec tests)', async accounts => {
 					beforeEach(async () => {
 						// CL aggregator with past price data
 						const aggregator = await MockAggregator.new({ from: owner });
-						await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
+						await exchangeRates.addAggregator(hETH, aggregator.address, { from: owner });
 						// set prices with no volatility over the course of last 20 minutes
 						for (let i = 4; i > 0; i--) {
 							await aggregator.setLatestAnswer(ethOnCL, (await currentTime()) - i * 5 * 60);
 						}
 
-						// Synth equivalents (needs ability to read into decimals)
-						const susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
-						const sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
-						await setAtomicEquivalentForDexPricing(hUSD, susdDexEquivalentToken.address);
-						await setAtomicEquivalentForDexPricing(sETH, sethDexEquivalentToken.address);
+						// Tribe equivalents (needs ability to read into decimals)
+						const husdDexEquivalentToken = await MockToken.new('ehUSD equivalent', 'ehUSD', '18');
+						const hethDexEquivalentToken = await MockToken.new('ehETH equivalent', 'ehETH', '18');
+						await setAtomicEquivalentForDexPricing(hUSD, husdDexEquivalentToken.address);
+						await setAtomicEquivalentForDexPricing(hETH, hethDexEquivalentToken.address);
 						await setAtomicVolatilityConsiderationWindow(
-							sETH,
+							hETH,
 							web3.utils.toBN(600) // 10 minutes
 						);
-						await setAtomicVolatilityUpdateThreshold(sETH, web3.utils.toBN(2));
+						await setAtomicVolatilityUpdateThreshold(hETH, web3.utils.toBN(2));
 
 						// DexPriceAggregator
 						const dexPriceAggregator = await MockDexPriceAggregator.new();
-						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, ethOnDex);
+						await dexPriceAggregator.setAssetToAssetRate(hethDexEquivalentToken.address, ethOnDex);
 						await dexPriceAggregator.setAssetToAssetRate(
-							susdDexEquivalentToken.address,
+							husdDexEquivalentToken.address,
 							toUnit('1')
 						);
 						await setDexPriceAggregator(dexPriceAggregator.address);
@@ -3183,7 +3183,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 						it('reverts when the received amount is too low', async () => {
 							await assert.revert(
-								tribeone.exchangeAtomically(hUSD, amountIn, sETH, toBytes32(), toUnit('.498'), {
+								tribeone.exchangeAtomically(hUSD, amountIn, hETH, toBytes32(), toUnit('.498'), {
 									from: account1,
 								}),
 								'The amount received is below the minimum amount specified.'
@@ -3194,7 +3194,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							await tribeone.exchangeAtomically(
 								hUSD,
 								amountIn,
-								sETH,
+								hETH,
 								toBytes32(),
 								toUnit('.495'),
 								{
@@ -3205,16 +3205,16 @@ contract('Exchanger (spec tests)', async accounts => {
 							const { amountReceived } = await exchanger.getAmountsForAtomicExchange(
 								amountIn,
 								hUSD,
-								sETH,
+								hETH,
 								{ from: account1 }
 							);
 
-							assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
-							assert.bnEqual(await sETHContract.balanceOf(account1), amountReceived);
+							assert.bnEqual(await hUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
+							assert.bnEqual(await hETHContract.balanceOf(account1), amountReceived);
 						});
 					});
 
-					describe('when the user exchanges into sETH using an atomic exchange with a tracking code', () => {
+					describe('when the user exchanges into hETH using an atomic exchange with a tracking code', () => {
 						const amountIn = toUnit('100');
 						const atomicTrackingCode = toBytes32('ATOMIC_AGGREGATOR');
 
@@ -3227,7 +3227,7 @@ contract('Exchanger (spec tests)', async accounts => {
 							const txn = await tribeone.exchangeAtomically(
 								hUSD,
 								amountIn,
-								sETH,
+								hETH,
 								atomicTrackingCode,
 								0,
 								{
@@ -3239,19 +3239,19 @@ contract('Exchanger (spec tests)', async accounts => {
 								amountReceived,
 								exchangeFeeRate,
 								fee: amountFee,
-							} = await exchanger.getAmountsForAtomicExchange(amountIn, hUSD, sETH, {
+							} = await exchanger.getAmountsForAtomicExchange(amountIn, hUSD, hETH, {
 								from: account1,
 							}));
 
 							logs = await getDecodedLogs({
 								hash: txn.tx,
-								contracts: [tribeone, exchanger, sUSDContract, issuer, flexibleStorage, debtCache],
+								contracts: [tribeone, exchanger, hUSDContract, issuer, flexibleStorage, debtCache],
 							});
 						});
 
 						it('completed the exchange atomically', async () => {
-							assert.bnEqual(await sUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
-							assert.bnEqual(await sETHContract.balanceOf(account1), amountReceived);
+							assert.bnEqual(await hUSDContract.balanceOf(account1), amountIssued.sub(amountIn));
+							assert.bnEqual(await hETHContract.balanceOf(account1), amountReceived);
 						});
 
 						it('used the correct atomic exchange rate', async () => {
@@ -3261,7 +3261,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						});
 
 						it('used correct fee rate', async () => {
-							const expectedFeeRate = await exchanger.feeRateForAtomicExchange(hUSD, sETH, {
+							const expectedFeeRate = await exchanger.feeRateForAtomicExchange(hUSD, hETH, {
 								from: account1,
 							});
 							assert.bnEqual(exchangeFeeRate, expectedFeeRate);
@@ -3271,33 +3271,33 @@ contract('Exchanger (spec tests)', async accounts => {
 							);
 						});
 
-						it('emits an SynthExchange directly to the user', async () => {
+						it('emits an TribeExchange directly to the user', async () => {
 							decodedEventEqual({
-								log: logs.find(({ name }) => name === 'SynthExchange'),
-								event: 'SynthExchange',
+								log: logs.find(({ name }) => name === 'TribeExchange'),
+								event: 'TribeExchange',
 								emittedFrom: await tribeone.proxy(),
-								args: [account1, hUSD, amountIn, sETH, amountReceived, account1],
+								args: [account1, hUSD, amountIn, hETH, amountReceived, account1],
 								bnCloseVariance: '0',
 							});
 						});
 
-						it('emits an AtomicSynthExchange directly to the user', async () => {
+						it('emits an AtomicTribeExchange directly to the user', async () => {
 							decodedEventEqual({
-								log: logs.find(({ name }) => name === 'AtomicSynthExchange'),
-								event: 'AtomicSynthExchange',
+								log: logs.find(({ name }) => name === 'AtomicTribeExchange'),
+								event: 'AtomicTribeExchange',
 								emittedFrom: await tribeone.proxy(),
-								args: [account1, hUSD, amountIn, sETH, amountReceived, account1],
+								args: [account1, hUSD, amountIn, hETH, amountReceived, account1],
 								bnCloseVariance: '0',
 							});
 						});
 
 						it('emits an ExchangeTracking event with the correct code', async () => {
-							const usdFeeAmount = await exchangeRates.effectiveValue(sETH, amountFee, hUSD);
+							const usdFeeAmount = await exchangeRates.effectiveValue(hETH, amountFee, hUSD);
 							decodedEventEqual({
 								log: logs.find(({ name }) => name === 'ExchangeTracking'),
 								event: 'ExchangeTracking',
 								emittedFrom: await tribeone.proxy(),
-								args: [atomicTrackingCode, sETH, amountReceived, usdFeeAmount],
+								args: [atomicTrackingCode, hETH, amountReceived, usdFeeAmount],
 								bnCloseVariance: '0',
 							});
 						});
@@ -3307,12 +3307,12 @@ contract('Exchanger (spec tests)', async accounts => {
 								reclaimAmount,
 								rebateAmount,
 								numEntries: settleEntries,
-							} = await exchanger.settlementOwing(owner, sETH);
+							} = await exchanger.settlementOwing(owner, hETH);
 							assert.bnEqual(reclaimAmount, '0');
 							assert.bnEqual(rebateAmount, '0');
 							assert.bnEqual(settleEntries, '0');
 
-							const stateEntries = await exchangeState.getLengthOfEntries(owner, sETH);
+							const stateEntries = await exchangeState.getLengthOfEntries(owner, hETH);
 							assert.bnEqual(stateEntries, '0');
 						});
 					});
@@ -3326,11 +3326,11 @@ contract('Exchanger (spec tests)', async accounts => {
 						let exchangeFeeRate;
 
 						beforeEach(async () => {
-							await setAtomicExchangeFeeRate(sETH, feeRateOverride);
+							await setAtomicExchangeFeeRate(hETH, feeRateOverride);
 						});
 
 						beforeEach(async () => {
-							await tribeone.exchangeAtomically(hUSD, amountIn, sETH, toBytes32(), 0, {
+							await tribeone.exchangeAtomically(hUSD, amountIn, hETH, toBytes32(), 0, {
 								from: account1,
 							});
 
@@ -3338,7 +3338,7 @@ contract('Exchanger (spec tests)', async accounts => {
 								amountReceived,
 								exchangeFeeRate,
 								fee: amountFee,
-							} = await exchanger.getAmountsForAtomicExchange(amountIn, hUSD, sETH, {
+							} = await exchanger.getAmountsForAtomicExchange(amountIn, hUSD, hETH, {
 								from: account1,
 							}));
 						});
@@ -3355,7 +3355,7 @@ contract('Exchanger (spec tests)', async accounts => {
 					describe('when a user exchanges without a tracking code', () => {
 						let txn;
 						beforeEach(async () => {
-							txn = await tribeone.exchangeAtomically(hUSD, toUnit('10'), sETH, toBytes32(), 0, {
+							txn = await tribeone.exchangeAtomically(hUSD, toUnit('10'), hETH, toBytes32(), 0, {
 								from: account1,
 							});
 						});
@@ -3387,24 +3387,24 @@ contract('Exchanger (spec tests)', async accounts => {
 					await exchangeRates.addAggregator(sAUD, saudAggregator.address, { from: owner });
 					await saudAggregator.setLatestAnswer(saudChainlinkPrice, await currentTime());
 
-					const sbtcChainlinkPrice = toUnit('40000');
-					const sbtcAggregator = await MockAggregator.new({ from: owner });
-					await exchangeRates.addAggregator(sBTC, sbtcAggregator.address, { from: owner });
-					await sbtcAggregator.setLatestAnswer(sbtcChainlinkPrice, await currentTime());
+					const hbtcChainlinkPrice = toUnit('40000');
+					const hbtcAggregator = await MockAggregator.new({ from: owner });
+					await exchangeRates.addAggregator(hBTC, hbtcAggregator.address, { from: owner });
+					await hbtcAggregator.setLatestAnswer(hbtcChainlinkPrice, await currentTime());
 
-					// Add Synth Equivalents to System Settings
-					const susdDexEquivalentToken = await MockToken.new('hUSD equivalent', 'esUSD', '6');
-					const sbtcDexEquivalentToken = await MockToken.new('sBTC equivalent', 'esBTC', '9');
+					// Add Tribe Equivalents to System Settings
+					const husdDexEquivalentToken = await MockToken.new('hUSD equivalent', 'ehUSD', '6');
+					const hbtcDexEquivalentToken = await MockToken.new('hBTC equivalent', 'ehBTC', '9');
 					const seurDexEquivalentToken = await MockToken.new('sEUR equivalent', 'esEUR', '18');
 					const saudDexEquivalentToken = await MockToken.new('sAUD equivalent', 'esAUD', '18');
-					await setAtomicEquivalentForDexPricing(hUSD, susdDexEquivalentToken.address);
-					await setAtomicEquivalentForDexPricing(sBTC, sbtcDexEquivalentToken.address);
+					await setAtomicEquivalentForDexPricing(hUSD, husdDexEquivalentToken.address);
+					await setAtomicEquivalentForDexPricing(hBTC, hbtcDexEquivalentToken.address);
 					await setAtomicEquivalentForDexPricing(sEUR, seurDexEquivalentToken.address);
 					await setAtomicEquivalentForDexPricing(sAUD, saudDexEquivalentToken.address);
 
 					// Set up Uniswap Price Aggregator with different prices
 					const dexPriceAggregator = await MockDexPriceAggregator.new();
-					await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit('1'));
+					await dexPriceAggregator.setAssetToAssetRate(husdDexEquivalentToken.address, toUnit('1'));
 					await dexPriceAggregator.setAssetToAssetRate(
 						seurDexEquivalentToken.address,
 						toUnit('1.1')
@@ -3414,7 +3414,7 @@ contract('Exchanger (spec tests)', async accounts => {
 						toUnit('0.8')
 					);
 					await dexPriceAggregator.setAssetToAssetRate(
-						sbtcDexEquivalentToken.address,
+						hbtcDexEquivalentToken.address,
 						toUnit('50000')
 					);
 					await setDexPriceAggregator(dexPriceAggregator.address, { from: owner });
@@ -3432,7 +3432,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 
 				describe('for the source currency', () => {
-					// sEUR -> sBTC
+					// sEUR -> hBTC
 
 					beforeEach(async () => {
 						amountIn = toUnit('10000');
@@ -3441,17 +3441,17 @@ contract('Exchanger (spec tests)', async accounts => {
 							amountReceived,
 							exchangeFeeRate,
 							fee: amountFee,
-						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, sBTC, {
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, sEUR, hBTC, {
 							from: account1,
 						}));
-						await tribeone.exchangeAtomically(sEUR, amountIn, sBTC, toBytes32(), 0, {
+						await tribeone.exchangeAtomically(sEUR, amountIn, hBTC, toBytes32(), 0, {
 							from: account1,
 						});
 					});
 
 					it('completed the exchange atomically', async () => {
 						assert.bnEqual(await sEURContract.balanceOf(account1), 0);
-						assert.bnEqual(await sBTCContract.balanceOf(account1), amountReceived);
+						assert.bnEqual(await hBTCContract.balanceOf(account1), amountReceived);
 					});
 
 					it('used the correct atomic exchange rate', async () => {
@@ -3468,25 +3468,25 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 
 				describe('for the destination currency', () => {
-					// sBTC -> sEUR
+					// hBTC -> sEUR
 
 					beforeEach(async () => {
 						amountIn = toUnit('1');
-						await sBTCContract.issue(account1, amountIn);
+						await hBTCContract.issue(account1, amountIn);
 						({
 							amountReceived,
 							exchangeFeeRate,
 							fee: amountFee,
-						} = await exchanger.getAmountsForAtomicExchange(amountIn, sBTC, sEUR, {
+						} = await exchanger.getAmountsForAtomicExchange(amountIn, hBTC, sEUR, {
 							from: account1,
 						}));
-						await tribeone.exchangeAtomically(sBTC, amountIn, sEUR, toBytes32(), 0, {
+						await tribeone.exchangeAtomically(hBTC, amountIn, sEUR, toBytes32(), 0, {
 							from: account1,
 						});
 					});
 
 					it('completed the exchange atomically', async () => {
-						assert.bnEqual(await sBTCContract.balanceOf(account1), 0);
+						assert.bnEqual(await hBTCContract.balanceOf(account1), 0);
 						assert.bnEqual(await sEURContract.balanceOf(account1), amountReceived);
 					});
 
@@ -3642,7 +3642,7 @@ contract('Exchanger (spec tests)', async accounts => {
 		describe('it cannot exchange atomically', () => {
 			it('errors with not implemented when attempted to exchange', async () => {
 				await assert.revert(
-					tribeone.exchangeAtomically(hUSD, amountIssued, sETH, toBytes32(), 0, {
+					tribeone.exchangeAtomically(hUSD, amountIssued, hETH, toBytes32(), 0, {
 						from: account1,
 					}),
 					'Cannot be run on this layer'
@@ -3674,8 +3674,8 @@ contract('Exchanger (spec tests)', async accounts => {
 				});
 			};
 
-			describe(`when the price of sETH is ${baseRate}`, () => {
-				updateRate({ target: sETH, rate: baseRate, resetCircuitBreaker: true });
+			describe(`when the price of hETH is ${baseRate}`, () => {
+				updateRate({ target: hETH, rate: baseRate, resetCircuitBreaker: true });
 
 				describe('when price spike deviation is set to a factor of 2', () => {
 					const baseFactor = 2;
@@ -3686,42 +3686,42 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					it('lastExchangeRate returns the same thing as CircuitBreaker.lastValue', async () => {
-						const lastExchangeRate = await exchanger.lastExchangeRate(sETH);
+						const lastExchangeRate = await exchanger.lastExchangeRate(hETH);
 						assert.bnNotEqual(lastExchangeRate, '0');
 						assert.bnEqual(
 							lastExchangeRate,
-							await circuitBreaker.lastValue(await exchangeRates.aggregators(sETH))
+							await circuitBreaker.lastValue(await exchangeRates.aggregators(hETH))
 						);
 					});
 
-					describe('the isSynthRateInvalid() view correctly returns status', () => {
-						it('when called with a synth with only a single rate, returns false', async () => {
-							assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
+					describe('the isTribeRateInvalid() view correctly returns status', () => {
+						it('when called with a tribe with only a single rate, returns false', async () => {
+							assert.equal(await exchanger.isTribeRateInvalid(hETH), false);
 						});
-						it('when called with a synth with no rate (i.e. 0), returns true', async () => {
-							assert.equal(await exchanger.isSynthRateInvalid(toBytes32('XYZ')), true);
+						it('when called with a tribe with no rate (i.e. 0), returns true', async () => {
+							assert.equal(await exchanger.isTribeRateInvalid(toBytes32('XYZ')), true);
 						});
-						describe('when a synth rate changes outside of the range', () => {
-							updateRate({ target: sETH, rate: baseRate * 5 });
+						describe('when a tribe rate changes outside of the range', () => {
+							updateRate({ target: hETH, rate: baseRate * 5 });
 
-							it('when called with that synth, returns true', async () => {
-								assert.equal(await exchanger.isSynthRateInvalid(sETH), true);
+							it('when called with that tribe, returns true', async () => {
+								assert.equal(await exchanger.isTribeRateInvalid(hETH), true);
 							});
 
-							describe('when the synth rate changes back into the range', () => {
-								updateRate({ target: sETH, rate: baseRate });
+							describe('when the tribe rate changes back into the range', () => {
+								updateRate({ target: hETH, rate: baseRate });
 
 								it('then when called with the target, rate is valid again', async () => {
-									assert.equal(await exchanger.isSynthRateInvalid(sETH), false);
+									assert.equal(await exchanger.isTribeRateInvalid(hETH), false);
 								});
 							});
 						});
 					});
 
 					describe('suspension is triggered via exchanging', () => {
-						describe('given the user has some sETH', () => {
+						describe('given the user has some hETH', () => {
 							beforeEach(async () => {
-								await sETHContract.issue(account1, toUnit('1'));
+								await hETHContract.issue(account1, toUnit('1'));
 							});
 
 							const assertSpike = ({ from, to, target, factor, spikeExpected }) => {
@@ -3747,11 +3747,11 @@ contract('Exchanger (spec tests)', async accounts => {
 										});
 										if (Math.abs(factor) >= baseFactor || spikeExpected) {
 											it('no exchange took place', async () => {
-												assert.ok(!logs.some(({ name } = {}) => name === 'SynthExchange'));
+												assert.ok(!logs.some(({ name } = {}) => name === 'TribeExchange'));
 											});
 										} else {
 											it('an exchange took place', async () => {
-												assert.ok(logs.some(({ name } = {}) => name === 'SynthExchange'));
+												assert.ok(logs.some(({ name } = {}) => name === 'TribeExchange'));
 											});
 										}
 									});
@@ -3790,11 +3790,11 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							const assertBothSidesOfTheExchange = () => {
 								describe('on the dest side', () => {
-									assertRange({ from: hUSD, to: sETH, target: sETH });
+									assertRange({ from: hUSD, to: hETH, target: hETH });
 								});
 
 								describe('on the src side', () => {
-									assertRange({ from: sETH, to: sAUD, target: sETH });
+									assertRange({ from: hETH, to: sAUD, target: hETH });
 								});
 							};
 
@@ -3804,17 +3804,17 @@ contract('Exchanger (spec tests)', async accounts => {
 								describe('when a recent price rate is set way outside of the threshold', () => {
 									beforeEach(async () => {
 										await fastForward(10);
-										await updateRates([sETH], [toUnit('1000')]);
+										await updateRates([hETH], [toUnit('1000')]);
 									});
 									describe('and then put back to normal', () => {
 										beforeEach(async () => {
 											await fastForward(10);
-											await updateRates([sETH], [baseRate.toString()]);
+											await updateRates([hETH], [baseRate.toString()]);
 										});
 										assertSpike({
 											from: hUSD,
-											to: sETH,
-											target: sETH,
+											to: hETH,
+											target: hETH,
 											factor: 1,
 											spikeExpected: true,
 										});
@@ -3824,7 +3824,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							describe('with a prior exchange from another user into the source', () => {
 								beforeEach(async () => {
-									await tribeone.exchange(hUSD, toUnit('1'), sETH, { from: account2 });
+									await tribeone.exchange(hUSD, toUnit('1'), hETH, { from: account2 });
 								});
 
 								assertBothSidesOfTheExchange();
@@ -3832,8 +3832,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 							describe('with a prior exchange from another user out of the source', () => {
 								beforeEach(async () => {
-									await sETHContract.issue(account2, toUnit('1'));
-									await tribeone.exchange(sETH, toUnit('1'), sAUD, { from: account2 });
+									await hETHContract.issue(account2, toUnit('1'));
+									await tribeone.exchange(hETH, toUnit('1'), sAUD, { from: account2 });
 								});
 
 								assertBothSidesOfTheExchange();
@@ -3842,23 +3842,23 @@ contract('Exchanger (spec tests)', async accounts => {
 					});
 
 					describe('settlement ignores deviations', () => {
-						updateRate({ target: sETH, rate: baseRate, resetCircuitBreaker: true });
+						updateRate({ target: hETH, rate: baseRate, resetCircuitBreaker: true });
 
-						describe('when a user exchange 100 hUSD into sETH', () => {
+						describe('when a user exchange 100 hUSD into hETH', () => {
 							beforeEach(async () => {
 								// Disable Dynamic Fee in settlement by setting rounds to 1
 								await setExchangeDynamicFeeRounds('1');
-								await tribeone.exchange(hUSD, toUnit('100'), sETH, { from: account1 });
+								await tribeone.exchange(hUSD, toUnit('100'), hETH, { from: account1 });
 							});
-							describe('and the sETH rate moves up by a factor of 2 to 200', () => {
-								updateRate({ target: sETH, rate: baseRate * 2 });
+							describe('and the hETH rate moves up by a factor of 2 to 200', () => {
+								updateRate({ target: hETH, rate: baseRate * 2 });
 
 								it('then settlementOwing is 0 for rebate and reclaim, with 1 entry', async () => {
 									const {
 										reclaimAmount,
 										rebateAmount,
 										numEntries,
-									} = await exchanger.settlementOwing(account1, sETH);
+									} = await exchanger.settlementOwing(account1, hETH);
 									assert.equal(reclaimAmount, '0');
 									assert.equal(rebateAmount, '0');
 									assert.equal(numEntries, '1');
@@ -3866,8 +3866,8 @@ contract('Exchanger (spec tests)', async accounts => {
 							});
 
 							describe('multiple entries to settle', () => {
-								describe('when the sETH rate moves down by 20%', () => {
-									updateRate({ target: sETH, rate: baseRate * 0.8, resetCircuitBreaker: true });
+								describe('when the hETH rate moves down by 20%', () => {
+									updateRate({ target: hETH, rate: baseRate * 0.8, resetCircuitBreaker: true });
 
 									describe('and the waiting period expires', () => {
 										beforeEach(async () => {
@@ -3880,34 +3880,34 @@ contract('Exchanger (spec tests)', async accounts => {
 												reclaimAmount,
 												rebateAmount,
 												numEntries,
-											} = await exchanger.settlementOwing(account1, sETH);
+											} = await exchanger.settlementOwing(account1, hETH);
 											assert.equal(reclaimAmount, '0');
 											// some amount close to the 0.25 rebate (after fees)
 											assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 											assert.equal(numEntries, '1');
 										});
 
-										describe('and the user makes another exchange into sETH', () => {
+										describe('and the user makes another exchange into hETH', () => {
 											beforeEach(async () => {
-												await tribeone.exchange(hUSD, toUnit('100'), sETH, { from: account1 });
+												await tribeone.exchange(hUSD, toUnit('100'), hETH, { from: account1 });
 											});
-											describe('and the sETH rate moves up by a factor of 2 to 200, causing the second entry to be skipped', () => {
-												updateRate({ target: sETH, rate: baseRate * 2, resetCircuitBreaker: true });
+											describe('and the hETH rate moves up by a factor of 2 to 200, causing the second entry to be skipped', () => {
+												updateRate({ target: hETH, rate: baseRate * 2, resetCircuitBreaker: true });
 
 												it('then settlementOwing is existing rebate with 0 reclaim, with 2 entries', async () => {
 													const {
 														reclaimAmount,
 														rebateAmount,
 														numEntries,
-													} = await exchanger.settlementOwing(account1, sETH);
+													} = await exchanger.settlementOwing(account1, hETH);
 													assert.equal(reclaimAmount, '0');
 													assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 													assert.equal(numEntries, '2');
 												});
 											});
 
-											describe('and the sETH rate goes back up 25% (from 80 to 100)', () => {
-												updateRate({ target: sETH, rate: baseRate, resetCircuitBreaker: true });
+											describe('and the hETH rate goes back up 25% (from 80 to 100)', () => {
+												updateRate({ target: hETH, rate: baseRate, resetCircuitBreaker: true });
 												describe('and the waiting period expires', () => {
 													beforeEach(async () => {
 														// end waiting period
@@ -3918,20 +3918,20 @@ contract('Exchanger (spec tests)', async accounts => {
 															reclaimAmount,
 															rebateAmount,
 															numEntries,
-														} = await exchanger.settlementOwing(account1, sETH);
+														} = await exchanger.settlementOwing(account1, hETH);
 														assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
 														assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 														assert.equal(numEntries, '2');
 													});
-													describe('and the user makes another exchange into sETH', () => {
+													describe('and the user makes another exchange into hETH', () => {
 														beforeEach(async () => {
-															await tribeone.exchange(hUSD, toUnit('100'), sETH, {
+															await tribeone.exchange(hUSD, toUnit('100'), hETH, {
 																from: account1,
 															});
 														});
-														describe('and the sETH rate moves down by a factor of 2 to 50, causing the third entry to be skipped', () => {
+														describe('and the hETH rate moves down by a factor of 2 to 50, causing the third entry to be skipped', () => {
 															updateRate({
-																target: sETH,
+																target: hETH,
 																rate: baseRate * 0.5,
 																resetCircuitBreaker: true,
 															});
@@ -3941,7 +3941,7 @@ contract('Exchanger (spec tests)', async accounts => {
 																	reclaimAmount,
 																	rebateAmount,
 																	numEntries,
-																} = await exchanger.settlementOwing(account1, sETH);
+																} = await exchanger.settlementOwing(account1, hETH);
 																assert.bnClose(reclaimAmount, toUnit('0.25'), (1e16).toString());
 																assert.bnClose(rebateAmount, toUnit('0.25'), (1e16).toString());
 																assert.equal(numEntries, '3');
@@ -3962,7 +3962,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 								beforeEach(async () => {
 									aggregator = await MockAggregator.new({ from: owner });
-									await exchangeRates.addAggregator(sETH, aggregator.address, { from: owner });
+									await exchangeRates.addAggregator(hETH, aggregator.address, { from: owner });
 								});
 
 								describe('and the aggregator has a rate (so the exchange succeeds)', () => {
@@ -3974,9 +3974,9 @@ contract('Exchanger (spec tests)', async accounts => {
 									});
 									describe('when a user exchanges out of the aggregated rate into hUSD', () => {
 										beforeEach(async () => {
-											// give the user some sETH
-											await sETHContract.issue(account1, toUnit('1'));
-											await tribeone.exchange(sETH, toUnit('1'), hUSD, { from: account1 });
+											// give the user some hETH
+											await hETHContract.issue(account1, toUnit('1'));
+											await tribeone.exchange(hETH, toUnit('1'), hUSD, { from: account1 });
 										});
 										describe('and the aggregated rate becomes 0', () => {
 											beforeEach(async () => {
@@ -4048,7 +4048,7 @@ contract('Exchanger (spec tests)', async accounts => {
 									});
 									describe('when a user exchanges into the aggregated rate from hUSD', () => {
 										beforeEach(async () => {
-											await tribeone.exchange(hUSD, toUnit('1'), sETH, { from: account1 });
+											await tribeone.exchange(hUSD, toUnit('1'), hETH, { from: account1 });
 										});
 										describe('and the aggregated rate becomes 0', () => {
 											beforeEach(async () => {
@@ -4060,7 +4060,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													reclaimAmount,
 													rebateAmount,
 													numEntries,
-												} = await exchanger.settlementOwing(account1, sETH);
+												} = await exchanger.settlementOwing(account1, hETH);
 												assert.equal(reclaimAmount, '0');
 												assert.equal(rebateAmount, '0');
 												assert.equal(numEntries, '1');
@@ -4071,7 +4071,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													await fastForward(await systemSettings.waitingPeriodSecs());
 												});
 												it('then the user can settle with no impact', async () => {
-													const txn = await exchanger.settle(account1, sETH, { from: account1 });
+													const txn = await exchanger.settle(account1, hETH, { from: account1 });
 													// Note: no need to decode the logs as they are emitted off the target contract Exchanger
 													assert.equal(txn.logs.length, 1); // one settlement entry
 													assert.eventEqual(txn, 'ExchangeEntrySettled', {
@@ -4095,7 +4095,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													reclaimAmount,
 													rebateAmount,
 													numEntries,
-												} = await exchanger.settlementOwing(account1, sETH);
+												} = await exchanger.settlementOwing(account1, hETH);
 												assert.equal(reclaimAmount, '0');
 												assert.equal(rebateAmount, '0');
 												assert.equal(numEntries, '1');
@@ -4107,7 +4107,7 @@ contract('Exchanger (spec tests)', async accounts => {
 													await fastForward(await systemSettings.waitingPeriodSecs());
 												});
 												it('then the user can settle with no impact', async () => {
-													const txn = await exchanger.settle(account1, sETH, { from: account1 });
+													const txn = await exchanger.settle(account1, hETH, { from: account1 });
 													// Note: no need to decode the logs as they are emitted off the target contract Exchanger
 													assert.equal(txn.logs.length, 1); // one settlement entry
 													assert.eventEqual(txn, 'ExchangeEntrySettled', {
@@ -4127,13 +4127,13 @@ contract('Exchanger (spec tests)', async accounts => {
 		});
 	};
 
-	const itSetsExchangeFeeRateForSynths = () => {
-		describe('Given synth exchange fee rates to set', async () => {
+	const itSetsExchangeFeeRateForTribes = () => {
+		describe('Given tribe exchange fee rates to set', async () => {
 			const fxBIPS = toUnit('0.01');
 			const cryptoBIPS = toUnit('0.03');
 			const empty = toBytes32('');
 
-			describe('Given synth exchange fee rates to update', async () => {
+			describe('Given tribe exchange fee rates to update', async () => {
 				const newFxBIPS = toUnit('0.02');
 				const newCryptoBIPS = toUnit('0.04');
 
@@ -4142,42 +4142,42 @@ contract('Exchanger (spec tests)', async accounts => {
 					await setExchangeDynamicFeeRounds('1');
 
 					// Store multiple rates
-					await setExchangeFeeRateForSynths({
+					await setExchangeFeeRateForTribes({
 						owner,
 						systemSettings,
-						synthKeys: [hUSD, sAUD, sBTC, sETH],
+						tribeKeys: [hUSD, sAUD, hBTC, hETH],
 						exchangeFeeRates: [fxBIPS, fxBIPS, cryptoBIPS, cryptoBIPS],
 					});
 				});
 
 				it('when 1 exchange rate to update then overwrite existing rate', async () => {
-					await setExchangeFeeRateForSynths({
+					await setExchangeFeeRateForTribes({
 						owner,
 						systemSettings,
-						synthKeys: [hUSD],
+						tribeKeys: [hUSD],
 						exchangeFeeRates: [newFxBIPS],
 					});
-					const sUSDRate = await exchanger.feeRateForExchange(empty, hUSD, { from: owner });
-					assert.bnEqual(sUSDRate, newFxBIPS);
+					const hUSDRate = await exchanger.feeRateForExchange(empty, hUSD, { from: owner });
+					assert.bnEqual(hUSDRate, newFxBIPS);
 				});
 
 				it('when multiple exchange rates then store them to be readable', async () => {
 					// Update multiple rates
-					await setExchangeFeeRateForSynths({
+					await setExchangeFeeRateForTribes({
 						owner,
 						systemSettings,
-						synthKeys: [hUSD, sAUD, sBTC, sETH],
+						tribeKeys: [hUSD, sAUD, hBTC, hETH],
 						exchangeFeeRates: [newFxBIPS, newFxBIPS, newCryptoBIPS, newCryptoBIPS],
 					});
 					// Read all rates
 					const sAUDRate = await exchanger.feeRateForExchange(empty, sAUD, { from: owner });
 					assert.bnEqual(sAUDRate, newFxBIPS);
-					const sUSDRate = await exchanger.feeRateForExchange(empty, hUSD, { from: owner });
-					assert.bnEqual(sUSDRate, newFxBIPS);
-					const sBTCRate = await exchanger.feeRateForExchange(empty, sBTC, { from: owner });
-					assert.bnEqual(sBTCRate, newCryptoBIPS);
-					const sETHRate = await exchanger.feeRateForExchange(empty, sETH, { from: owner });
-					assert.bnEqual(sETHRate, newCryptoBIPS);
+					const hUSDRate = await exchanger.feeRateForExchange(empty, hUSD, { from: owner });
+					assert.bnEqual(hUSDRate, newFxBIPS);
+					const hBTCRate = await exchanger.feeRateForExchange(empty, hBTC, { from: owner });
+					assert.bnEqual(hBTCRate, newCryptoBIPS);
+					const hETHRate = await exchanger.feeRateForExchange(empty, hETH, { from: owner });
+					assert.bnEqual(hETHRate, newCryptoBIPS);
 				});
 			});
 		});
@@ -4189,8 +4189,8 @@ contract('Exchanger (spec tests)', async accounts => {
 
 	describe('With L1 configuration (Tribeone, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
-			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
-			const synths = ['hUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
+			const VirtualTribeMastercopy = artifacts.require('VirtualTribeMastercopy');
+			const tribes = ['hUSD', 'hETH', 'sEUR', 'sAUD', 'hBTC', 'iBTC', 'sTRX'];
 
 			({
 				Exchanger: exchanger,
@@ -4199,11 +4199,11 @@ contract('Exchanger (spec tests)', async accounts => {
 				ExchangeState: exchangeState,
 				FeePool: feePool,
 				SystemStatus: systemStatus,
-				SynthsUSD: sUSDContract,
-				SynthsBTC: sBTCContract,
-				SynthsEUR: sEURContract,
-				SynthsAUD: sAUDContract,
-				SynthsETH: sETHContract,
+				TribehUSD: hUSDContract,
+				TribehBTC: hBTCContract,
+				TribesEUR: sEURContract,
+				TribesAUD: sAUDContract,
+				TribehETH: hETHContract,
 				SystemSettings: systemSettings,
 				DelegateApprovals: delegateApprovals,
 				AddressResolver: resolver,
@@ -4213,7 +4213,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				FlexibleStorage: flexibleStorage,
 			} = await setupAllContracts({
 				accounts,
-				synths: synths,
+				tribes: tribes,
 				contracts: [
 					// L1 specific
 					'Tribeone',
@@ -4233,34 +4233,34 @@ contract('Exchanger (spec tests)', async accounts => {
 					'CollateralManager',
 				],
 				mocks: {
-					// Use a real VirtualSynthMastercopy so the spec tests can interrogate deployed vSynths
-					VirtualSynthMastercopy: await VirtualSynthMastercopy.new(),
+					// Use a real VirtualTribeMastercopy so the spec tests can interrogate deployed vTribes
+					VirtualTribeMastercopy: await VirtualTribeMastercopy.new(),
 				},
 			}));
 
-			await setupPriceAggregators(exchangeRates, owner, synths.map(toBytes32));
+			await setupPriceAggregators(exchangeRates, owner, tribes.map(toBytes32));
 
 			amountIssued = toUnit('1000');
 
 			// give the first two accounts 1000 hUSD each
-			await sUSDContract.issue(account1, amountIssued);
-			await sUSDContract.issue(account2, amountIssued);
+			await hUSDContract.issue(account1, amountIssued);
+			await hUSDContract.issue(account2, amountIssued);
 		});
 
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			const keys = [sAUD, sEUR, HAKA, sETH, sBTC, iBTC];
+			const keys = [sAUD, sEUR, HAKA, hETH, hBTC, iBTC];
 			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
 			await setupPriceAggregators(exchangeRates, owner, keys);
 			await updateRates(keys, rates);
 
 			exchangeFeeRate = toUnit('0.005');
-			await setExchangeFeeRateForSynths({
+			await setExchangeFeeRateForTribes({
 				owner,
 				systemSettings,
-				synthKeys,
-				exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+				tribeKeys,
+				exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 			});
 		});
 
@@ -4288,12 +4288,12 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		itPricesSpikeDeviation();
 
-		itSetsExchangeFeeRateForSynths();
+		itSetsExchangeFeeRateForTribes();
 	});
 
 	describe('With L2 configuration (MintableTribeone, Exchanger, ExchangeRates)', () => {
 		before(async () => {
-			const synths = ['hUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
+			const tribes = ['hUSD', 'hETH', 'sEUR', 'sAUD', 'hBTC', 'iBTC', 'sTRX'];
 			({
 				Exchanger: exchanger,
 				Tribeone: tribeone,
@@ -4301,11 +4301,11 @@ contract('Exchanger (spec tests)', async accounts => {
 				ExchangeState: exchangeState,
 				FeePool: feePool,
 				SystemStatus: systemStatus,
-				SynthsUSD: sUSDContract,
-				SynthsBTC: sBTCContract,
-				SynthsEUR: sEURContract,
-				SynthsAUD: sAUDContract,
-				SynthsETH: sETHContract,
+				TribehUSD: hUSDContract,
+				TribehBTC: hBTCContract,
+				TribesEUR: sEURContract,
+				TribesAUD: sAUDContract,
+				TribehETH: hETHContract,
 				SystemSettings: systemSettings,
 				DelegateApprovals: delegateApprovals,
 				AddressResolver: resolver,
@@ -4315,7 +4315,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				FlexibleStorage: flexibleStorage,
 			} = await setupAllContracts({
 				accounts,
-				synths: synths,
+				tribes: tribes,
 				contracts: [
 					// L2 specific
 					'MintableTribeone',
@@ -4336,30 +4336,30 @@ contract('Exchanger (spec tests)', async accounts => {
 				],
 			}));
 
-			await setupPriceAggregators(exchangeRates, owner, synths.map(toBytes32));
+			await setupPriceAggregators(exchangeRates, owner, tribes.map(toBytes32));
 
 			amountIssued = toUnit('1000');
 
 			// give the first two accounts 1000 hUSD each
-			await sUSDContract.issue(account1, amountIssued);
-			await sUSDContract.issue(account2, amountIssued);
+			await hUSDContract.issue(account1, amountIssued);
+			await hUSDContract.issue(account2, amountIssued);
 		});
 
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			const keys = [sAUD, sEUR, HAKA, sETH, sBTC, iBTC];
+			const keys = [sAUD, sEUR, HAKA, hETH, hBTC, iBTC];
 			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
 			await setupPriceAggregators(exchangeRates, owner, keys);
 			await updateRates(keys, rates);
 
 			// set a 0.5% exchange fee rate (1/200)
 			exchangeFeeRate = toUnit('0.005');
-			await setExchangeFeeRateForSynths({
+			await setExchangeFeeRateForTribes({
 				owner,
 				systemSettings,
-				synthKeys,
-				exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+				tribeKeys,
+				exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 			});
 		});
 
@@ -4387,7 +4387,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		itPricesSpikeDeviation();
 
-		itSetsExchangeFeeRateForSynths();
+		itSetsExchangeFeeRateForTribes();
 	});
 
 	/**
@@ -4395,8 +4395,8 @@ contract('Exchanger (spec tests)', async accounts => {
 	 */
 	describe('With Direct Integration overrides configuration (Tribeone, ExchangerWithFeeRecAlternatives, ExchangeRatesWithDexPricing)', () => {
 		before(async () => {
-			const VirtualSynthMastercopy = artifacts.require('VirtualSynthMastercopy');
-			const synths = ['hUSD', 'sETH', 'sEUR', 'sAUD', 'sBTC', 'iBTC', 'sTRX'];
+			const VirtualTribeMastercopy = artifacts.require('VirtualTribeMastercopy');
+			const tribes = ['hUSD', 'hETH', 'sEUR', 'sAUD', 'hBTC', 'iBTC', 'sTRX'];
 
 			({
 				Exchanger: exchanger,
@@ -4406,11 +4406,11 @@ contract('Exchanger (spec tests)', async accounts => {
 				ExchangeState: exchangeState,
 				FeePool: feePool,
 				SystemStatus: systemStatus,
-				SynthsUSD: sUSDContract,
-				SynthsBTC: sBTCContract,
-				SynthsEUR: sEURContract,
-				SynthsAUD: sAUDContract,
-				SynthsETH: sETHContract,
+				TribehUSD: hUSDContract,
+				TribehBTC: hBTCContract,
+				TribesEUR: sEURContract,
+				TribesAUD: sAUDContract,
+				TribehETH: hETHContract,
 				SystemSettings: systemSettings,
 				DelegateApprovals: delegateApprovals,
 				AddressResolver: resolver,
@@ -4420,7 +4420,7 @@ contract('Exchanger (spec tests)', async accounts => {
 				FlexibleStorage: flexibleStorage,
 			} = await setupAllContracts({
 				accounts,
-				synths: synths,
+				tribes: tribes,
 				contracts: [
 					// L1 specific
 					'Tribeone',
@@ -4441,18 +4441,18 @@ contract('Exchanger (spec tests)', async accounts => {
 					'CollateralManager',
 				],
 				mocks: {
-					// Use a real VirtualSynthMastercopy so the spec tests can interrogate deployed vSynths
-					VirtualSynthMastercopy: await VirtualSynthMastercopy.new(),
+					// Use a real VirtualTribeMastercopy so the spec tests can interrogate deployed vTribes
+					VirtualTribeMastercopy: await VirtualTribeMastercopy.new(),
 				},
 			}));
 
-			await setupPriceAggregators(exchangeRates, owner, synths.map(toBytes32));
+			await setupPriceAggregators(exchangeRates, owner, tribes.map(toBytes32));
 
 			amountIssued = toUnit('1000');
 
 			// give the first two accounts 1000 hUSD each
-			await sUSDContract.issue(account1, amountIssued);
-			await sUSDContract.issue(account2, amountIssued);
+			await hUSDContract.issue(account1, amountIssued);
+			await hUSDContract.issue(account2, amountIssued);
 		});
 
 		// set a bunch of fake systemsettings that will surely break the usual tests if not
@@ -4465,7 +4465,7 @@ contract('Exchanger (spec tests)', async accounts => {
 			const realExchangeDynamicFeeThreshold = await systemSettings.exchangeDynamicFeeThreshold();
 			const realExchangeDynamicFeeWeightDecay = await systemSettings.exchangeDynamicFeeWeightDecay();
 
-			for (const token of [hUSD, sAUD, sEUR, HAKA, sBTC, iBTC, sETH, iETH]) {
+			for (const token of [hUSD, sAUD, sEUR, HAKA, hBTC, iBTC, hETH, iETH]) {
 				const overrideParams = [ethers.utils.formatBytes32String('')];
 				overrideParams.push(realDexPriceAggregator);
 				overrideParams.push(await systemSettings.atomicEquivalentForDexPricing(token));
@@ -4494,7 +4494,7 @@ contract('Exchanger (spec tests)', async accounts => {
 
 				overrideParams.push(await systemSettings.exchangeFeeRate(token));
 				if (!overrideParams[overrideParams.length - 1].isZero()) {
-					await systemSettings.setExchangeFeeRateForSynths([token], [800], { from: owner });
+					await systemSettings.setExchangeFeeRateForTribes([token], [800], { from: owner });
 				}
 
 				overrideParams.push(realExchangeMaxDynamicFee);
@@ -4522,17 +4522,17 @@ contract('Exchanger (spec tests)', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			const keys = [sAUD, sEUR, HAKA, sETH, sBTC, iBTC];
+			const keys = [sAUD, sEUR, HAKA, hETH, hBTC, iBTC];
 			const rates = ['0.5', '2', '1', '100', '5000', '5000'].map(toUnit);
 			await setupPriceAggregators(exchangeRates, owner, keys);
 			await updateRates(keys, rates);
 
 			exchangeFeeRate = toUnit('0.005');
-			await setExchangeFeeRateForSynths({
+			await setExchangeFeeRateForTribes({
 				owner,
 				systemSettings,
-				synthKeys,
-				exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+				tribeKeys,
+				exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 			});
 		});
 
@@ -4560,6 +4560,6 @@ contract('Exchanger (spec tests)', async accounts => {
 
 		itPricesSpikeDeviation();
 
-		itSetsExchangeFeeRateForSynths();
+		itSetsExchangeFeeRateForTribes();
 	});
 });

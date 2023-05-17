@@ -424,6 +424,6 @@ module.exports = {
 				'-p, --provider-url <value>',
 				'Ethereum network provider URL. If default, will use PROVIDER_URL found in the .env file.'
 			)
-			.option('--etherscan-address-csv <file>', 'CSV of all addresses to scan', 'haka-addrs.csv')
+			.option('--etherscan-address-csv <file>', 'CSV of all addresses to scan', 'snx-addrs.csv')
 			.action(initiateLiquidatorRewards),
 };

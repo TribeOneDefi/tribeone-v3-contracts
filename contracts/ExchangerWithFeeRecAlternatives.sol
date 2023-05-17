@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
-
 // Inheritance
 import "./Exchanger.sol";
 
@@ -10,9 +9,9 @@ import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IDirectIntegrationManager.sol";
 import "./interfaces/IERC20.sol";
 
-interface IVirtualSynthInternal {
+interface IVirtualTribeInternal {
     function initialize(
-        IERC20 _synth,
+        IERC20 _tribe,
         IAddressResolver _resolver,
         address _recipient,
         uint _amount,
@@ -37,12 +36,12 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_VIRTUALSYNTH_MASTERCOPY = "VirtualSynthMastercopy";
+    bytes32 private constant CONTRACT_VIRTUALTRIBEONE_MASTERCOPY = "VirtualTribeMastercopy";
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = Exchanger.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](1);
-        newAddresses[0] = CONTRACT_VIRTUALSYNTH_MASTERCOPY;
+        newAddresses[0] = CONTRACT_VIRTUALTRIBEONE_MASTERCOPY;
         addresses = combineArrays(existingAddresses, newAddresses);
     }
 
@@ -101,7 +100,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         address destinationAddress,
         bytes32 trackingCode,
         uint minAmount
-    ) external onlyTribeoneorSynth returns (uint amountReceived) {
+    ) external onlyTribeoneorTribe returns (uint amountReceived) {
         uint fee;
         (amountReceived, fee) = _exchangeAtomically(
             from,
@@ -122,25 +121,25 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
     /* ========== INTERNAL FUNCTIONS ========== */
 
-    function _virtualSynthMastercopy() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_VIRTUALSYNTH_MASTERCOPY);
+    function _virtualTribeMastercopy() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_VIRTUALTRIBEONE_MASTERCOPY);
     }
 
-    function _createVirtualSynth(
-        IERC20 synth,
+    function _createVirtualTribe(
+        IERC20 tribe,
         address recipient,
         uint amount,
         bytes32 currencyKey
-    ) internal returns (IVirtualSynth) {
-        // prevent inverse synths from being allowed due to purgeability
-        require(currencyKey[0] != 0x69, "Cannot virtualize this synth");
+    ) internal returns (IVirtualTribe) {
+        // prevent inverse tribes from being allowed due to purgeability
+        require(currencyKey[0] != 0x69, "Cannot virtualize this tribe");
 
-        IVirtualSynthInternal vSynth =
-            IVirtualSynthInternal(_cloneAsMinimalProxy(_virtualSynthMastercopy(), "Could not create new vSynth"));
-        vSynth.initialize(synth, resolver, recipient, amount, currencyKey);
-        emit VirtualSynthCreated(address(synth), recipient, address(vSynth), currencyKey, amount);
+        IVirtualTribeInternal vTribe =
+            IVirtualTribeInternal(_cloneAsMinimalProxy(_virtualTribeMastercopy(), "Could not create new vTribe"));
+        vTribe.initialize(tribe, resolver, recipient, amount, currencyKey);
+        emit VirtualTribeCreated(address(tribe), recipient, address(vTribe), currencyKey, amount);
 
-        return IVirtualSynth(address(vSynth));
+        return IVirtualTribe(address(vTribe));
     }
 
     function _exchangeAtomically(
@@ -164,8 +163,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             if (!_ensureCanExchange(sourceCurrencyKey, destinationCurrencyKey, sourceAmount)) {
                 return (0, 0);
             }
-            require(!exchangeRates().synthTooVolatileForAtomicExchange(sourceSettings), "Src synth too volatile");
-            require(!exchangeRates().synthTooVolatileForAtomicExchange(destinationSettings), "Dest synth too volatile");
+            require(!exchangeRates().tribeTooVolatileForAtomicExchange(sourceSettings), "Src tribe too volatile");
+            require(!exchangeRates().tribeTooVolatileForAtomicExchange(destinationSettings), "Dest tribe too volatile");
 
             sourceAmountAfterSettlement = _settleAndCalcSourceAmountRemaining(sourceAmount, from, sourceCurrencyKey);
 
@@ -180,7 +179,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
             uint systemConvertedAmount;
 
-            // Note: also ensures the given synths are allowed to be atomically exchanged
+            // Note: also ensures the given tribes are allowed to be atomically exchanged
             (
                 amountReceived, // output amount with fee taken out (denominated in dest currency)
                 fee, // fee amount (denominated in dest currency)
@@ -207,7 +206,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
                 // Use after-settled amount as this is amount converted (not sourceAmount)
                 sourceSusdValue = sourceAmountAfterSettlement;
             } else if (destinationCurrencyKey == hUSD) {
-                // In this case the systemConvertedAmount would be the fee-free hUSD value of the source synth
+                // In this case the systemConvertedAmount would be the fee-free hUSD value of the source tribe
                 sourceSusdValue = systemConvertedAmount;
             } else {
                 // Otherwise, convert source to hUSD value
@@ -235,7 +234,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             destinationCurrencyKey,
             amountReceived,
             destinationAddress,
-            false // no vsynths
+            false // no vtribes
         );
 
         // Remit the fee if required
@@ -244,8 +243,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             // Note: `fee` is being reused to avoid stack too deep errors.
             fee = exchangeRates().effectiveValue(destinationCurrencyKey, fee, hUSD);
 
-            // Remit the fee in sUSDs
-            issuer().synths(hUSD).issue(feePool().FEE_ADDRESS(), fee);
+            // Remit the fee in hUSDs
+            issuer().tribes(hUSD).issue(feePool().FEE_ADDRESS(), fee);
 
             // Tell the fee pool about this
             feePool().recordFeePaid(fee);
@@ -255,7 +254,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
 
         // Note: this update of the debt snapshot will not be accurate because the atomic exchange
         // was executed with a different rate than the system rate. To be perfect, issuance data,
-        // priced in system rates, should have been adjusted on the src and dest synth.
+        // priced in system rates, should have been adjusted on the src and dest tribe.
         // The debt pool is expected to be deprecated soon, and so we don't bother with being
         // perfect here. For now, an inaccuracy will slowly accrue over time with increasing atomic
         // exchange volume.
@@ -264,8 +263,8 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
             [systemSourceRate, systemDestinationRate]
         );
 
-        // Let the DApps know there was a Synth exchange
-        ITribeoneInternal(address(tribeone())).emitSynthExchange(
+        // Let the DApps know there was a Tribe exchange
+        ITribeoneInternal(address(tribeone())).emitTribeExchange(
             from,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
@@ -275,7 +274,7 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         );
 
         // Emit separate event to track atomic exchanges
-        ITribeoneInternal(address(tribeone())).emitAtomicSynthExchange(
+        ITribeoneInternal(address(tribeone())).emitAtomicTribeExchange(
             from,
             sourceCurrencyKey,
             sourceAmountAfterSettlement,
@@ -340,10 +339,10 @@ contract ExchangerWithFeeRecAlternatives is MinimalProxyFactory, Exchanger {
         fee = destinationAmount.sub(amountReceived);
     }
 
-    event VirtualSynthCreated(
-        address indexed synth,
+    event VirtualTribeCreated(
+        address indexed tribe,
         address indexed recipient,
-        address vSynth,
+        address vTribe,
         bytes32 currencyKey,
         uint amount
     );

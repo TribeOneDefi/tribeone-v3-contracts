@@ -3,7 +3,6 @@ pragma solidity ^0.5.16;
 // Libraries
 import "./SafeDecimalMath.sol";
 
-
 // Inheritance
 import "./BaseDebtCache.sol";
 
@@ -20,29 +19,29 @@ contract DebtCache is BaseDebtCache {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    // This function exists in case a synth is ever somehow removed without its snapshot being updated.
-    function purgeCachedSynthDebt(bytes32 currencyKey) external onlyOwner {
-        require(issuer().synths(currencyKey) == ISynth(0), "Synth exists");
-        delete _cachedSynthDebt[currencyKey];
+    // This function exists in case a tribe is ever somehow removed without its snapshot being updated.
+    function purgeCachedTribeDebt(bytes32 currencyKey) external onlyOwner {
+        require(issuer().tribes(currencyKey) == ITribe(0), "Tribe exists");
+        delete _cachedTribeDebt[currencyKey];
     }
 
     function takeDebtSnapshot() external requireSystemActiveIfNotOwner {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
-        (uint[] memory values, uint futuresDebt, uint excludedDebt, bool isInvalid) = _currentSynthDebts(currencyKeys);
+        (uint[] memory values, uint futuresDebt, uint excludedDebt, bool isInvalid) = _currentTribeDebts(currencyKeys);
 
-        // The total HAKA-backed debt is the debt of futures markets plus the debt of circulating synths.
-        uint hakaCollateralDebt = futuresDebt;
-        _cachedSynthDebt[FUTURES_DEBT_KEY] = futuresDebt;
+        // The total HAKA-backed debt is the debt of futures markets plus the debt of circulating tribes.
+        uint snxCollateralDebt = futuresDebt;
+        _cachedTribeDebt[FUTURES_DEBT_KEY] = futuresDebt;
         uint numValues = values.length;
         for (uint i; i < numValues; i++) {
             uint value = values[i];
-            hakaCollateralDebt = hakaCollateralDebt.add(value);
-            _cachedSynthDebt[currencyKeys[i]] = value;
+            snxCollateralDebt = snxCollateralDebt.add(value);
+            _cachedTribeDebt[currencyKeys[i]] = value;
         }
 
         // Subtract out the excluded non-HAKA backed debt from our total
-        _cachedSynthDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
-        uint newDebt = hakaCollateralDebt.floorsub(excludedDebt);
+        _cachedTribeDebt[EXCLUDED_DEBT_KEY] = excludedDebt;
+        uint newDebt = snxCollateralDebt.floorsub(excludedDebt);
         _cachedDebt = newDebt;
         _cacheTimestamp = block.timestamp;
         emit DebtCacheUpdated(newDebt);
@@ -52,24 +51,24 @@ contract DebtCache is BaseDebtCache {
         _updateDebtCacheValidity(isInvalid);
     }
 
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
+    function updateCachedTribeDebts(bytes32[] calldata currencyKeys) external requireSystemActiveIfNotOwner {
         (uint[] memory rates, bool anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        _updateCachedSynthDebtsWithRates(currencyKeys, rates, anyRateInvalid);
+        _updateCachedTribeDebtsWithRates(currencyKeys, rates, anyRateInvalid);
     }
 
-    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
-        bytes32[] memory synthKeyArray = new bytes32[](1);
-        synthKeyArray[0] = currencyKey;
-        uint[] memory synthRateArray = new uint[](1);
-        synthRateArray[0] = currencyRate;
-        _updateCachedSynthDebtsWithRates(synthKeyArray, synthRateArray, false);
+    function updateCachedTribeDebtWithRate(bytes32 currencyKey, uint currencyRate) external onlyIssuer {
+        bytes32[] memory tribeKeyArray = new bytes32[](1);
+        tribeKeyArray[0] = currencyKey;
+        uint[] memory tribeRateArray = new uint[](1);
+        tribeRateArray[0] = currencyRate;
+        _updateCachedTribeDebtsWithRates(tribeKeyArray, tribeRateArray, false);
     }
 
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
+    function updateCachedTribeDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates)
         external
         onlyIssuerOrExchanger
     {
-        _updateCachedSynthDebtsWithRates(currencyKeys, currencyRates, false);
+        _updateCachedTribeDebtsWithRates(currencyKeys, currencyRates, false);
     }
 
     function updateDebtCacheValidity(bool currentlyInvalid) external onlyIssuer {
@@ -84,13 +83,13 @@ contract DebtCache is BaseDebtCache {
         _excludedIssuedDebt[currencyKey] = uint(newExcludedDebt);
     }
 
-    function updateCachedsUSDDebt(int amount) external onlyIssuer {
+    function updateCachedhUSDDebt(int amount) external onlyIssuer {
         uint delta = SafeDecimalMath.abs(amount);
         if (amount > 0) {
-            _cachedSynthDebt[hUSD] = _cachedSynthDebt[hUSD].add(delta);
+            _cachedTribeDebt[hUSD] = _cachedTribeDebt[hUSD].add(delta);
             _cachedDebt = _cachedDebt.add(delta);
         } else {
-            _cachedSynthDebt[hUSD] = _cachedSynthDebt[hUSD].sub(delta);
+            _cachedTribeDebt[hUSD] = _cachedTribeDebt[hUSD].sub(delta);
             _cachedDebt = _cachedDebt.sub(delta);
         }
 
@@ -106,8 +105,8 @@ contract DebtCache is BaseDebtCache {
         }
     }
 
-    // Updated the global debt according to a rate/supply change in a subset of issued synths.
-    function _updateCachedSynthDebtsWithRates(
+    // Updated the global debt according to a rate/supply change in a subset of issued tribes.
+    function _updateCachedTribeDebtsWithRates(
         bytes32[] memory currencyKeys,
         uint[] memory currentRates,
         bool anyRateIsInvalid
@@ -115,19 +114,19 @@ contract DebtCache is BaseDebtCache {
         uint numKeys = currencyKeys.length;
         require(numKeys == currentRates.length, "Input array lengths differ");
 
-        // Compute the cached and current debt sum for the subset of synths provided.
+        // Compute the cached and current debt sum for the subset of tribes provided.
         uint cachedSum;
         uint currentSum;
-        uint[] memory currentValues = _issuedSynthValues(currencyKeys, currentRates);
+        uint[] memory currentValues = _issuedTribeValues(currencyKeys, currentRates);
 
         for (uint i = 0; i < numKeys; i++) {
             bytes32 key = currencyKeys[i];
-            uint currentSynthDebt = currentValues[i];
+            uint currentTribeDebt = currentValues[i];
 
-            cachedSum = cachedSum.add(_cachedSynthDebt[key]);
-            currentSum = currentSum.add(currentSynthDebt);
+            cachedSum = cachedSum.add(_cachedTribeDebt[key]);
+            currentSum = currentSum.add(currentTribeDebt);
 
-            _cachedSynthDebt[key] = currentSynthDebt;
+            _cachedTribeDebt[key] = currentTribeDebt;
         }
 
         // Apply the debt update.

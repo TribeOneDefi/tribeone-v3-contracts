@@ -39,7 +39,7 @@ const getSipSources = ({ sip, useOvm = false }) => {
 
 const prepareDeploy = async ({
 	network = DEFAULTS.network,
-	synthsToAdd = [],
+	tribesToAdd = [],
 	useOvm,
 	useSips,
 	useReleases = true,
@@ -49,19 +49,19 @@ const prepareDeploy = async ({
 	const deploymentPath = getDeploymentPathForNetwork({ network, useOvm });
 	ensureDeploymentPath(deploymentPath);
 
-	// Get config and synths
-	const { config, configFile, synths, synthsFile, futuresMarkets } = loadAndCheckRequiredSources({
+	// Get config and tribes
+	const { config, configFile, tribes, tribesFile, futuresMarkets } = loadAndCheckRequiredSources({
 		deploymentPath,
 		network,
 	});
 
-	// now prepare synths, if any
-	if (synthsToAdd.length) {
-		fs.writeFileSync(synthsFile, stringify(synths.concat(synthsToAdd)));
+	// now prepare tribes, if any
+	if (tribesToAdd.length) {
+		fs.writeFileSync(tribesFile, stringify(tribes.concat(tribesToAdd)));
 		console.log(
-			yellow(synthsFile),
+			yellow(tribesFile),
 			gray(
-				`updated for ${yellow(network)} with synths ${yellow(synthsToAdd.map(({ name }) => name))}.`
+				`updated for ${yellow(network)} with tribes ${yellow(tribesToAdd.map(({ name }) => name))}.`
 			)
 		);
 	}

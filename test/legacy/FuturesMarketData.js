@@ -11,7 +11,7 @@ const FuturesMarket = artifacts.require('FuturesMarket');
 contract('FuturesMarketData', accounts => {
 	let addressResolver,
 		futuresMarket,
-		sethMarket,
+		hethMarket,
 		futuresMarketManager,
 		futuresMarketSettings,
 		futuresMarketData,
@@ -22,8 +22,8 @@ contract('FuturesMarketData', accounts => {
 		marketKey,
 		baseAsset;
 	const keySuffix = '-perp';
-	const newMarketKey = toBytes32('sETH' + keySuffix);
-	const newAssetKey = toBytes32('sETH');
+	const newMarketKey = toBytes32('hETH' + keySuffix);
+	const newAssetKey = toBytes32('hETH');
 
 	const owner = accounts[1];
 	const trader1 = accounts[2];
@@ -49,11 +49,11 @@ contract('FuturesMarketData', accounts => {
 			FuturesMarketData: futuresMarketData,
 			ExchangeRates: exchangeRates,
 			CircuitBreaker: circuitBreaker,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'sETH', 'sLINK'],
+			tribes: ['hUSD', 'hBTC', 'hETH', 'sLINK'],
 			contracts: [
 				'FuturesMarketManager',
 				'FuturesMarketSettings',
@@ -71,7 +71,7 @@ contract('FuturesMarketData', accounts => {
 		}));
 
 		// Add a couple of additional markets.
-		for (const symbol of ['sETH', 'sLINK']) {
+		for (const symbol of ['hETH', 'sLINK']) {
 			const assetKey = toBytes32(symbol);
 			const marketKey = toBytes32(symbol + keySuffix);
 
@@ -133,10 +133,10 @@ contract('FuturesMarketData', accounts => {
 		await futuresMarket.transferMargin(toUnit('4000'), { from: trader3 });
 		await futuresMarket.modifyPosition(toUnit('1.25'), { from: trader3 });
 
-		sethMarket = await FuturesMarket.at(await futuresMarketManager.marketForKey(newMarketKey));
+		hethMarket = await FuturesMarket.at(await futuresMarketManager.marketForKey(newMarketKey));
 
-		await sethMarket.transferMargin(toUnit('3000'), { from: trader3 });
-		await sethMarket.modifyPosition(toUnit('4'), { from: trader3 });
+		await hethMarket.transferMargin(toUnit('3000'), { from: trader3 });
+		await hethMarket.modifyPosition(toUnit('4'), { from: trader3 });
 		await setPrice(newAssetKey, toUnit('999'));
 	});
 
@@ -230,7 +230,7 @@ contract('FuturesMarketData', accounts => {
 
 		it('By market key', async () => {
 			const details = await futuresMarketData.positionDetails(futuresMarket.address, trader3);
-			const details2 = await futuresMarketData.positionDetails(sethMarket.address, trader3);
+			const details2 = await futuresMarketData.positionDetails(hethMarket.address, trader3);
 			const detailsByAsset = await futuresMarketData.positionDetailsForMarketKey(
 				marketKey,
 				trader3
@@ -247,31 +247,31 @@ contract('FuturesMarketData', accounts => {
 
 	describe('Market summaries', () => {
 		it('For markets', async () => {
-			const sETHSummary = (await futuresMarketData.marketSummariesForKeys([newMarketKey]))[0];
+			const hETHSummary = (await futuresMarketData.marketSummariesForKeys([newMarketKey]))[0];
 
-			const params = await futuresMarketData.parameters(newMarketKey); // sETH
+			const params = await futuresMarketData.parameters(newMarketKey); // hETH
 
-			assert.equal(sETHSummary.market, sethMarket.address);
-			assert.equal(sETHSummary.asset, newAssetKey);
-			assert.equal(sETHSummary.maxLeverage, params.maxLeverage);
-			const price = await sethMarket.assetPrice();
-			assert.equal(sETHSummary.price, price.price);
-			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
-			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
-			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
-			assert.equal(sETHSummary.feeRates.takerFee, params.takerFee);
-			assert.equal(sETHSummary.feeRates.makerFee, params.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
-			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
+			assert.equal(hETHSummary.market, hethMarket.address);
+			assert.equal(hETHSummary.asset, newAssetKey);
+			assert.equal(hETHSummary.maxLeverage, params.maxLeverage);
+			const price = await hethMarket.assetPrice();
+			assert.equal(hETHSummary.price, price.price);
+			assert.equal(hETHSummary.marketSize, await hethMarket.marketSize());
+			assert.equal(hETHSummary.marketSkew, await hethMarket.marketSkew());
+			assert.equal(hETHSummary.currentFundingRate, await hethMarket.currentFundingRate());
+			assert.equal(hETHSummary.feeRates.takerFee, params.takerFee);
+			assert.equal(hETHSummary.feeRates.makerFee, params.makerFee);
+			assert.equal(hETHSummary.feeRates.takerFeeNextPrice, params.takerFeeNextPrice);
+			assert.equal(hETHSummary.feeRates.makerFeeNextPrice, params.makerFeeNextPrice);
 		});
 
 		it('For market keys', async () => {
 			const summaries = await futuresMarketData.marketSummaries([
 				futuresMarket.address,
-				sethMarket.address,
+				hethMarket.address,
 			]);
 			const summariesForAsset = await futuresMarketData.marketSummariesForKeys(
-				['sBTC', 'sETH' + keySuffix].map(toBytes32)
+				['hBTC', 'hETH' + keySuffix].map(toBytes32)
 			);
 			assert.equal(JSON.stringify(summaries), JSON.stringify(summariesForAsset));
 		});
@@ -279,39 +279,39 @@ contract('FuturesMarketData', accounts => {
 		it('All summaries', async () => {
 			const summaries = await futuresMarketData.allMarketSummaries();
 
-			const sBTCSummary = summaries.find(summary => summary.asset === toBytes32('sBTC'));
-			const sETHSummary = summaries.find(summary => summary.asset === toBytes32('sETH'));
+			const hBTCSummary = summaries.find(summary => summary.asset === toBytes32('hBTC'));
+			const hETHSummary = summaries.find(summary => summary.asset === toBytes32('hETH'));
 			const sLINKSummary = summaries.find(summary => summary.asset === toBytes32('sLINK'));
 
 			const fmParams = await futuresMarketData.parameters(marketKey);
 
-			assert.equal(sBTCSummary.market, futuresMarket.address);
-			assert.equal(sBTCSummary.asset, baseAsset);
-			assert.equal(sBTCSummary.maxLeverage, fmParams.maxLeverage);
+			assert.equal(hBTCSummary.market, futuresMarket.address);
+			assert.equal(hBTCSummary.asset, baseAsset);
+			assert.equal(hBTCSummary.maxLeverage, fmParams.maxLeverage);
 			let price = await futuresMarket.assetPrice();
-			assert.equal(sBTCSummary.price, price.price);
-			assert.equal(sBTCSummary.marketSize, await futuresMarket.marketSize());
-			assert.equal(sBTCSummary.marketSkew, await futuresMarket.marketSkew());
-			assert.equal(sBTCSummary.currentFundingRate, await futuresMarket.currentFundingRate());
-			assert.equal(sBTCSummary.feeRates.takerFee, fmParams.takerFee);
-			assert.equal(sBTCSummary.feeRates.makerFee, fmParams.makerFee);
-			assert.equal(sBTCSummary.feeRates.takerFeeNextPrice, fmParams.takerFeeNextPrice);
-			assert.equal(sBTCSummary.feeRates.makerFeeNextPrice, fmParams.makerFeeNextPrice);
+			assert.equal(hBTCSummary.price, price.price);
+			assert.equal(hBTCSummary.marketSize, await futuresMarket.marketSize());
+			assert.equal(hBTCSummary.marketSkew, await futuresMarket.marketSkew());
+			assert.equal(hBTCSummary.currentFundingRate, await futuresMarket.currentFundingRate());
+			assert.equal(hBTCSummary.feeRates.takerFee, fmParams.takerFee);
+			assert.equal(hBTCSummary.feeRates.makerFee, fmParams.makerFee);
+			assert.equal(hBTCSummary.feeRates.takerFeeNextPrice, fmParams.takerFeeNextPrice);
+			assert.equal(hBTCSummary.feeRates.makerFeeNextPrice, fmParams.makerFeeNextPrice);
 
-			const sETHParams = await futuresMarketData.parameters(newMarketKey); // sETH
+			const hETHParams = await futuresMarketData.parameters(newMarketKey); // hETH
 
-			assert.equal(sETHSummary.market, sethMarket.address);
-			assert.equal(sETHSummary.asset, newAssetKey);
-			assert.equal(sETHSummary.maxLeverage, sETHParams.maxLeverage);
-			price = await sethMarket.assetPrice();
-			assert.equal(sETHSummary.price, price.price);
-			assert.equal(sETHSummary.marketSize, await sethMarket.marketSize());
-			assert.equal(sETHSummary.marketSkew, await sethMarket.marketSkew());
-			assert.equal(sETHSummary.currentFundingRate, await sethMarket.currentFundingRate());
-			assert.equal(sETHSummary.feeRates.takerFee, sETHParams.takerFee);
-			assert.equal(sETHSummary.feeRates.makerFee, sETHParams.makerFee);
-			assert.equal(sETHSummary.feeRates.takerFeeNextPrice, sETHParams.takerFeeNextPrice);
-			assert.equal(sETHSummary.feeRates.makerFeeNextPrice, sETHParams.makerFeeNextPrice);
+			assert.equal(hETHSummary.market, hethMarket.address);
+			assert.equal(hETHSummary.asset, newAssetKey);
+			assert.equal(hETHSummary.maxLeverage, hETHParams.maxLeverage);
+			price = await hethMarket.assetPrice();
+			assert.equal(hETHSummary.price, price.price);
+			assert.equal(hETHSummary.marketSize, await hethMarket.marketSize());
+			assert.equal(hETHSummary.marketSkew, await hethMarket.marketSkew());
+			assert.equal(hETHSummary.currentFundingRate, await hethMarket.currentFundingRate());
+			assert.equal(hETHSummary.feeRates.takerFee, hETHParams.takerFee);
+			assert.equal(hETHSummary.feeRates.makerFee, hETHParams.makerFee);
+			assert.equal(hETHSummary.feeRates.takerFeeNextPrice, hETHParams.takerFeeNextPrice);
+			assert.equal(hETHSummary.feeRates.makerFeeNextPrice, hETHParams.makerFeeNextPrice);
 
 			assert.equal(
 				sLINKSummary.market,

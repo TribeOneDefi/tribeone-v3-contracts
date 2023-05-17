@@ -1,0 +1,17 @@
+[
+	{
+		"name": "hUSD",
+		"asset": "USD",
+		"subclass": "MultiCollateralTribe"
+	},
+	{
+		"name": "hETH",
+		"asset": "ETH",
+		"subclass": "MultiCollateralTribe"
+	},
+	{
+		"name": "hBTC",
+		"asset": "BTC",
+		"subclass": "MultiCollateralTribe"
+	}
+]

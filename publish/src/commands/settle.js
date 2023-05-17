@@ -52,7 +52,7 @@ const settle = async ({
 	ethToSeed,
 	showDebt,
 	useFork,
-	synth,
+	tribe,
 }) => {
 	ensureNetwork(network);
 
@@ -83,8 +83,8 @@ const settle = async ({
 
 	const user = new ethers.Wallet(privateKey, provider);
 
-	if (synth) {
-		console.log(gray('Filtered to synth:'), yellow(synth));
+	if (tribe) {
+		console.log(gray('Filtered to tribe:'), yellow(tribe));
 	}
 	console.log(gray('Using wallet', cyan(user.address)));
 	const balance = ethers.utils.formatEther(await provider.getBalance(user.address));
@@ -148,7 +148,7 @@ const settle = async ({
 			}
 			console.log(gray('-> Fetching page of results from target', yellow(target.address)));
 			const pageOfResults = await target.queryFilter(
-				'SynthExchange',
+				'TribeExchange',
 				startingBlock,
 				startingBlock + pageSize - 1
 			);
@@ -206,7 +206,7 @@ const settle = async ({
 			// Fetch all entries within the settlement
 			const results = [];
 			let earliestTimestamp = Infinity;
-			const fromSynths = [];
+			const fromTribes = [];
 			for (let i = 0; i < numEntries; i++) {
 				const { src, amount, timestamp } = await ExchangeState.getEntryAt(
 					account,
@@ -220,14 +220,14 @@ const settle = async ({
 					).toString()}`
 				);
 
-				fromSynths.push(src);
+				fromTribes.push(src);
 				earliestTimestamp = Math.min(timestamp, earliestTimestamp);
 			}
-			const isSynthTheDest = new RegExp(synth).test(ethers.utils.toUtf8String(toCurrencyKey));
-			const isSynthOneSrcEntry = !!fromSynths.find(src => ethers.utils.toUtf8String(src) === synth);
+			const isTribeTheDest = new RegExp(tribe).test(ethers.utils.toUtf8String(toCurrencyKey));
+			const isTribeOneSrcEntry = !!fromTribes.find(src => ethers.utils.toUtf8String(src) === tribe);
 
-			// skip when filtered by synth if not the destination and not any of the sources
-			if (synth && !isSynthTheDest && !isSynthOneSrcEntry) {
+			// skip when filtered by tribe if not the destination and not any of the sources
+			if (tribe && !isTribeTheDest && !isTribeOneSrcEntry) {
 				continue;
 			}
 
@@ -280,11 +280,11 @@ const settle = async ({
 				);
 				// see if user has enough funds to settle
 				if (reclaimAmount > 0) {
-					const synth = await Tribeone.synths(toCurrencyKey);
+					const tribe = await Tribeone.tribes(toCurrencyKey);
 
-					const Synth = new ethers.Contract(synth, getSource({ contract: 'Synth' }).abi, provider);
+					const Tribe = new ethers.Contract(tribe, getSource({ contract: 'Tribe' }).abi, provider);
 
-					const balance = await Synth.balanceOf(account);
+					const balance = await Tribe.balanceOf(account);
 
 					console.log(
 						gray('Warning: user does not have enough balance to be reclaimed'),
@@ -376,7 +376,7 @@ module.exports = {
 				'-r, --dry-run',
 				'If enabled, will not run any transactions but merely report on them.'
 			)
-			.option('-s, --synth <synth>', 'Filter to a specific synth or regex')
+			.option('-s, --tribe <tribe>', 'Filter to a specific tribe or regex')
 			.option('-v, --private-key <value>', 'Provide private key to settle from given account')
 			.action(settle),
 };

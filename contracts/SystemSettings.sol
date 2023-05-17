@@ -80,8 +80,8 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
 
     // SIP-251 Differentiate Liquidation Penalties
     // penalty taken away from target of HAKA liquidation (with 18 decimals). E.g. 30% is 0.3e18
-    function hakaLiquidationPenalty() external view returns (uint) {
-        return getHakaLiquidationPenalty();
+    function snxLiquidationPenalty() external view returns (uint) {
+        return getSnxLiquidationPenalty();
     }
 
     /* ========== SIP-148: Upgrade Liquidation Mechanism ========== */
@@ -184,7 +184,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP 112: ETH Wrappr
-    // The fee for burning sETH and releasing ETH from the EtherWrapper.
+    // The fee for burning hETH and releasing ETH from the EtherWrapper.
     function etherWrapperBurnFeeRate() external view returns (uint) {
         return getEtherWrapperBurnFeeRate();
     }
@@ -202,7 +202,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP 182: Wrapper Factory
-    // The fee for burning synth and releasing token from the Wrapper.
+    // The fee for burning tribe and releasing token from the Wrapper.
     function wrapperBurnFeeRate(address wrapper) external view returns (int) {
         return getWrapperBurnFeeRate(wrapper);
     }
@@ -228,25 +228,25 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP-120 Atomic exchanges
-    // equivalent asset to use for a synth when considering external prices for atomic exchanges
+    // equivalent asset to use for a tribe when considering external prices for atomic exchanges
     function atomicEquivalentForDexPricing(bytes32 currencyKey) external view returns (address) {
         return getAtomicEquivalentForDexPricing(currencyKey);
     }
 
     // SIP-120 Atomic exchanges
-    // fee rate override for atomic exchanges into a synth
+    // fee rate override for atomic exchanges into a tribe
     function atomicExchangeFeeRate(bytes32 currencyKey) external view returns (uint) {
         return getAtomicExchangeFeeRate(currencyKey);
     }
 
     // SIP-120 Atomic exchanges
-    // consideration window for determining synth volatility
+    // consideration window for determining tribe volatility
     function atomicVolatilityConsiderationWindow(bytes32 currencyKey) external view returns (uint) {
         return getAtomicVolatilityConsiderationWindow(currencyKey);
     }
 
     // SIP-120 Atomic exchanges
-    // update threshold for determining synth volatility
+    // update threshold for determining tribe volatility
     function atomicVolatilityUpdateThreshold(bytes32 currencyKey) external view returns (uint) {
         return getAtomicVolatilityUpdateThreshold(currencyKey);
     }
@@ -258,9 +258,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     // SIP-229 Atomic exchanges
-    // enable/disable sending of synths cross chain
-    function crossChainSynthTransferEnabled(bytes32 currencyKey) external view returns (uint) {
-        return getCrossChainSynthTransferEnabled(currencyKey);
+    // enable/disable sending of tribes cross chain
+    function crossChainTribeTransferEnabled(bytes32 currencyKey) external view returns (uint) {
+        return getCrossChainTribeTransferEnabled(currencyKey);
     }
 
     // ========== RESTRICTED ==========
@@ -317,7 +317,7 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         flexibleStorage().setLiquidationRatio(
             SETTING_LIQUIDATION_RATIO,
             _liquidationRatio,
-            getHakaLiquidationPenalty(),
+            getSnxLiquidationPenalty(),
             getIssuanceRatio()
         );
         emit LiquidationRatioUpdated(_liquidationRatio);
@@ -328,9 +328,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit LiquidationEscrowDurationUpdated(duration);
     }
 
-    function setHakaLiquidationPenalty(uint penalty) external onlyOwner {
-        flexibleStorage().setHakaLiquidationPenalty(SETTING_HAKA_LIQUIDATION_PENALTY, penalty);
-        emit HakaLiquidationPenaltyUpdated(penalty);
+    function setSnxLiquidationPenalty(uint penalty) external onlyOwner {
+        flexibleStorage().setSnxLiquidationPenalty(SETTING_HAKA_LIQUIDATION_PENALTY, penalty);
+        emit SnxLiquidationPenaltyUpdated(penalty);
     }
 
     function setLiquidationPenalty(uint penalty) external onlyOwner {
@@ -359,13 +359,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     }
 
     /* ========== Exchange Fees Related ========== */
-    function setExchangeFeeRateForSynths(bytes32[] calldata synthKeys, uint256[] calldata exchangeFeeRates)
+    function setExchangeFeeRateForTribes(bytes32[] calldata tribeKeys, uint256[] calldata exchangeFeeRates)
         external
         onlyOwner
     {
-        flexibleStorage().setExchangeFeeRateForSynths(SETTING_EXCHANGE_FEE_RATE, synthKeys, exchangeFeeRates);
-        for (uint i = 0; i < synthKeys.length; i++) {
-            emit ExchangeFeeUpdated(synthKeys[i], exchangeFeeRates[i]);
+        flexibleStorage().setExchangeFeeRateForTribes(SETTING_EXCHANGE_FEE_RATE, tribeKeys, exchangeFeeRates);
+        for (uint i = 0; i < tribeKeys.length; i++) {
+            emit ExchangeFeeUpdated(tribeKeys[i], exchangeFeeRates[i]);
         }
     }
 
@@ -524,9 +524,9 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
         emit PureChainlinkPriceForAtomicSwapsEnabledUpdated(_currencyKey, _enabled);
     }
 
-    function setCrossChainSynthTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
-        flexibleStorage().setCrossChainSynthTransferEnabled(SETTING_CROSS_SYNTH_TRANSFER_ENABLED, _currencyKey, _value);
-        emit CrossChainSynthTransferEnabledUpdated(_currencyKey, _value);
+    function setCrossChainTribeTransferEnabled(bytes32 _currencyKey, uint _value) external onlyOwner {
+        flexibleStorage().setCrossChainTribeTransferEnabled(SETTING_CROSS_TRIBEONE_TRANSFER_ENABLED, _currencyKey, _value);
+        emit CrossChainTribeTransferEnabledUpdated(_currencyKey, _value);
     }
 
     // ========== EVENTS ==========
@@ -541,13 +541,13 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event LiquidationRatioUpdated(uint newRatio);
     event LiquidationEscrowDurationUpdated(uint newDuration);
     event LiquidationPenaltyUpdated(uint newPenalty);
-    event HakaLiquidationPenaltyUpdated(uint newPenalty);
+    event SnxLiquidationPenaltyUpdated(uint newPenalty);
     event SelfLiquidationPenaltyUpdated(uint newPenalty);
     event FlagRewardUpdated(uint newReward);
     event LiquidateRewardUpdated(uint newReward);
     event RateStalePeriodUpdated(uint rateStalePeriod);
     /* ========== Exchange Fees Related ========== */
-    event ExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
+    event ExchangeFeeUpdated(bytes32 tribeKey, uint newExchangeFeeRate);
     event ExchangeDynamicFeeThresholdUpdated(uint dynamicFeeThreshold);
     event ExchangeDynamicFeeWeightDecayUpdated(uint dynamicFeeWeightDecay);
     event ExchangeDynamicFeeRoundsUpdated(uint dynamicFeeRounds);
@@ -566,10 +566,10 @@ contract SystemSettings is Owned, MixinSystemSettings, ISystemSettings {
     event CollapseFeeRateUpdated(uint collapseFeeRate);
     event AtomicMaxVolumePerBlockUpdated(uint newMaxVolume);
     event AtomicTwapWindowUpdated(uint newWindow);
-    event AtomicEquivalentForDexPricingUpdated(bytes32 synthKey, address equivalent);
-    event AtomicExchangeFeeUpdated(bytes32 synthKey, uint newExchangeFeeRate);
-    event AtomicVolatilityConsiderationWindowUpdated(bytes32 synthKey, uint newVolatilityConsiderationWindow);
-    event AtomicVolatilityUpdateThresholdUpdated(bytes32 synthKey, uint newVolatilityUpdateThreshold);
-    event PureChainlinkPriceForAtomicSwapsEnabledUpdated(bytes32 synthKey, bool enabled);
-    event CrossChainSynthTransferEnabledUpdated(bytes32 synthKey, uint value);
+    event AtomicEquivalentForDexPricingUpdated(bytes32 tribeKey, address equivalent);
+    event AtomicExchangeFeeUpdated(bytes32 tribeKey, uint newExchangeFeeRate);
+    event AtomicVolatilityConsiderationWindowUpdated(bytes32 tribeKey, uint newVolatilityConsiderationWindow);
+    event AtomicVolatilityUpdateThresholdUpdated(bytes32 tribeKey, uint newVolatilityUpdateThreshold);
+    event PureChainlinkPriceForAtomicSwapsEnabledUpdated(bytes32 tribeKey, bool enabled);
+    event CrossChainTribeTransferEnabledUpdated(bytes32 tribeKey, uint value);
 }

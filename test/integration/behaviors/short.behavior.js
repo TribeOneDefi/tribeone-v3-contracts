@@ -8,24 +8,24 @@ const { assert } = require('../../contracts/common');
 const { toBytes32 } = require('../../../index');
 const { getLoan, getShortInteractionDelay, setShortInteractionDelay } = require('../utils/loans');
 const { ensureBalance } = require('../utils/balances');
-const { exchangeSynths } = require('../utils/exchanging');
+const { exchangeTribes } = require('../utils/exchanging');
 const { updateCache } = require('../utils/rates');
 const { skipWaitingPeriod } = require('../utils/skip');
 
 function itCanOpenAndCloseShort({ ctx }) {
 	describe('shorting', () => {
-		const amountOfsUSDRequired = parseEther('5000'); // hUSD
+		const amountOfhUSDRequired = parseEther('5000'); // hUSD
 		const amountToDeposit = parseEther('1000'); // hUSD
-		const amountToBorrow = parseEther('0.00000000001'); // sETH
+		const amountToBorrow = parseEther('0.00000000001'); // hETH
 		const amountToExchange = parseEther('100'); // hUSD
 
-		const shortableSynth = toBytes32('sETH');
+		const shortableTribe = toBytes32('hETH');
 
 		let user, owner;
-		let CollateralShort, CollateralManager, Tribeone, SynthsUSD, interactionDelay;
+		let CollateralShort, CollateralManager, Tribeone, TribehUSD, interactionDelay;
 
 		before('target contracts and users', () => {
-			({ CollateralShort, CollateralManager, Tribeone, SynthsUSD } = ctx.contracts);
+			({ CollateralShort, CollateralManager, Tribeone, TribehUSD } = ctx.contracts);
 
 			user = ctx.users.someUser;
 			owner = ctx.users.owner;
@@ -46,15 +46,15 @@ function itCanOpenAndCloseShort({ ctx }) {
 
 		describe('when opening is enabled', () => {
 			before('ensure user should have hUSD', async () => {
-				await ensureBalance({ ctx, symbol: 'hUSD', user, balance: amountOfsUSDRequired });
+				await ensureBalance({ ctx, symbol: 'hUSD', user, balance: amountOfhUSDRequired });
 			});
 
-			before('ensure sETH supply exists', async () => {
-				// CollateralManager.getShortRate requires existing sETH else div by zero
-				await exchangeSynths({
+			before('ensure hETH supply exists', async () => {
+				// CollateralManager.getShortRate requires existing hETH else div by zero
+				await exchangeTribes({
 					ctx,
 					src: 'hUSD',
-					dest: 'sETH',
+					dest: 'hETH',
 					amount: parseEther('1'),
 					user: ctx.users.otherUser,
 				});
@@ -77,7 +77,7 @@ function itCanOpenAndCloseShort({ ctx }) {
 					before('skip if max borrowing power reached', async function() {
 						const maxBorrowingPower = await CollateralShort.maxLoan(
 							amountToDeposit,
-							shortableSynth
+							shortableTribe
 						);
 						const maxBorrowingPowerReached = maxBorrowingPower <= amountToBorrow;
 
@@ -91,28 +91,28 @@ function itCanOpenAndCloseShort({ ctx }) {
 						}
 					});
 
-					before('add the shortable synths if needed', async () => {
-						await CollateralShort.connect(owner).addSynths(
-							[toBytes32(`SynthsETH`)],
-							[shortableSynth]
+					before('add the shortable tribes if needed', async () => {
+						await CollateralShort.connect(owner).addTribes(
+							[toBytes32(`TribehETH`)],
+							[shortableTribe]
 						);
 
-						await CollateralManager.addSynths([toBytes32(`SynthsETH`)], [shortableSynth]);
+						await CollateralManager.addTribes([toBytes32(`TribehETH`)], [shortableTribe]);
 
-						await CollateralManager.addShortableSynths([toBytes32(`SynthsETH`)], [shortableSynth]);
+						await CollateralManager.addShortableTribes([toBytes32(`TribehETH`)], [shortableTribe]);
 					});
 
-					before('approve the synths for collateral short', async () => {
+					before('approve the tribes for collateral short', async () => {
 						await approveIfNeeded({
-							token: SynthsUSD,
+							token: TribehUSD,
 							owner: user,
 							beneficiary: CollateralShort,
-							amount: amountOfsUSDRequired,
+							amount: amountOfhUSDRequired,
 						});
 					});
 
 					before('open the loan', async () => {
-						tx = await CollateralShort.open(amountToDeposit, amountToBorrow, shortableSynth);
+						tx = await CollateralShort.open(amountToDeposit, amountToBorrow, shortableTribe);
 
 						const { events } = await tx.wait();
 
@@ -166,25 +166,25 @@ function itCanOpenAndCloseShort({ ctx }) {
 					});
 
 					describe('closing a loan', () => {
-						before('exchange synths', async () => {
+						before('exchange tribes', async () => {
 							await updateCache({ ctx });
 
-							await exchangeSynths({
+							await exchangeTribes({
 								ctx,
 								src: 'hUSD',
-								dest: 'sETH',
+								dest: 'hETH',
 								amount: amountToExchange,
 								user,
 							});
 						});
 
 						before('skip waiting period', async () => {
-							// Ignore settlement period for hUSD --> sETH closing the loan
+							// Ignore settlement period for hUSD --> hETH closing the loan
 							await skipWaitingPeriod({ ctx });
 						});
 
 						before('settle', async () => {
-							const tx = await Tribeone.settle(shortableSynth);
+							const tx = await Tribeone.settle(shortableTribe);
 							await tx.wait();
 						});
 

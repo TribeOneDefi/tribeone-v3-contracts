@@ -14,7 +14,7 @@ function bootstrapL1({ ctx }) {
 		ctx.useOvm = false;
 		ctx.fork = hre.config.fork;
 
-		ctx.addedSynths = hre.config.addedSynths || [];
+		ctx.addedTribes = hre.config.addedTribes || [];
 
 		ctx.provider = _setupProvider({ url: `${hre.config.providerUrl}:${hre.config.providerPort}` });
 
@@ -42,7 +42,7 @@ function bootstrapL2({ ctx }) {
 		ctx.useOvm = true;
 		ctx.fork = hre.config.fork;
 
-		ctx.addedSynths = hre.config.addedSynths || [];
+		ctx.addedTribes = hre.config.addedTribes || [];
 
 		ctx.provider = _setupProvider({
 			url: `${hre.config.providerUrl}:${hre.config.providerPortL2}`,
@@ -76,10 +76,10 @@ function bootstrapL2({ ctx }) {
 
 function bootstrapDual({ ctx }) {
 	before('bootstrap layer 1 and layer 2 instances', async () => {
-		const addedSynths = hre.config.addedSynths || [];
+		const addedTribes = hre.config.addedTribes || [];
 
-		ctx.l1 = { useOvm: false, addedSynths };
-		ctx.l2 = { useOvm: true, addedSynths };
+		ctx.l1 = { useOvm: false, addedTribes };
+		ctx.l2 = { useOvm: true, addedTribes };
 
 		ctx.l2.l1 = ctx.l1;
 

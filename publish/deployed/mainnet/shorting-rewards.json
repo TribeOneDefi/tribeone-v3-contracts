@@ -1,10 +1,10 @@
 [
 	{
-		"name": "sETH",
+		"name": "hETH",
 		"rewardsToken": "ProxyERC20"
 	},
 	{
-		"name": "sBTC",
+		"name": "hBTC",
 		"rewardsToken": "ProxyERC20"
 	}
 ]

@@ -4,7 +4,7 @@ const { artifacts, contract, web3 } = require('hardhat');
 
 const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 
-let MultiCollateralSynth;
+let MultiCollateralTribe;
 
 const {
 	onlyGivenAddressCanInvoke,
@@ -20,11 +20,11 @@ const {
 
 const { setupAllContracts } = require('./setup');
 
-contract('MultiCollateralSynth', accounts => {
+contract('MultiCollateralTribe', accounts => {
 	const [deployerAccount, owner, , , account1] = accounts;
 
-	const sETH = toBytes32('sETH');
-	const sBTC = toBytes32('sBTC');
+	const hETH = toBytes32('hETH');
+	const hBTC = toBytes32('hBTC');
 
 	let issuer,
 		resolver,
@@ -33,34 +33,34 @@ contract('MultiCollateralSynth', accounts => {
 		exchangeRates,
 		managerState,
 		debtCache,
-		sUSDSynth,
+		hUSDTribe,
 		feePool,
-		synths;
+		tribes;
 
 	const getid = async tx => {
 		const event = tx.logs.find(log => log.event === 'LoanCreated');
 		return event.args.id;
 	};
 
-	const issuesUSDToAccount = async (issueAmount, receiver) => {
-		// Set up the depositor with an amount of synths to deposit.
-		await sUSDSynth.issue(receiver, issueAmount, {
+	const issuehUSDToAccount = async (issueAmount, receiver) => {
+		// Set up the depositor with an amount of tribes to deposit.
+		await hUSDTribe.issue(receiver, issueAmount, {
 			from: owner,
 		});
 	};
 
 	before(async () => {
-		MultiCollateralSynth = artifacts.require('MultiCollateralSynth');
+		MultiCollateralTribe = artifacts.require('MultiCollateralTribe');
 	});
 
 	const onlyInternalString = 'Only internal contracts allowed';
 
 	before(async () => {
-		synths = ['hUSD'];
+		tribes = ['hUSD'];
 		({
 			AddressResolver: resolver,
 			Issuer: issuer,
-			SynthsUSD: sUSDSynth,
+			TribehUSD: hUSDTribe,
 			ExchangeRates: exchangeRates,
 			DebtCache: debtCache,
 			FeePool: feePool,
@@ -69,7 +69,7 @@ contract('MultiCollateralSynth', accounts => {
 			CollateralEth: ceth,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'AddressResolver',
 				'Tribeone',
@@ -86,8 +86,8 @@ contract('MultiCollateralSynth', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
-		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
+		await setupPriceAggregators(exchangeRates, owner, [hETH, hBTC]);
+		await updateAggregatorRates(exchangeRates, null, [hETH, hBTC], [100, 10000].map(toUnit));
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -97,13 +97,13 @@ contract('MultiCollateralSynth', accounts => {
 
 		await manager.addCollaterals([ceth.address], { from: owner });
 
-		await issuesUSDToAccount(toUnit(1000), owner);
+		await issuehUSDToAccount(toUnit(1000), owner);
 		await debtCache.takeDebtSnapshot();
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
 
-	const deploySynth = async ({ currencyKey, proxy, tokenState }) => {
+	const deployTribe = async ({ currencyKey, proxy, tokenState }) => {
 		// As either of these could be legacy, we require them in the testing context (see buidler.config.js)
 		const TokenState = artifacts.require('TokenState');
 		const Proxy = artifacts.require('Proxy');
@@ -116,10 +116,10 @@ contract('MultiCollateralSynth', accounts => {
 
 		proxy = proxy || (await Proxy.new(owner, { from: deployerAccount }));
 
-		const synth = await MultiCollateralSynth.new(
+		const tribe = await MultiCollateralTribe.new(
 			proxy.address,
 			tokenState.address,
-			`Synth${currencyKey}`,
+			`Tribe${currencyKey}`,
 			currencyKey,
 			owner,
 			toBytes32(currencyKey),
@@ -130,43 +130,43 @@ contract('MultiCollateralSynth', accounts => {
 			}
 		);
 
-		await resolver.importAddresses([toBytes32(`Synth${currencyKey}`)], [synth.address], {
+		await resolver.importAddresses([toBytes32(`Tribe${currencyKey}`)], [tribe.address], {
 			from: owner,
 		});
 
-		await synth.rebuildCache();
+		await tribe.rebuildCache();
 		await manager.rebuildCache();
 		await debtCache.rebuildCache();
 
-		await ceth.addSynths([toBytes32(`Synth${currencyKey}`)], [toBytes32(currencyKey)], {
+		await ceth.addTribes([toBytes32(`Tribe${currencyKey}`)], [toBytes32(currencyKey)], {
 			from: owner,
 		});
 
-		return { synth, tokenState, proxy };
+		return { tribe, tokenState, proxy };
 	};
 
-	describe('when a MultiCollateral synth is added and connected to Tribeone', () => {
+	describe('when a MultiCollateral tribe is added and connected to Tribeone', () => {
 		beforeEach(async () => {
-			const { synth, tokenState, proxy } = await deploySynth({
+			const { tribe, tokenState, proxy } = await deployTribe({
 				currencyKey: 'sXYZ',
 			});
-			await tokenState.setAssociatedContract(synth.address, { from: owner });
-			await proxy.setTarget(synth.address, { from: owner });
-			await issuer.addSynth(synth.address, { from: owner });
-			this.synth = synth;
-			this.synthViaProxy = await MultiCollateralSynth.at(proxy.address);
+			await tokenState.setAssociatedContract(tribe.address, { from: owner });
+			await proxy.setTarget(tribe.address, { from: owner });
+			await issuer.addTribe(tribe.address, { from: owner });
+			this.tribe = tribe;
+			this.tribeViaProxy = await MultiCollateralTribe.at(proxy.address);
 		});
 
 		it('ensure only known functions are mutative', () => {
 			ensureOnlyExpectedMutativeFunctions({
-				abi: this.synth.abi,
-				ignoreParents: ['Synth'],
-				expected: [], // issue and burn are both overridden in MultiCollateral from Synth
+				abi: this.tribe.abi,
+				ignoreParents: ['Tribe'],
+				expected: [], // issue and burn are both overridden in MultiCollateral from Tribe
 			});
 		});
 
 		it('ensure the list of resolver addresses are as expected', async () => {
-			const actual = await this.synth.resolverAddressesRequired();
+			const actual = await this.tribe.resolverAddressesRequired();
 			assert.deepEqual(
 				actual,
 				[
@@ -188,29 +188,29 @@ contract('MultiCollateralSynth', accounts => {
 			const amount = toUnit('100');
 			beforeEach(async () => {
 				// approve for transferFrom to work
-				await this.synthViaProxy.approve(account1, amount, { from: owner });
+				await this.tribeViaProxy.approve(account1, amount, { from: owner });
 			});
 			it('approve does not revert', async () => {
-				await this.synth.approve(account1, amount, { from: owner });
+				await this.tribe.approve(account1, amount, { from: owner });
 			});
 			it('transfer reverts', async () => {
-				await assert.revert(this.synth.transfer(account1, amount, { from: owner }), revertMsg);
+				await assert.revert(this.tribe.transfer(account1, amount, { from: owner }), revertMsg);
 			});
 			it('transferFrom reverts', async () => {
 				await assert.revert(
-					this.synth.transferFrom(owner, account1, amount, { from: account1 }),
+					this.tribe.transferFrom(owner, account1, amount, { from: account1 }),
 					revertMsg
 				);
 			});
 			it('transferAndSettle reverts', async () => {
 				await assert.revert(
-					this.synth.transferAndSettle(account1, amount, { from: account1 }),
+					this.tribe.transferAndSettle(account1, amount, { from: account1 }),
 					revertMsg
 				);
 			});
 			it('transferFromAndSettle reverts', async () => {
 				await assert.revert(
-					this.synth.transferFromAndSettle(owner, account1, amount, { from: account1 }),
+					this.tribe.transferFromAndSettle(owner, account1, amount, { from: account1 }),
 					revertMsg
 				);
 			});
@@ -219,7 +219,7 @@ contract('MultiCollateralSynth', accounts => {
 		describe('when non-multiCollateral tries to issue', () => {
 			it('then it fails', async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: this.synth.issue,
+					fnc: this.tribe.issue,
 					args: [account1, toUnit('1')],
 					accounts,
 					reason: onlyInternalString,
@@ -229,7 +229,7 @@ contract('MultiCollateralSynth', accounts => {
 		describe('when non-multiCollateral tries to burn', () => {
 			it('then it fails', async () => {
 				await onlyGivenAddressCanInvoke({
-					fnc: this.synth.burn,
+					fnc: this.tribe.burn,
 					args: [account1, toUnit('1')],
 					accounts,
 					reason: onlyInternalString,
@@ -244,25 +244,25 @@ contract('MultiCollateralSynth', accounts => {
 				await updateAggregatorRates(exchangeRates, null, [sXYZ], [toUnit(5)]);
 			});
 			describe('when multiCollateral tries to issue', () => {
-				it('then it can issue new synths', async () => {
+				it('then it can issue new tribes', async () => {
 					const accountToIssue = account1;
 					const issueAmount = toUnit('1');
-					const totalSupplyBefore = await this.synth.totalSupply();
-					const balanceOfBefore = await this.synth.balanceOf(accountToIssue);
+					const totalSupplyBefore = await this.tribe.totalSupply();
+					const balanceOfBefore = await this.tribe.balanceOf(accountToIssue);
 
 					await ceth.open(issueAmount, toBytes32('sXYZ'), { value: toUnit(2), from: account1 });
 
-					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(issueAmount));
+					assert.bnEqual(await this.tribe.totalSupply(), totalSupplyBefore.add(issueAmount));
 					assert.bnEqual(
-						await this.synth.balanceOf(accountToIssue),
+						await this.tribe.balanceOf(accountToIssue),
 						balanceOfBefore.add(issueAmount)
 					);
 				});
 			});
 			describe('when multiCollateral tries to burn', () => {
-				it('then it can burn synths', async () => {
-					const totalSupplyBefore = await this.synth.totalSupply();
-					const balanceOfBefore = await this.synth.balanceOf(account1);
+				it('then it can burn tribes', async () => {
+					const totalSupplyBefore = await this.tribe.totalSupply();
+					const balanceOfBefore = await this.tribe.balanceOf(account1);
 					const amount = toUnit('5');
 
 					const tx = await ceth.open(amount, toBytes32('sXYZ'), {
@@ -274,13 +274,13 @@ contract('MultiCollateralSynth', accounts => {
 
 					await fastForward(300);
 
-					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(amount));
-					assert.bnEqual(await this.synth.balanceOf(account1), balanceOfBefore.add(amount));
+					assert.bnEqual(await this.tribe.totalSupply(), totalSupplyBefore.add(amount));
+					assert.bnEqual(await this.tribe.balanceOf(account1), balanceOfBefore.add(amount));
 
 					await ceth.repay(account1, id, toUnit(3), { from: account1 });
 
-					assert.bnEqual(await this.synth.totalSupply(), toUnit(2));
-					assert.bnEqual(await this.synth.balanceOf(account1), toUnit(2));
+					assert.bnEqual(await this.tribe.totalSupply(), toUnit(2));
+					assert.bnEqual(await this.tribe.balanceOf(account1), toUnit(2));
 				});
 			});
 
@@ -291,19 +291,19 @@ contract('MultiCollateralSynth', accounts => {
 				beforeEach(async () => {
 					// have account1 simulate being Issuer so we can invoke issue and burn
 					await resolver.importAddresses([toBytes32('Issuer')], [accountToIssue], { from: owner });
-					// now have the synth resync its cache
-					await this.synth.rebuildCache();
+					// now have the tribe resync its cache
+					await this.tribe.rebuildCache();
 				});
 
-				it('then it can issue new synths as account1', async () => {
-					const totalSupplyBefore = await this.synth.totalSupply();
-					const balanceOfBefore = await this.synth.balanceOf(accountToIssue);
+				it('then it can issue new tribes as account1', async () => {
+					const totalSupplyBefore = await this.tribe.totalSupply();
+					const balanceOfBefore = await this.tribe.balanceOf(accountToIssue);
 
-					await this.synth.issue(accountToIssue, issueAmount, { from: accountToIssue });
+					await this.tribe.issue(accountToIssue, issueAmount, { from: accountToIssue });
 
-					assert.bnEqual(await this.synth.totalSupply(), totalSupplyBefore.add(issueAmount));
+					assert.bnEqual(await this.tribe.totalSupply(), totalSupplyBefore.add(issueAmount));
 					assert.bnEqual(
-						await this.synth.balanceOf(accountToIssue),
+						await this.tribe.balanceOf(accountToIssue),
 						balanceOfBefore.add(issueAmount)
 					);
 				});

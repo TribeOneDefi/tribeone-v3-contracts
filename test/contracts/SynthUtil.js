@@ -5,25 +5,25 @@ const { assert, addSnapshotBeforeRestoreAfterEach } = require('./common');
 const { toBytes32 } = require('../..');
 const { toUnit } = require('../utils')();
 const {
-	setExchangeFeeRateForSynths,
+	setExchangeFeeRateForTribes,
 	setupPriceAggregators,
 	updateAggregatorRates,
 } = require('./helpers');
 
 const { setupAllContracts } = require('./setup');
 
-contract('SynthUtil', accounts => {
+contract('TribeUtil', accounts => {
 	const [, ownerAccount, , account2] = accounts;
-	let synthUtil, sUSDContract, tribeone, exchangeRates, systemSettings, debtCache, circuitBreaker;
+	let tribeUtil, hUSDContract, tribeone, exchangeRates, systemSettings, debtCache, circuitBreaker;
 
-	const [hUSD, sBTC, iBTC, HAKA] = ['hUSD', 'sBTC', 'iBTC', 'HAKA'].map(toBytes32);
-	const synthKeys = [hUSD, sBTC, iBTC];
-	const synthPrices = [toUnit('1'), toUnit('5000'), toUnit('5000')];
+	const [hUSD, hBTC, iBTC, HAKA] = ['hUSD', 'hBTC', 'iBTC', 'HAKA'].map(toBytes32);
+	const tribeKeys = [hUSD, hBTC, iBTC];
+	const tribePrices = [toUnit('1'), toUnit('5000'), toUnit('5000')];
 
 	before(async () => {
 		({
-			SynthUtil: synthUtil,
-			SynthsUSD: sUSDContract,
+			TribeUtil: tribeUtil,
+			TribehUSD: hUSDContract,
 			Tribeone: tribeone,
 			ExchangeRates: exchangeRates,
 			SystemSettings: systemSettings,
@@ -31,9 +31,9 @@ contract('SynthUtil', accounts => {
 			DebtCache: debtCache,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'iBTC'],
+			tribes: ['hUSD', 'hBTC', 'iBTC'],
 			contracts: [
-				'SynthUtil',
+				'TribeUtil',
 				'Tribeone',
 				'Exchanger',
 				'ExchangeRates',
@@ -49,7 +49,7 @@ contract('SynthUtil', accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, ownerAccount, [sBTC, iBTC]);
+		await setupPriceAggregators(exchangeRates, ownerAccount, [hBTC, iBTC]);
 	});
 
 	addSnapshotBeforeRestoreAfterEach();
@@ -58,59 +58,59 @@ contract('SynthUtil', accounts => {
 		await updateAggregatorRates(
 			exchangeRates,
 			circuitBreaker,
-			[sBTC, iBTC, HAKA],
+			[hBTC, iBTC, HAKA],
 			['5000', '5000', '0.2'].map(toUnit)
 		);
 		await debtCache.takeDebtSnapshot();
 
 		// set a 0% default exchange fee rate for test purpose
 		const exchangeFeeRate = toUnit('0');
-		await setExchangeFeeRateForSynths({
+		await setExchangeFeeRateForTribes({
 			owner: ownerAccount,
 			systemSettings,
-			synthKeys,
-			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+			tribeKeys,
+			exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 		});
 	});
 
 	describe('given an instance', () => {
-		const sUSDMinted = toUnit('10000');
+		const hUSDMinted = toUnit('10000');
 		const amountToExchange = toUnit('50');
-		const sUSDAmount = toUnit('100');
+		const hUSDAmount = toUnit('100');
 		beforeEach(async () => {
-			await tribeone.issueSynths(sUSDMinted, {
+			await tribeone.issueTribes(hUSDMinted, {
 				from: ownerAccount,
 			});
-			await sUSDContract.transfer(account2, sUSDAmount, { from: ownerAccount });
-			await tribeone.exchange(hUSD, amountToExchange, sBTC, { from: account2 });
+			await hUSDContract.transfer(account2, hUSDAmount, { from: ownerAccount });
+			await tribeone.exchange(hUSD, amountToExchange, hBTC, { from: account2 });
 		});
-		describe('totalSynthsInKey', () => {
-			it('should return the total balance of synths into the specified currency key', async () => {
-				assert.bnEqual(await synthUtil.totalSynthsInKey(account2, hUSD), sUSDAmount);
+		describe('totalTribesInKey', () => {
+			it('should return the total balance of tribes into the specified currency key', async () => {
+				assert.bnEqual(await tribeUtil.totalTribesInKey(account2, hUSD), hUSDAmount);
 			});
 		});
-		describe('synthsBalances', () => {
-			it('should return the balance and its value in hUSD for every synth in the wallet', async () => {
-				const effectiveValue = await exchangeRates.effectiveValue(hUSD, amountToExchange, sBTC);
-				assert.deepEqual(await synthUtil.synthsBalances(account2), [
-					[hUSD, sBTC, iBTC],
+		describe('tribesBalances', () => {
+			it('should return the balance and its value in hUSD for every tribe in the wallet', async () => {
+				const effectiveValue = await exchangeRates.effectiveValue(hUSD, amountToExchange, hBTC);
+				assert.deepEqual(await tribeUtil.tribesBalances(account2), [
+					[hUSD, hBTC, iBTC],
 					[toUnit('50'), effectiveValue, 0],
 					[toUnit('50'), toUnit('50'), 0],
 				]);
 			});
 		});
-		describe('synthsRates', () => {
-			it('should return the correct synth rates', async () => {
-				assert.deepEqual(await synthUtil.synthsRates(), [synthKeys, synthPrices]);
+		describe('tribesRates', () => {
+			it('should return the correct tribe rates', async () => {
+				assert.deepEqual(await tribeUtil.tribesRates(), [tribeKeys, tribePrices]);
 			});
 		});
-		describe('synthsTotalSupplies', () => {
-			it('should return the correct synth total supplies', async () => {
-				const effectiveValue = await exchangeRates.effectiveValue(hUSD, amountToExchange, sBTC);
-				assert.deepEqual(await synthUtil.synthsTotalSupplies(), [
-					synthKeys,
-					[sUSDMinted.sub(amountToExchange), effectiveValue, 0],
-					[sUSDMinted.sub(amountToExchange), amountToExchange, 0],
+		describe('tribesTotalSupplies', () => {
+			it('should return the correct tribe total supplies', async () => {
+				const effectiveValue = await exchangeRates.effectiveValue(hUSD, amountToExchange, hBTC);
+				assert.deepEqual(await tribeUtil.tribesTotalSupplies(), [
+					tribeKeys,
+					[hUSDMinted.sub(amountToExchange), effectiveValue, 0],
+					[hUSDMinted.sub(amountToExchange), amountToExchange, 0],
 				]);
 			});
 		});

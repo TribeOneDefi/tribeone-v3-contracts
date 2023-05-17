@@ -75,8 +75,8 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 
 	const marketKeySuffix = '-perp';
 
-	const marketKey = toBytes32('sBTC' + marketKeySuffix);
-	const baseAsset = toBytes32('sBTC');
+	const marketKey = toBytes32('hBTC' + marketKeySuffix);
+	const baseAsset = toBytes32('hBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
 	const takerFeeDelayedOrder = toUnit('0.0005');
@@ -110,8 +110,8 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 	}
 
 	const feeds = [
-		{ assetId: baseAsset, feedId: toBytes32('feed-sBTC') },
-		{ assetId: toBytes32('sETH'), feedId: toBytes32('feed-sETH') },
+		{ assetId: baseAsset, feedId: toBytes32('feed-hBTC') },
+		{ assetId: toBytes32('hETH'), feedId: toBytes32('feed-hETH') },
 	];
 
 	const defaultFeedId = feeds[0].feedId;
@@ -190,7 +190,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			PerpsV2MarketStateBTC: perpsV2MarketState,
 			PerpsV2MarketBTC: perpsV2MarketImpl,
 			PerpsV2MarketLiquidateBTC: perpsV2MarketLiquidate,
-			PerpsV2MarketViewsBTC: perpsV2MarketViewsImpl,
+			PerpsV2MarketViewhBTC: perpsV2MarketViewsImpl,
 			PerpsV2MarketDelayedIntentBTC: perpsV2MarketDelayedIntent,
 			PerpsV2MarketDelayedExecutionBTC: perpsV2MarketDelayedExecution,
 			ProxyPerpsV2MarketBTC: perpsV2MarketProxy,
@@ -200,7 +200,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			Exchanger: exchanger,
 			CircuitBreaker: circuitBreaker,
 			AddressResolver: addressResolver,
-			SynthsUSD: hUSD,
+			TribehUSD: hUSD,
 			Tribeone: tribeone,
 			FeePool: feePool,
 			DebtCache: debtCache,
@@ -208,11 +208,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			SystemSettings: systemSettings,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD', 'sBTC', 'sETH'],
+			tribes: ['hUSD', 'hBTC', 'hETH'],
 			contracts: [
 				'FuturesMarketManager',
 				{ contract: 'PerpsV2MarketStateBTC', properties: { perpSuffix: marketKeySuffix } },
-				'PerpsV2MarketViewsBTC',
+				'PerpsV2MarketViewhBTC',
 				'PerpsV2MarketBTC',
 				'PerpsV2MarketSettings',
 				'TestablePerpsV2MarketBTC',
@@ -248,9 +248,9 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			await hUSD.issue(t, traderInitialBalance);
 		}
 
-		// allow owner to suspend system or synths
+		// allow owner to suspend system or tribes
 		await systemStatus.updateAccessControls(
-			[toBytes32('System'), toBytes32('Synth')],
+			[toBytes32('System'), toBytes32('Tribe')],
 			[owner, owner],
 			[true, true],
 			[true, true],
@@ -1486,19 +1486,19 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			assert.bnClose((await perpsV2Market.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
 		});
 
-		it('Reverts if the synth is suspended', async () => {
+		it('Reverts if the tribe is suspended', async () => {
 			await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 
 			// suspend
-			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 			// should revert
 			await assert.revert(
 				perpsV2Market.transferMargin(toUnit('-1000'), { from: trader }),
-				'Synth is suspended'
+				'Tribe is suspended'
 			);
 
 			// resume
-			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			await systemStatus.resumeTribe(baseAsset, { from: owner });
 			// should work now
 			await perpsV2Market.transferMargin(toUnit('-1000'), { from: trader });
 			assert.bnClose((await perpsV2Market.accessibleMargin(trader))[0], toBN('0'), toUnit('0.1'));
@@ -1881,7 +1881,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			assert.bnEqual(position.lastPrice, fillPrice);
 		});
 
-		it('Cannot modify a position if the synth is suspended', async () => {
+		it('Cannot modify a position if the tribe is suspended', async () => {
 			const margin = toUnit('1000');
 			await perpsV2Market.transferMargin(margin, { from: trader });
 			const size = toUnit('10');
@@ -1893,15 +1893,15 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 			const desiredFillPrice = fillPriceMeta[1];
 
 			// suspend
-			await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+			await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 			// should revert modifying position
 			await assert.revert(
 				perpsV2Market.modifyPosition(size, desiredFillPrice, { from: trader }),
-				'Synth is suspended'
+				'Tribe is suspended'
 			);
 
 			// resume
-			await systemStatus.resumeSynth(baseAsset, { from: owner });
+			await systemStatus.resumeTribe(baseAsset, { from: owner });
 			// should work now
 			await perpsV2Market.modifyPosition(size, desiredFillPrice, { from: trader });
 			const position = await perpsV2Market.positions(trader);
@@ -3277,19 +3277,19 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					);
 				});
 
-				it('Reverts if the synth is suspended', async () => {
+				it('Reverts if the tribe is suspended', async () => {
 					await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 
 					// suspend
-					await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+					await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 					// should revert
 					await assert.revert(
 						perpsV2Market.withdrawAllMargin({ from: trader }),
-						'Synth is suspended'
+						'Tribe is suspended'
 					);
 
 					// resume
-					await systemStatus.resumeSynth(baseAsset, { from: owner });
+					await systemStatus.resumeTribe(baseAsset, { from: owner });
 					// should work now
 					await perpsV2Market.withdrawAllMargin({ from: trader });
 					assert.bnClose(
@@ -5510,7 +5510,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.isTrue(await perpsV2Market.canLiquidate(trader));
 			});
 
-			it('No liquidations while the synth is suspended', async () => {
+			it('No liquidations while the tribe is suspended', async () => {
 				await setPrice(baseAsset, toUnit('250'));
 				await perpsV2Market.transferMargin(toUnit('1000'), { from: trader });
 
@@ -5527,11 +5527,11 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 				assert.isTrue(await perpsV2Market.canLiquidate(trader));
 
 				// suspend
-				await systemStatus.suspendSynth(baseAsset, 65, { from: owner });
+				await systemStatus.suspendTribe(baseAsset, 65, { from: owner });
 				assert.isFalse(await perpsV2Market.canLiquidate(trader));
 
 				// resume
-				await systemStatus.resumeSynth(baseAsset, { from: owner });
+				await systemStatus.resumeTribe(baseAsset, { from: owner });
 				// should work now
 				assert.isTrue(await perpsV2Market.canLiquidate(trader));
 			});
@@ -6840,7 +6840,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('1'), priceImpactDelta, 0)
 				)[1];
 				await perpsV2Market.modifyPosition(toUnit('1'), desiredFillPrice, { from: trader });
-				// base rate of sETH is 100 from shared setup above
+				// base rate of hETH is 100 from shared setup above
 				await setPrice(baseAsset, toUnit('300'), false);
 			});
 
@@ -6855,7 +6855,7 @@ contract('PerpsV2Market PerpsV2MarketAtomic', accounts => {
 					await perpsV2MarketHelper.fillPriceWithMeta(toUnit('1'), priceImpactDelta, 0)
 				)[1];
 				await perpsV2Market.modifyPosition(toUnit('1'), desiredFillPrice, { from: trader });
-				// base rate of sETH is 100 from shared setup above
+				// base rate of hETH is 100 from shared setup above
 				await setPrice(baseAsset, toUnit('30'), false);
 			});
 

@@ -5,9 +5,9 @@ import "../interfaces/ISystemStatus.sol";
 import "../interfaces/IAddressResolver.sol";
 import "../interfaces/IFeePool.sol";
 
-// Mock synth that also adheres to system status
+// Mock tribe that also adheres to system status
 
-contract MockSynth is ExternStateToken {
+contract MockTribe is ExternStateToken {
     IAddressResolver private addressResolver;
     bytes32 public currencyKey;
 
@@ -30,14 +30,14 @@ contract MockSynth is ExternStateToken {
         addressResolver = _resolver;
     }
 
-    // Used for PurgeableSynth to test removal
+    // Used for PurgeableTribe to test removal
     function setTotalSupply(uint256 _totalSupply) external {
         totalSupply = _totalSupply;
     }
 
     /**
      * @notice _transferToFeeAddress function
-     * non-hUSD synths are exchanged into hUSD via synthInitiatedExchange
+     * non-hUSD tribes are exchanged into hUSD via tribeInitiatedExchange
      * notify feePool to record amount as fee paid to feePool */
     function _transferToFeeAddress(address to, uint value) internal returns (bool) {
         uint amountInUSD;
@@ -57,7 +57,7 @@ contract MockSynth is ExternStateToken {
     }
 
     function transfer(address to, uint value) external optionalProxy returns (bool) {
-        ISystemStatus(addressResolver.getAddress("SystemStatus")).requireSynthActive(currencyKey);
+        ISystemStatus(addressResolver.getAddress("SystemStatus")).requireTribeActive(currencyKey);
 
         // transfers to FEE_ADDRESS will be exchanged into hUSD and recorded as fee
         if (to == FEE_ADDRESS) {
@@ -78,7 +78,7 @@ contract MockSynth is ExternStateToken {
         address to,
         uint value
     ) external optionalProxy returns (bool) {
-        ISystemStatus(addressResolver.getAddress("SystemStatus")).requireSynthActive(currencyKey);
+        ISystemStatus(addressResolver.getAddress("SystemStatus")).requireTribeActive(currencyKey);
 
         return _transferFromByProxy(messageSender, from, to, value);
     }

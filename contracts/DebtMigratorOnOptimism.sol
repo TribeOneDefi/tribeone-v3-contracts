@@ -1,7 +1,6 @@
 pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./BaseDebtMigrator.sol";
 import "./interfaces/IDebtMigrator.sol";
@@ -53,7 +52,7 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         uint amountPerEntry = escrowMigrated.multiplyDecimal(1e17);
 
         // Make sure to approve the creation of the escrow entries.
-        _tribeoneERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
+        _tribeetixERC20().approve(address(_rewardEscrowV2()), escrowMigrated);
 
         // Create ten distinct entries that vest each month for a year. First entry vests in 8 weeks.
         uint amountEscrowed = 0;
@@ -90,7 +89,7 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
         address account,
         uint debtSharesMigrated,
         uint escrowMigrated,
-        uint liquidHakaMigrated,
+        uint liquidSnxMigrated,
         bytes calldata debtPayload
     ) external onlyCounterpart {
         _incrementDebtTransferCounter(DEBT_TRANSFER_RECV, debtSharesMigrated);
@@ -100,11 +99,11 @@ contract DebtMigratorOnOptimism is BaseDebtMigrator, IDebtMigrator {
             _finalizeEscrow(account, escrowMigrated);
         }
 
-        if (liquidHakaMigrated > 0) {
-            _tribeoneERC20().transfer(account, liquidHakaMigrated);
+        if (liquidSnxMigrated > 0) {
+            _tribeetixERC20().transfer(account, liquidSnxMigrated);
         }
 
-        emit MigrationFinalized(account, debtSharesMigrated, escrowMigrated, liquidHakaMigrated);
+        emit MigrationFinalized(account, debtSharesMigrated, escrowMigrated, liquidSnxMigrated);
     }
 
     /* ========== EVENTS ========== */

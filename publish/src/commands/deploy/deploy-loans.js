@@ -10,7 +10,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	await deployer.deployContract({
 		name: 'Depot',
-		deps: ['ProxyTribeone', 'SynthhUSD', 'FeePool'],
+		deps: ['ProxyTribeone', 'TribehUSD', 'FeePool'],
 		args: [account, account, addressOf(ReadProxyAddressResolver)],
 	});
 
@@ -86,7 +86,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
-			toBytes32('sETH'),
+			toBytes32('hETH'),
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_ETH'))['MIN_COLLATERAL'],
 		],
@@ -94,7 +94,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
 	if (!RENBTC_ADDRESS) {
-		if (network !== 'local') {
+		if (network !== 'local' && network !== 'goerli-arbitrum') {
 			throw new Error('renBTC address is not known');
 		}
 
@@ -115,7 +115,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 			account,
 			addressOf(collateralManager),
 			addressOf(ReadProxyAddressResolver),
-			toBytes32('sBTC'),
+			toBytes32('hBTC'),
 			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_CRATIO'],
 			(await getDeployParameter('COLLATERAL_RENBTC'))['MIN_COLLATERAL'],
 			RENBTC_ADDRESS, // if undefined then this will error as expected.

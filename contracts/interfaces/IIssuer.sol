@@ -1,6 +1,6 @@
 pragma solidity >=0.4.24;
 
-import "../interfaces/ISynth.sol";
+import "../interfaces/ITribe.sol";
 
 // https://docs.tribeone.io/contracts/source/interfaces/iissuer
 interface IIssuer {
@@ -15,15 +15,15 @@ interface IIssuer {
             bool isStale
         );
 
-    function anySynthOrHAKARateIsInvalid() external view returns (bool anyRateInvalid);
+    function anyTribeOrHAKARateIsInvalid() external view returns (bool anyRateInvalid);
 
     function availableCurrencyKeys() external view returns (bytes32[] memory);
 
-    function availableSynthCount() external view returns (uint);
+    function availableTribeCount() external view returns (uint);
 
-    function availableSynths(uint index) external view returns (ISynth);
+    function availableTribes(uint index) external view returns (ITribe);
 
-    function canBurnSynths(address account) external view returns (bool);
+    function canBurnTribes(address account) external view returns (bool);
 
     function collateral(address account) external view returns (uint);
 
@@ -40,11 +40,11 @@ interface IIssuer {
 
     function lastIssueEvent(address account) external view returns (uint);
 
-    function maxIssuableSynths(address issuer) external view returns (uint maxIssuable);
+    function maxIssuableTribes(address issuer) external view returns (uint maxIssuable);
 
     function minimumStakeTime() external view returns (uint);
 
-    function remainingIssuableSynths(address issuer)
+    function remainingIssuableTribes(address issuer)
         external
         view
         returns (
@@ -53,13 +53,13 @@ interface IIssuer {
             uint totalSystemDebt
         );
 
-    function synths(bytes32 currencyKey) external view returns (ISynth);
+    function tribes(bytes32 currencyKey) external view returns (ITribe);
 
-    function getSynths(bytes32[] calldata currencyKeys) external view returns (ISynth[] memory);
+    function getTribes(bytes32[] calldata currencyKeys) external view returns (ITribe[] memory);
 
-    function synthsByAddress(address synthAddress) external view returns (bytes32);
+    function tribesByAddress(address tribeAddress) external view returns (bytes32);
 
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint);
+    function totalIssuedTribes(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint);
 
     function transferableTribeoneAndAnyRateIsInvalid(address account, uint balance)
         external
@@ -77,34 +77,34 @@ interface IIssuer {
         );
 
     // Restricted: used internally to Tribeone
-    function addSynths(ISynth[] calldata synthsToAdd) external;
+    function addTribes(ITribe[] calldata tribesToAdd) external;
 
-    function issueSynths(address from, uint amount) external;
+    function issueTribes(address from, uint amount) external;
 
-    function issueSynthsOnBehalf(
+    function issueTribesOnBehalf(
         address issueFor,
         address from,
         uint amount
     ) external;
 
-    function issueMaxSynths(address from) external;
+    function issueMaxTribes(address from) external;
 
-    function issueMaxSynthsOnBehalf(address issueFor, address from) external;
+    function issueMaxTribesOnBehalf(address issueFor, address from) external;
 
-    function burnSynths(address from, uint amount) external;
+    function burnTribes(address from, uint amount) external;
 
-    function burnSynthsOnBehalf(
+    function burnTribesOnBehalf(
         address burnForAddress,
         address from,
         uint amount
     ) external;
 
-    function burnSynthsToTarget(address from) external;
+    function burnTribesToTarget(address from) external;
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external;
+    function burnTribesToTargetOnBehalf(address burnForAddress, address from) external;
 
     function burnForRedemption(
-        address deprecatedSynthProxy,
+        address deprecatedTribeProxy,
         address account,
         uint balance
     ) external;
@@ -119,13 +119,13 @@ interface IIssuer {
             uint escrowToLiquidate
         );
 
-    function issueSynthsWithoutDebt(
+    function issueTribesWithoutDebt(
         bytes32 currencyKey,
         address to,
         uint amount
     ) external returns (bool rateInvalid);
 
-    function burnSynthsWithoutDebt(
+    function burnTribesWithoutDebt(
         bytes32 currencyKey,
         address to,
         uint amount

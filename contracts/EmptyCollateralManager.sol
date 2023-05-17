@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 import "./interfaces/ICollateralManager.sol";
 
 contract EmptyCollateralManager is ICollateralManager {
@@ -9,7 +8,7 @@ contract EmptyCollateralManager is ICollateralManager {
         return false;
     }
 
-    function isSynthManaged(bytes32) external view returns (bool) {
+    function isTribeManaged(bytes32) external view returns (bool) {
         return false;
     }
 
@@ -22,11 +21,11 @@ contract EmptyCollateralManager is ICollateralManager {
         return 0;
     }
 
-    function totalLong() external view returns (uint susdValue, bool anyRateIsInvalid) {
+    function totalLong() external view returns (uint husdValue, bool anyRateIsInvalid) {
         return (0, false);
     }
 
-    function totalShort() external view returns (uint susdValue, bool anyRateIsInvalid) {
+    function totalShort() external view returns (uint husdValue, bool anyRateIsInvalid) {
         return (0, false);
     }
 
@@ -68,11 +67,11 @@ contract EmptyCollateralManager is ICollateralManager {
         return (false, false);
     }
 
-    function areSynthsAndCurrenciesSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
+    function areTribesAndCurrenciesSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
         return false;
     }
 
-    function areShortableSynthsSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
+    function areShortableTribesSet(bytes32[] calldata, bytes32[] calldata) external view returns (bool) {
         return false;
     }
 
@@ -86,13 +85,13 @@ contract EmptyCollateralManager is ICollateralManager {
 
     function removeCollaterals(address[] calldata) external {}
 
-    function addSynths(bytes32[] calldata, bytes32[] calldata) external {}
+    function addTribes(bytes32[] calldata, bytes32[] calldata) external {}
 
-    function removeSynths(bytes32[] calldata, bytes32[] calldata) external {}
+    function removeTribes(bytes32[] calldata, bytes32[] calldata) external {}
 
-    function addShortableSynths(bytes32[2][] calldata, bytes32[] calldata) external {}
+    function addShortableTribes(bytes32[2][] calldata, bytes32[] calldata) external {}
 
-    function removeShortableSynths(bytes32[] calldata) external {}
+    function removeShortableTribes(bytes32[] calldata) external {}
 
     // State mutative
     function updateBorrowRates(uint) external {}

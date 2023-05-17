@@ -22,7 +22,7 @@ contract RewardEscrowV2Frozen is BaseRewardEscrowV2Frozen {
     uint public migrateEntriesThresholdAmount = (10**18) * 1000; // Default 1000 HAKA
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_TRIBEONE_BRIDGE_OPTIMISM = "TribeoneBridgeToOptimism";
+    bytes32 private constant CONTRACT_TRIBEONEETIX_BRIDGE_OPTIMISM = "TribeoneBridgeToOptimism";
     bytes32 private constant CONTRACT_REWARD_ESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
 
@@ -35,14 +35,14 @@ contract RewardEscrowV2Frozen is BaseRewardEscrowV2Frozen {
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseRewardEscrowV2Frozen.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](3);
-        newAddresses[0] = CONTRACT_TRIBEONE_BRIDGE_OPTIMISM;
+        newAddresses[0] = CONTRACT_TRIBEONEETIX_BRIDGE_OPTIMISM;
         newAddresses[1] = CONTRACT_REWARD_ESCROW;
         newAddresses[2] = CONTRACT_SYSTEMSTATUS;
         return combineArrays(existingAddresses, newAddresses);
     }
 
-    function tribeoneBridgeToOptimism() internal view returns (address) {
-        return requireAndGetAddress(CONTRACT_TRIBEONE_BRIDGE_OPTIMISM);
+    function tribeetixBridgeToOptimism() internal view returns (address) {
+        return requireAndGetAddress(CONTRACT_TRIBEONEETIX_BRIDGE_OPTIMISM);
     }
 
     function oldRewardEscrow() internal view returns (IRewardEscrow) {
@@ -222,7 +222,7 @@ contract RewardEscrowV2Frozen is BaseRewardEscrowV2Frozen {
          */
         if (escrowedAccountBalance > 0) {
             _reduceAccountEscrowBalances(account, escrowedAccountBalance);
-            IERC20(address(tribeone())).transfer(tribeoneBridgeToOptimism(), escrowedAccountBalance);
+            IERC20(address(tribeone())).transfer(tribeetixBridgeToOptimism(), escrowedAccountBalance);
         }
 
         emit BurnedForMigrationToL2(account, entryIDs, escrowedAccountBalance, block.timestamp);
@@ -233,7 +233,7 @@ contract RewardEscrowV2Frozen is BaseRewardEscrowV2Frozen {
     /* ========== MODIFIERS ========== */
 
     modifier onlyTribeoneBridge() {
-        require(msg.sender == tribeoneBridgeToOptimism(), "Can only be invoked by TribeoneBridgeToOptimism contract");
+        require(msg.sender == tribeetixBridgeToOptimism(), "Can only be invoked by TribeoneBridgeToOptimism contract");
         _;
     }
 

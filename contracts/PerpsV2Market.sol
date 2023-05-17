@@ -6,7 +6,7 @@ import "./PerpsV2MarketProxyable.sol";
 import "./interfaces/IPerpsV2Market.sol";
 
 /*
- * Synthetic PerpsV2
+ * Tribeetic PerpsV2
  * =================
  *
  * PerpsV2 markets allow users leveraged exposure to an asset, long or short.
@@ -139,7 +139,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
             // hUSD balance and credited to their margin account.
 
             // Ensure we handle reclamation when burning tokens.
-            uint postReclamationAmount = _manager().burnSUSD(sender, absDelta);
+            uint postReclamationAmount = _manager().burnHUSD(sender, absDelta);
             if (postReclamationAmount != absDelta) {
                 // If balance was insufficient, the actual delta will be smaller
                 marginDelta = int(postReclamationAmount);
@@ -147,7 +147,7 @@ contract PerpsV2Market is IPerpsV2Market, PerpsV2MarketProxyable {
         } else if (marginDelta < 0) {
             // A negative margin delta corresponds to a withdrawal, which will be minted into
             // their hUSD balance, and debited from their margin account.
-            _manager().issueSUSD(sender, absDelta);
+            _manager().issueHUSD(sender, absDelta);
         } else {
             // Zero delta is a no-op
             return;

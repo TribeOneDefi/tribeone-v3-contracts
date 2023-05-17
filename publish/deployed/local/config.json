@@ -56,7 +56,7 @@
 	"ExchangeCircuitBreaker": {
 		"deploy": true
 	},
-	"VirtualSynthMastercopy": {
+	"VirtualTribeMastercopy": {
 		"deploy": true
 	},
 	"ExchangeState": {
@@ -116,16 +116,16 @@
 	"SystemStatus": {
 		"deploy": true
 	},
-	"SynthUtil": {
+	"TribeUtil": {
 		"deploy": true
 	},
 	"DappMaintenance": {
 		"deploy": true
 	},
-	"SynthsUSD": {
+	"TribehUSD": {
 		"deploy": true
 	},
-	"SynthsBTC": {
+	"TribehBTC": {
 		"deploy": true
 	},
 	"ProxyFeePool": {
@@ -134,10 +134,10 @@
 	"ProxyTribeone": {
 		"deploy": true
 	},
-	"ProxysUSD": {
+	"ProxyhUSD": {
 		"deploy": true
 	},
-	"ProxysBTC": {
+	"ProxyhBTC": {
 		"deploy": true
 	},
 	"SafeDecimalMath": {
@@ -149,37 +149,37 @@
 	"TokenStateTribeone": {
 		"deploy": true
 	},
-	"TokenStatesUSD": {
+	"TokenStatehUSD": {
 		"deploy": true
 	},
-	"TokenStatesBTC": {
+	"TokenStatehBTC": {
 		"deploy": true
 	},
-	"TokenStatesETH": {
+	"TokenStatehETH": {
 		"deploy": true
 	},
 	"TokenStatesLINK": {
 		"deploy": true
 	},
-	"TokenStatesETHBTC": {
+	"TokenStatehETHBTC": {
 		"deploy": true
 	},
-	"ProxysETH": {
+	"ProxyhETH": {
 		"deploy": true
 	},
 	"ProxysLINK": {
 		"deploy": true
 	},
-	"ProxysETHBTC": {
+	"ProxyhETHBTC": {
 		"deploy": true
 	},
-	"SynthsETH": {
+	"TribehETH": {
 		"deploy": true
 	},
-	"SynthsLINK": {
+	"TribesLINK": {
 		"deploy": true
 	},
-	"SynthsETHBTC": {
+	"TribehETHBTC": {
 		"deploy": true
 	},
 	"MockToken": {
@@ -203,10 +203,10 @@
 	"OwnerRelayOnEthereum": {
 		"deploy": true
 	},
-	"SynthRedeemer": {
+	"TribeRedeemer": {
 		"deploy": true
 	},
-	"OneNetAggregatorIssuedSynths": {
+	"OneNetAggregatorIssuedTribes": {
 		"deploy": true
 	},
 	"OneNetAggregatorDebtRatio": {

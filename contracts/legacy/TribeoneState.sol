@@ -8,7 +8,7 @@ import "../interfaces/ITribeoneState.sol";
 // Libraries
 import "../SafeDecimalMath.sol";
 
-// https://docs.tribeone.io/contracts/source/contracts/tribeonestate
+// https://docs.tribeone.io/contracts/source/contracts/tribeetixstate
 contract TribeoneState is Owned, State, ITribeoneState {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
@@ -27,10 +27,10 @@ contract TribeoneState is Owned, State, ITribeoneState {
         uint debtEntryIndex;
     }
 
-    // Issued synth balances for individual fee entitlements and exit price calculations
+    // Issued tribe balances for individual fee entitlements and exit price calculations
     mapping(address => IssuanceData) public issuanceData;
 
-    // The total count of people that have outstanding issued synths in any flavour
+    // The total count of people that have outstanding issued tribes in any flavour
     uint public totalIssuerCount;
 
     // Global debt pool tracking

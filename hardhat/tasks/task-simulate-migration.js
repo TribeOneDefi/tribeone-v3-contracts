@@ -54,7 +54,7 @@ task(
 			});
 
 			await deployInstance({
-				addNewSynths: true,
+				addNewTribes: true,
 				freshDeploy: false,
 				generateSolidity: true,
 				providerPort: '8545',

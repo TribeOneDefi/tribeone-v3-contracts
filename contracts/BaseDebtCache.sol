@@ -26,7 +26,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     using SafeDecimalMath for uint;
 
     uint internal _cachedDebt;
-    mapping(bytes32 => uint) internal _cachedSynthDebt;
+    mapping(bytes32 => uint) internal _cachedTribeDebt;
     mapping(bytes32 => uint) internal _excludedIssuedDebt;
     uint internal _cacheTimestamp;
     bool internal _cacheInvalid = true;
@@ -37,7 +37,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant hUSD = "hUSD";
-    bytes32 internal constant sETH = "sETH";
+    bytes32 internal constant hETH = "hETH";
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
@@ -108,8 +108,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cachedDebt;
     }
 
-    function cachedSynthDebt(bytes32 currencyKey) external view returns (uint) {
-        return _cachedSynthDebt[currencyKey];
+    function cachedTribeDebt(bytes32 currencyKey) external view returns (uint) {
+        return _cachedTribeDebt[currencyKey];
     }
 
     function cacheTimestamp() external view returns (uint) {
@@ -131,45 +131,44 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         return _cacheStale(_cacheTimestamp);
     }
 
-    function _issuedSynthValues(bytes32[] memory currencyKeys, uint[] memory rates)
+    function _issuedTribeValues(bytes32[] memory currencyKeys, uint[] memory rates)
         internal
         view
         returns (uint[] memory values)
     {
-
         uint numValues = currencyKeys.length;
         values = new uint[](numValues);
-        ISynth[] memory synths = issuer().getSynths(currencyKeys);
+        ITribe[] memory tribes = issuer().getTribes(currencyKeys);
 
         for (uint i = 0; i < numValues; i++) {
-            address synthAddress = address(synths[i]);
-            require(synthAddress != address(0), "Synth does not exist");
-            uint supply = IERC20(synthAddress).totalSupply();
+            address tribeAddress = address(tribes[i]);
+            require(tribeAddress != address(0), "Tribe does not exist");
+            uint supply = IERC20(tribeAddress).totalSupply();
             values[i] = supply.multiplyDecimalRound(rates[i]);
         }
 
         return (values);
     }
 
-    function _currentSynthDebts(bytes32[] memory currencyKeys)
+    function _currentTribeDebts(bytes32[] memory currencyKeys)
         internal
         view
         returns (
-            uint[] memory hakaIssuedDebts,
+            uint[] memory snxIssuedDebts,
             uint _futuresDebt,
             uint _excludedDebt,
             bool anyRateIsInvalid
         )
     {
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
-        uint[] memory values = _issuedSynthValues(currencyKeys, rates);
-        (uint excludedDebt, bool isAnyNonHakaDebtRateInvalid) = _totalNonHakaBackedDebt(currencyKeys, rates, isInvalid);
+        uint[] memory values = _issuedTribeValues(currencyKeys, rates);
+        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
         (uint futuresDebt, bool futuresDebtIsInvalid) = futuresMarketManager().totalDebt();
 
-        return (values, futuresDebt, excludedDebt, isInvalid || futuresDebtIsInvalid || isAnyNonHakaDebtRateInvalid);
+        return (values, futuresDebt, excludedDebt, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
-    function currentSynthDebts(bytes32[] calldata currencyKeys)
+    function currentTribeDebts(bytes32[] calldata currencyKeys)
         external
         view
         returns (
@@ -179,20 +178,20 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
             bool anyRateIsInvalid
         )
     {
-        return _currentSynthDebts(currencyKeys);
+        return _currentTribeDebts(currencyKeys);
     }
 
-    function _cachedSynthDebts(bytes32[] memory currencyKeys) internal view returns (uint[] memory) {
+    function _cachedTribeDebts(bytes32[] memory currencyKeys) internal view returns (uint[] memory) {
         uint numKeys = currencyKeys.length;
         uint[] memory debts = new uint[](numKeys);
         for (uint i = 0; i < numKeys; i++) {
-            debts[i] = _cachedSynthDebt[currencyKeys[i]];
+            debts[i] = _cachedTribeDebt[currencyKeys[i]];
         }
         return debts;
     }
 
-    function cachedSynthDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory hakaIssuedDebts) {
-        return _cachedSynthDebts(currencyKeys);
+    function cachedTribeDebts(bytes32[] calldata currencyKeys) external view returns (uint[] memory snxIssuedDebts) {
+        return _cachedTribeDebts(currencyKeys);
     }
 
     function _excludedIssuedDebts(bytes32[] memory currencyKeys) internal view returns (uint[] memory) {
@@ -221,13 +220,13 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         isInitialized = true;
 
         // get the currency keys from **previous** issuer, in case current issuer
-        // doesn't have all the synths at this point
-        // warning: if a synth won't be added to the current issuer before the next upgrade of this contract,
+        // doesn't have all the tribes at this point
+        // warning: if a tribe won't be added to the current issuer before the next upgrade of this contract,
         // its entry will be lost (because it won't be in the prevIssuer for next time).
         // if for some reason this is a problem, it should be possible to use recordExcludedDebtChange() to amend
         bytes32[] memory keys = prevIssuer.availableCurrencyKeys();
 
-        require(keys.length > 0, "previous Issuer has no synths");
+        require(keys.length > 0, "previous Issuer has no tribes");
 
         // query for previous debt records
         uint[] memory debts = prevDebtCache.excludedIssuedDebts(keys);
@@ -243,14 +242,14 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     }
 
     // Returns the total hUSD debt backed by non-HAKA collateral.
-    function totalNonHakaBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid) {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
         (uint[] memory rates, bool ratesAreInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
-        return _totalNonHakaBackedDebt(currencyKeys, rates, ratesAreInvalid);
+        return _totalNonSnxBackedDebt(currencyKeys, rates, ratesAreInvalid);
     }
 
-    function _totalNonHakaBackedDebt(
+    function _totalNonSnxBackedDebt(
         bytes32[] memory currencyKeys,
         uint[] memory rates,
         bool ratesAreInvalid
@@ -263,8 +262,8 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         excludedDebt = longValue.add(shortValue);
 
         // 2. EtherWrapper.
-        // Subtract sETH and hUSD issued by EtherWrapper.
-        excludedDebt = excludedDebt.add(etherWrapper().totalIssuedSynths());
+        // Subtract hETH and hUSD issued by EtherWrapper.
+        excludedDebt = excludedDebt.add(etherWrapper().totalIssuedTribes());
 
         // 3. WrapperFactory.
         // Get the debt issued by the Wrappers.
@@ -279,9 +278,9 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         bytes32[] memory currencyKeys = issuer().availableCurrencyKeys();
         (uint[] memory rates, bool isInvalid) = exchangeRates().ratesAndInvalidForCurrencies(currencyKeys);
 
-        // Sum all issued synth values based on their supply.
-        uint[] memory values = _issuedSynthValues(currencyKeys, rates);
-        (uint excludedDebt, bool isAnyNonHakaDebtRateInvalid) = _totalNonHakaBackedDebt(currencyKeys, rates, isInvalid);
+        // Sum all issued tribe values based on their supply.
+        uint[] memory values = _issuedTribeValues(currencyKeys, rates);
+        (uint excludedDebt, bool isAnyNonSnxDebtRateInvalid) = _totalNonSnxBackedDebt(currencyKeys, rates, isInvalid);
 
         uint numValues = values.length;
         uint total;
@@ -296,7 +295,7 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
         // Ensure that if the excluded non-HAKA debt exceeds HAKA-backed debt, no overflow occurs
         total = total < excludedDebt ? 0 : total.sub(excludedDebt);
 
-        return (total, isInvalid || futuresDebtIsInvalid || isAnyNonHakaDebtRateInvalid);
+        return (total, isInvalid || futuresDebtIsInvalid || isAnyNonSnxDebtRateInvalid);
     }
 
     function currentDebt() external view returns (uint debt, bool anyRateIsInvalid) {
@@ -322,21 +321,21 @@ contract BaseDebtCache is Owned, MixinSystemSettings, IDebtCache {
     // Stub out all mutative functions as no-ops;
     // since they do nothing, there are no restrictions
 
-    function updateCachedSynthDebts(bytes32[] calldata currencyKeys) external {}
+    function updateCachedTribeDebts(bytes32[] calldata currencyKeys) external {}
 
-    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
+    function updateCachedTribeDebtWithRate(bytes32 currencyKey, uint currencyRate) external {}
 
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
+    function updateCachedTribeDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external {}
 
     function updateDebtCacheValidity(bool currentlyInvalid) external {}
 
-    function purgeCachedSynthDebt(bytes32 currencyKey) external {}
+    function purgeCachedTribeDebt(bytes32 currencyKey) external {}
 
     function takeDebtSnapshot() external {}
 
     function recordExcludedDebtChange(bytes32 currencyKey, int256 delta) external {}
 
-    function updateCachedsUSDDebt(int amount) external {}
+    function updateCachedhUSDDebt(int amount) external {}
 
     /* ========== MODIFIERS ========== */
 

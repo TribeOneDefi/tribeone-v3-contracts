@@ -11,7 +11,7 @@ import "./SafeCast.sol";
 import "./SafeDecimalMath.sol";
 
 // Internal references
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 import "./interfaces/ITribeoneDebtShare.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IDelegateApprovals.sol";
@@ -21,7 +21,7 @@ import "./interfaces/IHasBalance.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ILiquidator.sol";
 import "./interfaces/ILiquidatorRewards.sol";
-import "./interfaces/ISynthRedeemer.sol";
+import "./interfaces/ITribeRedeemer.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./Proxyable.sol";
 
@@ -32,13 +32,13 @@ interface IProxy {
 }
 
 interface IIssuerInternalDebtCache {
-    function updateCachedSynthDebtWithRate(bytes32 currencyKey, uint currencyRate) external;
+    function updateCachedTribeDebtWithRate(bytes32 currencyKey, uint currencyRate) external;
 
-    function updateCachedSynthDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
+    function updateCachedTribeDebtsWithRates(bytes32[] calldata currencyKeys, uint[] calldata currencyRates) external;
 
     function updateDebtCacheValidity(bool currentlyInvalid) external;
 
-    function totalNonHakaBackedDebt() external view returns (uint excludedDebt, bool isInvalid);
+    function totalNonSnxBackedDebt() external view returns (uint excludedDebt, bool isInvalid);
 
     function cacheInfo()
         external
@@ -50,7 +50,7 @@ interface IIssuerInternalDebtCache {
             bool isStale
         );
 
-    function updateCachedsUSDDebt(int amount) external;
+    function updateCachedhUSDDebt(int amount) external;
 }
 
 // https://docs.tribeone.io/contracts/source/contracts/issuer
@@ -60,10 +60,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     bytes32 public constant CONTRACT_NAME = "Issuer";
 
-    // Available Synths which can be used with the system
-    ISynth[] public availableSynths;
-    mapping(bytes32 => ISynth) public synths;
-    mapping(address => bytes32) public synthsByAddress;
+    // Available Tribes which can be used with the system
+    ITribe[] public availableTribes;
+    mapping(bytes32 => ITribe) public tribes;
+    mapping(address => bytes32) public tribesByAddress;
 
     /* ========== ENCODED NAMES ========== */
 
@@ -76,24 +76,24 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /* ========== ADDRESS RESOLVER CONFIGURATION ========== */
 
-    bytes32 private constant CONTRACT_TRIBEONE = "Tribeone";
+    bytes32 private constant CONTRACT_TRIBEONEETIX = "Tribeone";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_CIRCUIT_BREAKER = "CircuitBreaker";
-    bytes32 private constant CONTRACT_TRIBEONEDEBTSHARE = "TribeoneDebtShare";
+    bytes32 private constant CONTRACT_TRIBEONEETIXDEBTSHARE = "TribeoneDebtShare";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 private constant CONTRACT_DELEGATEAPPROVALS = "DelegateApprovals";
     bytes32 private constant CONTRACT_REWARDESCROW_V2 = "RewardEscrowV2";
     bytes32 private constant CONTRACT_LIQUIDATOR = "Liquidator";
     bytes32 private constant CONTRACT_LIQUIDATOR_REWARDS = "LiquidatorRewards";
     bytes32 private constant CONTRACT_DEBTCACHE = "DebtCache";
-    bytes32 private constant CONTRACT_SYNTHREDEEMER = "SynthRedeemer";
-    bytes32 private constant CONTRACT_TRIBEONEBRIDGETOOPTIMISM = "TribeoneBridgeToOptimism";
-    bytes32 private constant CONTRACT_TRIBEONEBRIDGETOBASE = "TribeoneBridgeToBase";
+    bytes32 private constant CONTRACT_TRIBEONEREDEEMER = "TribeRedeemer";
+    bytes32 private constant CONTRACT_TRIBEONEETIXBRIDGETOOPTIMISM = "TribeoneBridgeToOptimism";
+    bytes32 private constant CONTRACT_TRIBEONEETIXBRIDGETOBASE = "TribeoneBridgeToBase";
     bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM = "DebtMigratorOnEthereum";
     bytes32 private constant CONTRACT_DEBT_MIGRATOR_ON_OPTIMISM = "DebtMigratorOnOptimism";
 
-    bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS = "ext:AggregatorIssuedSynths";
+    bytes32 private constant CONTRACT_EXT_AGGREGATOR_ISSUED_TRIBEONES = "ext:AggregatorIssuedTribes";
     bytes32 private constant CONTRACT_EXT_AGGREGATOR_DEBT_RATIO = "ext:AggregatorDebtRatio";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
@@ -102,25 +102,25 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = MixinSystemSettings.resolverAddressesRequired();
         bytes32[] memory newAddresses = new bytes32[](14);
-        newAddresses[0] = CONTRACT_TRIBEONE;
+        newAddresses[0] = CONTRACT_TRIBEONEETIX;
         newAddresses[1] = CONTRACT_EXCHANGER;
         newAddresses[2] = CONTRACT_EXRATES;
         newAddresses[3] = CONTRACT_CIRCUIT_BREAKER;
-        newAddresses[4] = CONTRACT_TRIBEONEDEBTSHARE;
+        newAddresses[4] = CONTRACT_TRIBEONEETIXDEBTSHARE;
         newAddresses[5] = CONTRACT_FEEPOOL;
         newAddresses[6] = CONTRACT_DELEGATEAPPROVALS;
         newAddresses[7] = CONTRACT_REWARDESCROW_V2;
         newAddresses[8] = CONTRACT_LIQUIDATOR;
         newAddresses[9] = CONTRACT_LIQUIDATOR_REWARDS;
         newAddresses[10] = CONTRACT_DEBTCACHE;
-        newAddresses[11] = CONTRACT_SYNTHREDEEMER;
-        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS;
+        newAddresses[11] = CONTRACT_TRIBEONEREDEEMER;
+        newAddresses[12] = CONTRACT_EXT_AGGREGATOR_ISSUED_TRIBEONES;
         newAddresses[13] = CONTRACT_EXT_AGGREGATOR_DEBT_RATIO;
         return combineArrays(existingAddresses, newAddresses);
     }
 
-    function tribeoneERC20() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONE));
+    function tribeetixERC20() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEETIX));
     }
 
     function exchanger() internal view returns (IExchanger) {
@@ -135,8 +135,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return ICircuitBreaker(requireAndGetAddress(CONTRACT_CIRCUIT_BREAKER));
     }
 
-    function tribeoneDebtShare() internal view returns (ITribeoneDebtShare) {
-        return ITribeoneDebtShare(requireAndGetAddress(CONTRACT_TRIBEONEDEBTSHARE));
+    function tribeetixDebtShare() internal view returns (ITribeoneDebtShare) {
+        return ITribeoneDebtShare(requireAndGetAddress(CONTRACT_TRIBEONEETIXDEBTSHARE));
     }
 
     function liquidator() internal view returns (ILiquidator) {
@@ -159,8 +159,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return IIssuerInternalDebtCache(requireAndGetAddress(CONTRACT_DEBTCACHE));
     }
 
-    function synthRedeemer() internal view returns (ISynthRedeemer) {
-        return ISynthRedeemer(requireAndGetAddress(CONTRACT_SYNTHREDEEMER));
+    function tribeRedeemer() internal view returns (ITribeRedeemer) {
+        return ITribeRedeemer(requireAndGetAddress(CONTRACT_TRIBEONEREDEEMER));
     }
 
     function allNetworksDebtInfo()
@@ -172,19 +172,19 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             bool isStale
         )
     {
-        (, int256 rawIssuedSynths, , uint issuedSynthsUpdatedAt, ) =
-            _latestRoundData(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_SYNTHS));
+        (, int256 rawIssuedTribes, , uint issuedTribesUpdatedAt, ) =
+            _latestRoundData(requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_ISSUED_TRIBEONES));
 
         (uint rawRatio, uint ratioUpdatedAt) = _rawDebtRatioAndUpdatedAt();
 
-        debt = uint(rawIssuedSynths);
+        debt = uint(rawIssuedTribes);
         sharesSupply = rawRatio == 0 ? 0 : debt.divideDecimalRoundPrecise(uint(rawRatio));
 
         uint stalePeriod = getRateStalePeriod();
 
         isStale =
             stalePeriod < block.timestamp &&
-            (block.timestamp - stalePeriod > issuedSynthsUpdatedAt || block.timestamp - stalePeriod > ratioUpdatedAt);
+            (block.timestamp - stalePeriod > issuedTribesUpdatedAt || block.timestamp - stalePeriod > ratioUpdatedAt);
     }
 
     function issuanceRatio() external view returns (uint) {
@@ -226,11 +226,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _debtShareBalanceOf(address account) internal view returns (uint) {
-        return tribeoneDebtShare().balanceOf(account);
+        return tribeetixDebtShare().balanceOf(account);
     }
 
-    function _hakaBalanceOf(address account) internal view returns (uint) {
-        return tribeoneERC20().balanceOf(account);
+    function _snxBalanceOf(address account) internal view returns (uint) {
+        return tribeetixERC20().balanceOf(account);
     }
 
     function _rewardEscrowBalanceOf(address account) internal view returns (uint) {
@@ -238,14 +238,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _availableCurrencyKeysWithOptionalHAKA(bool withHAKA) internal view returns (bytes32[] memory) {
-        bytes32[] memory currencyKeys = new bytes32[](availableSynths.length + (withHAKA ? 1 : 0));
+        bytes32[] memory currencyKeys = new bytes32[](availableTribes.length + (withHAKA ? 1 : 0));
 
-        for (uint i = 0; i < availableSynths.length; i++) {
-            currencyKeys[i] = synthsByAddress[address(availableSynths[i])];
+        for (uint i = 0; i < availableTribes.length; i++) {
+            currencyKeys[i] = tribesByAddress[address(availableTribes[i])];
         }
 
         if (withHAKA) {
-            currencyKeys[availableSynths.length] = HAKA;
+            currencyKeys[availableTribes.length] = HAKA;
         }
 
         return currencyKeys;
@@ -253,7 +253,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     // Returns the total value of the debt pool in currency specified by `currencyKey`.
     // To return only the HAKA-backed debt, set `excludeCollateral` to true.
-    function _totalIssuedSynths(bytes32 currencyKey, bool excludeCollateral)
+    function _totalIssuedTribes(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
         returns (uint totalIssued, bool anyRateIsInvalid)
@@ -261,10 +261,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (uint debt, , bool cacheIsInvalid, bool cacheIsStale) = debtCache().cacheInfo();
         anyRateIsInvalid = cacheIsInvalid || cacheIsStale;
 
-        // Add total issued synths from non haka collateral back into the total if not excluded
+        // Add total issued tribes from non snx collateral back into the total if not excluded
         if (!excludeCollateral) {
-            (uint nonHakaDebt, bool invalid) = debtCache().totalNonHakaBackedDebt();
-            debt = debt.add(nonHakaDebt);
+            (uint nonSnxDebt, bool invalid) = debtCache().totalNonSnxBackedDebt();
+            debt = debt.add(nonSnxDebt);
             anyRateIsInvalid = anyRateIsInvalid || invalid;
         }
 
@@ -285,23 +285,23 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             bool anyRateIsInvalid
         )
     {
-        // What's the total value of the system excluding ETH backed synths in their requested currency?
-        (uint hakaBackedAmount, , bool debtInfoStale) = allNetworksDebtInfo();
+        // What's the total value of the system excluding ETH backed tribes in their requested currency?
+        (uint snxBackedAmount, , bool debtInfoStale) = allNetworksDebtInfo();
 
         if (debtShareBalance == 0) {
-            return (0, hakaBackedAmount, debtInfoStale);
+            return (0, snxBackedAmount, debtInfoStale);
         }
 
         // existing functionality requires for us to convert into the exchange rate specified by `currencyKey`
         (uint currencyRate, bool currencyRateInvalid) = _rateAndInvalid(currencyKey);
 
         debtBalance = _debtForShares(debtShareBalance).divideDecimalRound(currencyRate);
-        totalSystemValue = hakaBackedAmount;
+        totalSystemValue = snxBackedAmount;
 
         anyRateIsInvalid = currencyRateInvalid || debtInfoStale;
     }
 
-    function _canBurnSynths(address account) internal view returns (bool) {
+    function _canBurnTribes(address account) internal view returns (bool) {
         return now >= _lastIssueEvent(account).add(getMinimumStakeTime());
     }
 
@@ -310,7 +310,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         return flexibleStorage().getUIntValue(CONTRACT_NAME, keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)));
     }
 
-    function _remainingIssuableSynths(address _issuer)
+    function _remainingIssuableTribes(address _issuer)
         internal
         view
         returns (
@@ -321,7 +321,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         )
     {
         (alreadyIssued, totalSystemDebt, anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(_issuer), hUSD);
-        (uint issuable, bool isInvalid) = _maxIssuableSynths(_issuer);
+        (uint issuable, bool isInvalid) = _maxIssuableTribes(_issuer);
         maxIssuable = issuable;
         anyRateIsInvalid = anyRateIsInvalid || isInvalid;
 
@@ -332,18 +332,18 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function _hakaToUSD(uint amount, uint hakaRate) internal pure returns (uint) {
-        return amount.multiplyDecimalRound(hakaRate);
+    function _snxToUSD(uint amount, uint snxRate) internal pure returns (uint) {
+        return amount.multiplyDecimalRound(snxRate);
     }
 
-    function _usdToHaka(uint amount, uint hakaRate) internal pure returns (uint) {
-        return amount.divideDecimalRound(hakaRate);
+    function _usdToSnx(uint amount, uint snxRate) internal pure returns (uint) {
+        return amount.divideDecimalRound(snxRate);
     }
 
-    function _maxIssuableSynths(address _issuer) internal view returns (uint, bool) {
+    function _maxIssuableTribes(address _issuer) internal view returns (uint, bool) {
         // What is the value of their HAKA balance in hUSD
-        (uint hakaRate, bool isInvalid) = _rateAndInvalid(HAKA);
-        uint destinationValue = _hakaToUSD(_collateral(_issuer), hakaRate);
+        (uint snxRate, bool isInvalid) = _rateAndInvalid(HAKA);
+        uint destinationValue = _snxToUSD(_collateral(_issuer), snxRate);
 
         // They're allowed to issue up to issuanceRatio of that value
         return (destinationValue.multiplyDecimal(getIssuanceRatio()), isInvalid);
@@ -361,31 +361,31 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _collateral(address account) internal view returns (uint) {
-        return _hakaBalanceOf(account).add(_rewardEscrowBalanceOf(account)).add(liquidatorRewards().earned(account));
+        return _snxBalanceOf(account).add(_rewardEscrowBalanceOf(account)).add(liquidatorRewards().earned(account));
     }
 
     function minimumStakeTime() external view returns (uint) {
         return getMinimumStakeTime();
     }
 
-    function canBurnSynths(address account) external view returns (bool) {
-        return _canBurnSynths(account);
+    function canBurnTribes(address account) external view returns (bool) {
+        return _canBurnTribes(account);
     }
 
     function availableCurrencyKeys() external view returns (bytes32[] memory) {
         return _availableCurrencyKeysWithOptionalHAKA(false);
     }
 
-    function availableSynthCount() external view returns (uint) {
-        return availableSynths.length;
+    function availableTribeCount() external view returns (uint) {
+        return availableTribes.length;
     }
 
-    function anySynthOrHAKARateIsInvalid() external view returns (bool anyRateInvalid) {
+    function anyTribeOrHAKARateIsInvalid() external view returns (bool anyRateInvalid) {
         (, anyRateInvalid) = exchangeRates().ratesAndInvalidForCurrencies(_availableCurrencyKeysWithOptionalHAKA(true));
     }
 
-    function totalIssuedSynths(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint totalIssued) {
-        (totalIssued, ) = _totalIssuedSynths(currencyKey, excludeOtherCollateral);
+    function totalIssuedTribes(bytes32 currencyKey, bool excludeOtherCollateral) external view returns (uint totalIssued) {
+        (totalIssued, ) = _totalIssuedTribes(currencyKey, excludeOtherCollateral);
     }
 
     function lastIssueEvent(address account) external view returns (uint) {
@@ -418,7 +418,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (debtBalance, , ) = _debtBalanceOfAndTotalDebt(debtShareBalance, currencyKey);
     }
 
-    function remainingIssuableSynths(address _issuer)
+    function remainingIssuableTribes(address _issuer)
         external
         view
         returns (
@@ -427,11 +427,11 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             uint totalSystemDebt
         )
     {
-        (maxIssuable, alreadyIssued, totalSystemDebt, ) = _remainingIssuableSynths(_issuer);
+        (maxIssuable, alreadyIssued, totalSystemDebt, ) = _remainingIssuableTribes(_issuer);
     }
 
-    function maxIssuableSynths(address _issuer) external view returns (uint) {
-        (uint maxIssuable, ) = _maxIssuableSynths(_issuer);
+    function maxIssuableTribes(address _issuer) external view returns (uint) {
+        (uint maxIssuable, ) = _maxIssuableTribes(_issuer);
         return maxIssuable;
     }
 
@@ -460,12 +460,12 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
     }
 
-    function getSynths(bytes32[] calldata currencyKeys) external view returns (ISynth[] memory) {
+    function getTribes(bytes32[] calldata currencyKeys) external view returns (ITribe[] memory) {
         uint numKeys = currencyKeys.length;
-        ISynth[] memory addresses = new ISynth[](numKeys);
+        ITribe[] memory addresses = new ITribe[](numKeys);
 
         for (uint i = 0; i < numKeys; i++) {
-            addresses[i] = synths[currencyKeys[i]];
+            addresses[i] = tribes[currencyKeys[i]];
         }
 
         return addresses;
@@ -493,141 +493,141 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function _addSynth(ISynth synth) internal {
-        bytes32 currencyKey = synth.currencyKey();
-        require(synths[currencyKey] == ISynth(0), "Synth exists");
-        require(synthsByAddress[address(synth)] == bytes32(0), "Synth address already exists");
+    function _addTribe(ITribe tribe) internal {
+        bytes32 currencyKey = tribe.currencyKey();
+        require(tribes[currencyKey] == ITribe(0), "Tribe exists");
+        require(tribesByAddress[address(tribe)] == bytes32(0), "Tribe address already exists");
 
-        availableSynths.push(synth);
-        synths[currencyKey] = synth;
-        synthsByAddress[address(synth)] = currencyKey;
+        availableTribes.push(tribe);
+        tribes[currencyKey] = tribe;
+        tribesByAddress[address(tribe)] = currencyKey;
 
-        emit SynthAdded(currencyKey, address(synth));
+        emit TribeAdded(currencyKey, address(tribe));
     }
 
-    function addSynth(ISynth synth) external onlyOwner {
-        _addSynth(synth);
-        // Invalidate the cache to force a snapshot to be recomputed. If a synth were to be added
+    function addTribe(ITribe tribe) external onlyOwner {
+        _addTribe(tribe);
+        // Invalidate the cache to force a snapshot to be recomputed. If a tribe were to be added
         // back to the system and it still somehow had cached debt, this would force the value to be
         // updated.
         debtCache().updateDebtCacheValidity(true);
     }
 
-    function addSynths(ISynth[] calldata synthsToAdd) external onlyOwner {
-        uint numSynths = synthsToAdd.length;
-        for (uint i = 0; i < numSynths; i++) {
-            _addSynth(synthsToAdd[i]);
+    function addTribes(ITribe[] calldata tribesToAdd) external onlyOwner {
+        uint numTribes = tribesToAdd.length;
+        for (uint i = 0; i < numTribes; i++) {
+            _addTribe(tribesToAdd[i]);
         }
 
         // Invalidate the cache to force a snapshot to be recomputed.
         debtCache().updateDebtCacheValidity(true);
     }
 
-    function _removeSynth(bytes32 currencyKey) internal {
-        address synthToRemove = address(synths[currencyKey]);
-        require(synthToRemove != address(0), "Synth does not exist");
-        require(currencyKey != hUSD, "Cannot remove synth");
+    function _removeTribe(bytes32 currencyKey) internal {
+        address tribeToRemove = address(tribes[currencyKey]);
+        require(tribeToRemove != address(0), "Tribe does not exist");
+        require(currencyKey != hUSD, "Cannot remove tribe");
 
-        uint synthSupply = IERC20(synthToRemove).totalSupply();
+        uint tribeSupply = IERC20(tribeToRemove).totalSupply();
 
-        if (synthSupply > 0) {
-            (uint amountOfsUSD, uint rateToRedeem, ) =
-                exchangeRates().effectiveValueAndRates(currencyKey, synthSupply, "hUSD");
+        if (tribeSupply > 0) {
+            (uint amountOfhUSD, uint rateToRedeem, ) =
+                exchangeRates().effectiveValueAndRates(currencyKey, tribeSupply, "hUSD");
             require(rateToRedeem > 0, "Cannot remove without rate");
-            ISynthRedeemer _synthRedeemer = synthRedeemer();
-            synths[hUSD].issue(address(_synthRedeemer), amountOfsUSD);
+            ITribeRedeemer _tribeRedeemer = tribeRedeemer();
+            tribes[hUSD].issue(address(_tribeRedeemer), amountOfhUSD);
             // ensure the debt cache is aware of the new hUSD issued
-            debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amountOfsUSD));
-            _synthRedeemer.deprecate(IERC20(address(Proxyable(synthToRemove).proxy())), rateToRedeem);
+            debtCache().updateCachedhUSDDebt(SafeCast.toInt256(amountOfhUSD));
+            _tribeRedeemer.deprecate(IERC20(address(Proxyable(tribeToRemove).proxy())), rateToRedeem);
         }
 
-        // Remove the synth from the availableSynths array.
-        for (uint i = 0; i < availableSynths.length; i++) {
-            if (address(availableSynths[i]) == synthToRemove) {
-                delete availableSynths[i];
+        // Remove the tribe from the availableTribes array.
+        for (uint i = 0; i < availableTribes.length; i++) {
+            if (address(availableTribes[i]) == tribeToRemove) {
+                delete availableTribes[i];
 
-                // Copy the last synth into the place of the one we just deleted
-                // If there's only one synth, this is synths[0] = synths[0].
+                // Copy the last tribe into the place of the one we just deleted
+                // If there's only one tribe, this is tribes[0] = tribes[0].
                 // If we're deleting the last one, it's also a NOOP in the same way.
-                availableSynths[i] = availableSynths[availableSynths.length - 1];
+                availableTribes[i] = availableTribes[availableTribes.length - 1];
 
                 // Decrease the size of the array by one.
-                availableSynths.length--;
+                availableTribes.length--;
 
                 break;
             }
         }
 
-        // And remove it from the synths mapping
-        delete synthsByAddress[synthToRemove];
-        delete synths[currencyKey];
+        // And remove it from the tribes mapping
+        delete tribesByAddress[tribeToRemove];
+        delete tribes[currencyKey];
 
-        emit SynthRemoved(currencyKey, synthToRemove);
+        emit TribeRemoved(currencyKey, tribeToRemove);
     }
 
-    function removeSynth(bytes32 currencyKey) external onlyOwner {
+    function removeTribe(bytes32 currencyKey) external onlyOwner {
         // Remove its contribution from the debt pool snapshot, and
         // invalidate the cache to force a new snapshot.
         IIssuerInternalDebtCache cache = debtCache();
-        cache.updateCachedSynthDebtWithRate(currencyKey, 0);
+        cache.updateCachedTribeDebtWithRate(currencyKey, 0);
         cache.updateDebtCacheValidity(true);
 
-        _removeSynth(currencyKey);
+        _removeTribe(currencyKey);
     }
 
-    function removeSynths(bytes32[] calldata currencyKeys) external onlyOwner {
+    function removeTribes(bytes32[] calldata currencyKeys) external onlyOwner {
         uint numKeys = currencyKeys.length;
 
         // Remove their contributions from the debt pool snapshot, and
         // invalidate the cache to force a new snapshot.
         IIssuerInternalDebtCache cache = debtCache();
         uint[] memory zeroRates = new uint[](numKeys);
-        cache.updateCachedSynthDebtsWithRates(currencyKeys, zeroRates);
+        cache.updateCachedTribeDebtsWithRates(currencyKeys, zeroRates);
         cache.updateDebtCacheValidity(true);
 
         for (uint i = 0; i < numKeys; i++) {
-            _removeSynth(currencyKeys[i]);
+            _removeTribe(currencyKeys[i]);
         }
     }
 
-    function issueSynthsWithoutDebt(
+    function issueTribesWithoutDebt(
         bytes32 currencyKey,
         address to,
         uint amount
     ) external onlyTrustedMinters returns (bool rateInvalid) {
-        require(address(synths[currencyKey]) != address(0), "synth doesn't exist");
-        require(amount > 0, "cannot issue 0 synths");
+        require(address(tribes[currencyKey]) != address(0), "tribe doesn't exist");
+        require(amount > 0, "cannot issue 0 tribes");
 
         // record issue timestamp
         _setLastIssueEvent(to);
 
-        // Create their synths
-        synths[currencyKey].issue(to, amount);
+        // Create their tribes
+        tribes[currencyKey].issue(to, amount);
 
         // Account for the issued debt in the cache
         (uint rate, bool rateInvalid) = _rateAndInvalid(currencyKey);
-        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount.multiplyDecimal(rate)));
+        debtCache().updateCachedhUSDDebt(SafeCast.toInt256(amount.multiplyDecimal(rate)));
 
         // returned so that the caller can decide what to do if the rate is invalid
         return rateInvalid;
     }
 
-    function burnSynthsWithoutDebt(
+    function burnTribesWithoutDebt(
         bytes32 currencyKey,
         address from,
         uint amount
     ) external onlyTrustedMinters returns (bool rateInvalid) {
-        require(address(synths[currencyKey]) != address(0), "synth doesn't exist");
-        require(amount > 0, "cannot issue 0 synths");
+        require(address(tribes[currencyKey]) != address(0), "tribe doesn't exist");
+        require(amount > 0, "cannot issue 0 tribes");
 
         exchanger().settle(from, currencyKey);
 
-        // Burn some synths
-        synths[currencyKey].burn(from, amount);
+        // Burn some tribes
+        tribes[currencyKey].burn(from, amount);
 
         // Account for the burnt debt in the cache. If rate is invalid, the user won't be able to exchange
         (uint rate, bool rateInvalid) = _rateAndInvalid(currencyKey);
-        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amount.multiplyDecimal(rate)));
+        debtCache().updateCachedhUSDDebt(-SafeCast.toInt256(amount.multiplyDecimal(rate)));
 
         // returned so that the caller can decide what to do if the rate is invalid
         return rateInvalid;
@@ -640,7 +640,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      * @param amount The amount of debt shares moving across layers
      */
     function modifyDebtSharesForMigration(address account, uint amount) external onlyTrustedMigrators {
-        ITribeoneDebtShare sds = tribeoneDebtShare();
+        ITribeoneDebtShare sds = tribeetixDebtShare();
 
         if (msg.sender == resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM)) {
             sds.burnShare(account, amount);
@@ -656,65 +656,65 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
      */
     function upgradeCollateralShort(address short, uint amount) external onlyOwner {
         require(short == resolver.getAddress("CollateralShortLegacy"), "wrong address");
-        require(amount > 0, "cannot burn 0 synths");
+        require(amount > 0, "cannot burn 0 tribes");
 
         exchanger().settle(short, hUSD);
 
-        synths[hUSD].burn(short, amount);
+        tribes[hUSD].burn(short, amount);
     }
 
-    function issueSynths(address from, uint amount) external onlyTribeone {
-        require(amount > 0, "cannot issue 0 synths");
+    function issueTribes(address from, uint amount) external onlyTribeone {
+        require(amount > 0, "cannot issue 0 tribes");
 
-        _issueSynths(from, amount, false);
+        _issueTribes(from, amount, false);
     }
 
-    function issueMaxSynths(address from) external onlyTribeone {
-        _issueSynths(from, 0, true);
+    function issueMaxTribes(address from) external onlyTribeone {
+        _issueTribes(from, 0, true);
     }
 
-    function issueSynthsOnBehalf(
+    function issueTribesOnBehalf(
         address issueForAddress,
         address from,
         uint amount
     ) external onlyTribeone {
         _requireCanIssueOnBehalf(issueForAddress, from);
-        _issueSynths(issueForAddress, amount, false);
+        _issueTribes(issueForAddress, amount, false);
     }
 
-    function issueMaxSynthsOnBehalf(address issueForAddress, address from) external onlyTribeone {
+    function issueMaxTribesOnBehalf(address issueForAddress, address from) external onlyTribeone {
         _requireCanIssueOnBehalf(issueForAddress, from);
-        _issueSynths(issueForAddress, 0, true);
+        _issueTribes(issueForAddress, 0, true);
     }
 
-    function burnSynths(address from, uint amount) external onlyTribeone {
-        _voluntaryBurnSynths(from, amount, false);
+    function burnTribes(address from, uint amount) external onlyTribeone {
+        _voluntaryBurnTribes(from, amount, false);
     }
 
-    function burnSynthsOnBehalf(
+    function burnTribesOnBehalf(
         address burnForAddress,
         address from,
         uint amount
     ) external onlyTribeone {
         _requireCanBurnOnBehalf(burnForAddress, from);
-        _voluntaryBurnSynths(burnForAddress, amount, false);
+        _voluntaryBurnTribes(burnForAddress, amount, false);
     }
 
-    function burnSynthsToTarget(address from) external onlyTribeone {
-        _voluntaryBurnSynths(from, 0, true);
+    function burnTribesToTarget(address from) external onlyTribeone {
+        _voluntaryBurnTribes(from, 0, true);
     }
 
-    function burnSynthsToTargetOnBehalf(address burnForAddress, address from) external onlyTribeone {
+    function burnTribesToTargetOnBehalf(address burnForAddress, address from) external onlyTribeone {
         _requireCanBurnOnBehalf(burnForAddress, from);
-        _voluntaryBurnSynths(burnForAddress, 0, true);
+        _voluntaryBurnTribes(burnForAddress, 0, true);
     }
 
     function burnForRedemption(
-        address deprecatedSynthProxy,
+        address deprecatedTribeProxy,
         address account,
         uint balance
-    ) external onlySynthRedeemer {
-        ISynth(IProxy(deprecatedSynthProxy).target()).burn(account, balance);
+    ) external onlyTribeRedeemer {
+        ITribe(IProxy(deprecatedTribeProxy).target()).burn(account, balance);
     }
 
     // SIP-148: Upgraded Liquidation Mechanism
@@ -769,8 +769,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(account), hUSD);
 
         // Get the HAKA rate
-        (uint hakaRate, bool hakaRateInvalid) = _rateAndInvalid(HAKA);
-        _requireRatesNotInvalid(anyRateIsInvalid || hakaRateInvalid);
+        (uint snxRate, bool snxRateInvalid) = _rateAndInvalid(HAKA);
+        _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         uint penalty;
         if (isSelfLiquidation) {
@@ -780,17 +780,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // Calculate the amount of debt to remove and HAKA to redeem for a self liquidation
             debtToRemove = liquidator().calculateAmountToFixCollateral(
                 debtBalance,
-                _hakaToUSD(_collateral(account), hakaRate),
+                _snxToUSD(_collateral(account), snxRate),
                 penalty
             );
 
             // Get the minimum values for both totalRedeemed and debtToRemove
             totalRedeemed = _getMinValue(
-                _usdToHaka(debtToRemove, hakaRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty)),
-                _hakaBalanceOf(account)
+                _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty)),
+                _snxBalanceOf(account)
             );
             debtToRemove = _getMinValue(
-                _hakaToUSD(totalRedeemed, hakaRate).divideDecimal(SafeDecimalMath.unit().add(penalty)),
+                _snxToUSD(totalRedeemed, snxRate).divideDecimal(SafeDecimalMath.unit().add(penalty)),
                 debtToRemove
             );
 
@@ -799,15 +799,15 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         } else {
             // In the case of forced Liquidation
             // Get the forced liquidation penalty and sum of the flag and liquidate rewards.
-            penalty = getHakaLiquidationPenalty();
+            penalty = getSnxLiquidationPenalty();
             uint rewardsSum = getLiquidateReward().add(getFlagReward());
 
             // Get the total USD value of their HAKA collateral (including escrow and rewards minus the flag and liquidate rewards)
-            uint collateralForAccountUSD = _hakaToUSD(_collateral(account).sub(rewardsSum), hakaRate);
+            uint collateralForAccountUSD = _snxToUSD(_collateral(account).sub(rewardsSum), snxRate);
 
             // Calculate the amount of debt to remove and the hUSD value of the HAKA required to liquidate.
             debtToRemove = liquidator().calculateAmountToFixCollateral(debtBalance, collateralForAccountUSD, penalty);
-            uint redeemTarget = _usdToHaka(debtToRemove, hakaRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
+            uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
             if (redeemTarget.add(rewardsSum) >= _collateral(account)) {
                 // need to wipe out the account
@@ -833,7 +833,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     ) internal view returns (uint totalRedeemed, uint escrowToLiquidate) {
         // The balanceOf here can be considered "transferable" since it's not escrowed,
         // and it is the only HAKA that can potentially be transfered if unstaked.
-        uint transferable = _hakaBalanceOf(account);
+        uint transferable = _snxBalanceOf(account);
         if (redeemTarget.add(rewardsSum) <= transferable) {
             // transferable is enough
             return (redeemTarget, 0);
@@ -852,7 +852,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function setCurrentPeriodId(uint128 periodId) external {
         require(msg.sender == requireAndGetAddress(CONTRACT_FEEPOOL), "Must be fee pool");
 
-        ITribeoneDebtShare sds = tribeoneDebtShare();
+        ITribeoneDebtShare sds = tribeetixDebtShare();
 
         if (sds.currentPeriodId() < periodId) {
             sds.takeSnapshot(periodId);
@@ -862,7 +862,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireRatesNotInvalid(bool anyRateIsInvalid) internal pure {
-        require(!anyRateIsInvalid, "A synth or HAKA rate is invalid");
+        require(!anyRateIsInvalid, "A tribe or HAKA rate is invalid");
     }
 
     function _requireCanIssueOnBehalf(address issueForAddress, address from) internal view {
@@ -873,7 +873,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         require(delegateApprovals().canBurnFor(burnForAddress, from), "Not approved to act on behalf");
     }
 
-    function _issueSynths(
+    function _issueTribes(
         address from,
         uint amount,
         bool issueMax
@@ -882,7 +882,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             return;
         }
 
-        (uint maxIssuable, , , bool anyRateIsInvalid) = _remainingIssuableSynths(from);
+        (uint maxIssuable, , , bool anyRateIsInvalid) = _remainingIssuableTribes(from);
         _requireRatesNotInvalid(anyRateIsInvalid);
 
         if (!issueMax) {
@@ -897,14 +897,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // record issue timestamp
         _setLastIssueEvent(from);
 
-        // Create their synths
-        synths[hUSD].issue(from, amount);
+        // Create their tribes
+        tribes[hUSD].issue(from, amount);
 
         // Account for the issued debt in the cache
-        debtCache().updateCachedsUSDDebt(SafeCast.toInt256(amount));
+        debtCache().updateCachedhUSDDebt(SafeCast.toInt256(amount));
     }
 
-    function _burnSynths(
+    function _burnTribes(
         address debtAccount,
         address burnAccount,
         uint amount,
@@ -923,17 +923,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // Remove liquidated debt from the ledger
         _removeFromDebtRegister(debtAccount, amountBurnt, existingDebt);
 
-        // synth.burn does a safe subtraction on balance (so it will revert if there are not enough synths).
-        synths[hUSD].burn(burnAccount, amountBurnt);
+        // tribe.burn does a safe subtraction on balance (so it will revert if there are not enough tribes).
+        tribes[hUSD].burn(burnAccount, amountBurnt);
 
         // Account for the burnt debt in the cache.
-        debtCache().updateCachedsUSDDebt(-SafeCast.toInt256(amountBurnt));
+        debtCache().updateCachedhUSDDebt(-SafeCast.toInt256(amountBurnt));
     }
 
     // If burning to target, `amount` is ignored, and the correct quantity of hUSD is burnt to reach the target
     // c-ratio, allowing fees to be claimed. In this case, pending settlements will be skipped as the user
     // will still have debt remaining after reaching their target.
-    function _voluntaryBurnSynths(
+    function _voluntaryBurnTribes(
         address from,
         uint amount,
         bool burnToTarget
@@ -944,7 +944,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
         if (!burnToTarget) {
             // If not burning to target, then burning requires that the minimum stake time has elapsed.
-            require(_canBurnSynths(from), "Minimum stake time not reached");
+            require(_canBurnTribes(from), "Minimum stake time not reached");
             // First settle anything pending into hUSD as burning or issuing impacts the size of the debt pool
             (, uint refunded, uint numEntriesSettled) = exchanger().settle(from, hUSD);
             if (numEntriesSettled > 0) {
@@ -953,25 +953,25 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         (uint existingDebt, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(from), hUSD);
-        (uint maxIssuableSynthsForAccount, bool hakaRateInvalid) = _maxIssuableSynths(from);
-        _requireRatesNotInvalid(anyRateIsInvalid || hakaRateInvalid);
+        (uint maxIssuableTribesForAccount, bool snxRateInvalid) = _maxIssuableTribes(from);
+        _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
         require(existingDebt > 0, "No debt to forgive");
 
         if (burnToTarget) {
-            amount = existingDebt.sub(maxIssuableSynthsForAccount);
+            amount = existingDebt.sub(maxIssuableTribesForAccount);
         }
 
-        uint amountBurnt = _burnSynths(from, from, amount, existingDebt);
+        uint amountBurnt = _burnTribes(from, from, amount, existingDebt);
 
-        // Check and remove liquidation if existingDebt after burning is <= maxIssuableSynths
+        // Check and remove liquidation if existingDebt after burning is <= maxIssuableTribes
         // Issuance ratio is fixed so should remove any liquidations
-        if (existingDebt.sub(amountBurnt) <= maxIssuableSynthsForAccount) {
+        if (existingDebt.sub(amountBurnt) <= maxIssuableTribesForAccount) {
             liquidator().removeAccountInLiquidation(from);
         }
     }
 
     function _setLastIssueEvent(address account) internal {
-        // Set the timestamp of the last issueSynths
+        // Set the timestamp of the last issueTribes
         flexibleStorage().setUIntValue(
             CONTRACT_NAME,
             keccak256(abi.encodePacked(LAST_ISSUE_EVENT, account)),
@@ -983,7 +983,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // important: this has to happen before any updates to user's debt shares
         liquidatorRewards().updateEntry(from);
 
-        ITribeoneDebtShare sds = tribeoneDebtShare();
+        ITribeoneDebtShare sds = tribeetixDebtShare();
 
         // it is possible (eg in tests, system initialized with extra debt) to have issued debt without any shares issued
         // in which case, the first account to mint gets the debt. yw.
@@ -1003,7 +1003,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         // important: this has to happen before any updates to user's debt shares
         liquidatorRewards().updateEntry(from);
 
-        ITribeoneDebtShare sds = tribeoneDebtShare();
+        ITribeoneDebtShare sds = tribeetixDebtShare();
 
         uint currentDebtShare = _debtShareBalanceOf(from);
 
@@ -1026,13 +1026,13 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /* ========== MODIFIERS ========== */
     modifier onlyTribeone() {
-        require(msg.sender == address(tribeoneERC20()), "Only Tribeone");
+        require(msg.sender == address(tribeetixERC20()), "Only Tribeone");
         _;
     }
 
     modifier onlyTrustedMinters() {
-        address bridgeL1 = resolver.getAddress(CONTRACT_TRIBEONEBRIDGETOOPTIMISM);
-        address bridgeL2 = resolver.getAddress(CONTRACT_TRIBEONEBRIDGETOBASE);
+        address bridgeL1 = resolver.getAddress(CONTRACT_TRIBEONEETIXBRIDGETOOPTIMISM);
+        address bridgeL2 = resolver.getAddress(CONTRACT_TRIBEONEETIXBRIDGETOBASE);
         address feePool = resolver.getAddress(CONTRACT_FEEPOOL);
         require(msg.sender == bridgeL1 || msg.sender == bridgeL2 || msg.sender == feePool, "only trusted minters");
         _;
@@ -1046,17 +1046,17 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         _;
     }
 
-    function _onlySynthRedeemer() internal view {
-        require(msg.sender == address(synthRedeemer()), "Only SynthRedeemer");
+    function _onlyTribeRedeemer() internal view {
+        require(msg.sender == address(tribeRedeemer()), "Only TribeRedeemer");
     }
 
-    modifier onlySynthRedeemer() {
-        _onlySynthRedeemer();
+    modifier onlyTribeRedeemer() {
+        _onlyTribeRedeemer();
         _;
     }
 
     /* ========== EVENTS ========== */
 
-    event SynthAdded(bytes32 currencyKey, address synth);
-    event SynthRemoved(bytes32 currencyKey, address synth);
+    event TribeAdded(bytes32 currencyKey, address tribe);
+    event TribeRemoved(bytes32 currencyKey, address tribe);
 }

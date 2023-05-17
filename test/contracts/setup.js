@@ -62,11 +62,11 @@ const constantsOverrides = {
 };
 
 /**
- * Create a mock ExternStateToken - useful to mock Tribeone or a synth
+ * Create a mock ExternStateToken - useful to mock Tribeone or a tribe
  */
 const mockToken = async ({
 	accounts,
-	synth = undefined,
+	tribe = undefined,
 	name = 'name',
 	symbol = 'ABC',
 	supply = 1e8,
@@ -86,10 +86,10 @@ const mockToken = async ({
 		await tokenState.setBalanceOf(owner, totalSupply, { from: deployerAccount });
 	}
 
-	const token = await artifacts.require(synth ? 'MockSynth' : 'PublicEST').new(
+	const token = await artifacts.require(tribe ? 'MockTribe' : 'PublicEST').new(
 		...[proxy.address, tokenState.address, name, symbol, totalSupply, owner]
-			// add synth as currency key if needed
-			.concat(synth ? toBytes32(synth) : [])
+			// add tribe as currency key if needed
+			.concat(tribe ? toBytes32(tribe) : [])
 			.concat({
 				from: deployerAccount,
 			})
@@ -274,7 +274,7 @@ const setupContract = async ({
 		GenericMock: [],
 		TradingRewards: [owner, owner, tryGetAddressOf('AddressResolver')],
 		AddressResolver: [owner],
-		OneNetAggregatorIssuedSynths: [tryGetAddressOf('AddressResolver')],
+		OneNetAggregatorIssuedTribes: [tryGetAddressOf('AddressResolver')],
 		OneNetAggregatorDebtRatio: [tryGetAddressOf('AddressResolver')],
 		SystemStatus: [owner],
 		FlexibleStorage: [tryGetAddressOf('AddressResolver')],
@@ -286,7 +286,7 @@ const setupContract = async ({
 		ProxyERC20: [owner],
 		ProxyTribeone: [owner],
 		Depot: [owner, fundsWallet, tryGetAddressOf('AddressResolver')],
-		SynthUtil: [tryGetAddressOf('AddressResolver')],
+		TribeUtil: [tryGetAddressOf('AddressResolver')],
 		DappMaintenance: [owner],
 		DebtCache: [owner, tryGetAddressOf('AddressResolver')],
 		Issuer: [owner, tryGetAddressOf('AddressResolver')],
@@ -343,10 +343,10 @@ const setupContract = async ({
 		NativeEtherWrapper: [owner, tryGetAddressOf('AddressResolver')],
 		WrapperFactory: [owner, tryGetAddressOf('AddressResolver')],
 		FeePool: [tryGetAddressOf('ProxyFeePool'), owner, tryGetAddressOf('AddressResolver')],
-		Synth: [
-			tryGetAddressOf('ProxyERC20Synth'),
-			tryGetAddressOf('TokenStateSynth'),
-			tryGetProperty({ property: 'name', otherwise: 'Synthetic hUSD' }),
+		Tribe: [
+			tryGetAddressOf('ProxyERC20Tribe'),
+			tryGetAddressOf('TokenStateTribe'),
+			tryGetProperty({ property: 'name', otherwise: 'Tribeetic hUSD' }),
 			tryGetProperty({ property: 'symbol', otherwise: 'hUSD' }),
 			owner,
 			tryGetProperty({ property: 'currencyKey', otherwise: toBytes32('hUSD') }),
@@ -383,7 +383,7 @@ const setupContract = async ({
 			owner,
 			tryGetAddressOf('CollateralManager'),
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sETH'),
+			toBytes32('hETH'),
 			toUnit(1.3),
 			toUnit(2),
 		],
@@ -396,18 +396,18 @@ const setupContract = async ({
 			toUnit(100),
 		],
 		WETH: [],
-		SynthRedeemer: [tryGetAddressOf('AddressResolver')],
+		TribeRedeemer: [tryGetAddressOf('AddressResolver')],
 		FuturesMarketManager: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketSettings: [owner, tryGetAddressOf('AddressResolver')],
 		FuturesMarketBTC: [
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sBTC'), // base asset
-			toBytes32('sBTC' + perpSuffix), // market key
+			toBytes32('hBTC'), // base asset
+			toBytes32('hBTC' + perpSuffix), // market key
 		],
 		FuturesMarketETH: [
 			tryGetAddressOf('AddressResolver'),
-			toBytes32('sETH'), // base asset
-			toBytes32('sETH' + perpSuffix), // market key
+			toBytes32('hETH'), // base asset
+			toBytes32('hETH' + perpSuffix), // market key
 		],
 		FuturesMarketData: [tryGetAddressOf('AddressResolver')],
 		// Perps V2
@@ -418,25 +418,25 @@ const setupContract = async ({
 		PerpsV2MarketStateBTC: [
 			owner,
 			[deployerAccount],
-			toBytes32('sBTC'), // base asset
-			toBytes32('sBTC' + perpSuffix), // market key
+			toBytes32('hBTC'), // base asset
+			toBytes32('hBTC' + perpSuffix), // market key
 			ethers.constants.AddressZero,
 		],
 		PerpsV2MarketStateETH: [
 			owner,
 			[deployerAccount],
-			toBytes32('sETH'), // base asset
-			toBytes32('sETH' + perpSuffix), // market key
+			toBytes32('hETH'), // base asset
+			toBytes32('hETH' + perpSuffix), // market key
 			ethers.constants.AddressZero,
 		],
 		ProxyPerpsV2MarketBTC: [owner],
 		ProxyPerpsV2MarketETH: [owner],
-		PerpsV2MarketViewsBTC: [
+		PerpsV2MarketViewhBTC: [
 			tryGetAddressOf('PerpsV2MarketStateBTC'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
 		],
-		PerpsV2MarketViewsETH: [
+		PerpsV2MarketViewhETH: [
 			tryGetAddressOf('PerpsV2MarketStateETH'),
 			owner,
 			tryGetAddressOf('AddressResolver'),
@@ -660,11 +660,11 @@ const setupContract = async ({
 					)
 			);
 		},
-		async Synth() {
+		async Tribe() {
 			await Promise.all(
 				[
-					cache['TokenStateSynth'].setAssociatedContract(instance.address, { from: owner }),
-					cache['ProxyERC20Synth'].setTarget(instance.address, { from: owner }),
+					cache['TokenStateTribe'].setAssociatedContract(instance.address, { from: owner }),
+					cache['ProxyERC20Tribe'].setTarget(instance.address, { from: owner }),
 				] || []
 			);
 		},
@@ -718,7 +718,7 @@ const setupContract = async ({
 		async ExchangeCircuitBreaker() {
 			await Promise.all([
 				cache['SystemStatus'].updateAccessControl(
-					toBytes32('Synth'),
+					toBytes32('Tribe'),
 					instance.address,
 					true,
 					false,
@@ -731,7 +731,7 @@ const setupContract = async ({
 				cache['ExchangeState'].setAssociatedContract(instance.address, { from: owner }),
 
 				cache['SystemStatus'].updateAccessControl(
-					toBytes32('Synth'),
+					toBytes32('Tribe'),
 					instance.address,
 					true,
 					false,
@@ -769,7 +769,7 @@ const setupContract = async ({
 		async SystemStatus() {
 			// ensure the owner has suspend/resume control over everything
 			await instance.updateAccessControls(
-				['System', 'Issuance', 'Exchange', 'SynthExchange', 'Synth', 'Futures'].map(toBytes32),
+				['System', 'Issuance', 'Exchange', 'TribeExchange', 'Tribe', 'Futures'].map(toBytes32),
 				[owner, owner, owner, owner, owner, owner],
 				[true, true, true, true, true, true],
 				[true, true, true, true, true, true],
@@ -786,7 +786,7 @@ const setupContract = async ({
 				cache['FuturesMarketManager'].addMarkets([instance.address], { from: owner }),
 			]);
 		},
-		async PerpsV2MarketViewsBTC() {
+		async PerpsV2MarketViewhBTC() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all(
@@ -797,7 +797,7 @@ const setupContract = async ({
 				)
 			);
 		},
-		async PerpsV2MarketViewsETH() {
+		async PerpsV2MarketViewhETH() {
 			const filteredFunctions = getFunctionSignatures(instance, excludedFunctions);
 
 			await Promise.all(
@@ -981,7 +981,7 @@ const setupContract = async ({
 				await mockGenericContractFnc({
 					instance,
 					mock,
-					fncName: 'totalIssuedSynths',
+					fncName: 'totalIssuedTribes',
 					returns: ['0'],
 				});
 			} else if (mock === 'WrapperFactory') {
@@ -1040,7 +1040,7 @@ const setupContract = async ({
 					mockGenericContractFnc({
 						instance,
 						mock,
-						fncName: 'isSynthManaged',
+						fncName: 'isTribeManaged',
 						returns: [false],
 					}),
 				]);
@@ -1088,7 +1088,7 @@ const setupAllContracts = async ({
 	existing = {},
 	mocks = {},
 	contracts = [],
-	synths = [],
+	tribes = [],
 	feeds = [],
 }) => {
 	const [, owner] = accounts;
@@ -1105,8 +1105,8 @@ const setupAllContracts = async ({
 	const baseContracts = [
 		{ contract: 'AddressResolver' },
 		{
-			contract: 'OneNetAggregatorIssuedSynths',
-			resolverAlias: 'ext:AggregatorIssuedSynths',
+			contract: 'OneNetAggregatorIssuedTribes',
+			resolverAlias: 'ext:AggregatorIssuedTribes',
 		},
 		{
 			contract: 'OneNetAggregatorDebtRatio',
@@ -1133,7 +1133,7 @@ const setupAllContracts = async ({
 		{ contract: 'ProxyERC20', forContract: 'Tribeone' },
 		{ contract: 'ProxyERC20', forContract: 'MintableTribeone' },
 		{ contract: 'ProxyERC20', forContract: 'BaseTribeone' },
-		{ contract: 'ProxyERC20', forContract: 'Synth' }, // for generic synth
+		{ contract: 'ProxyERC20', forContract: 'Tribe' }, // for generic tribe
 		{ contract: 'Proxy', forContract: 'Tribeone' },
 		{ contract: 'Proxy', forContract: 'MintableTribeone' },
 		{ contract: 'Proxy', forContract: 'BaseTribeone' },
@@ -1141,7 +1141,7 @@ const setupAllContracts = async ({
 		{ contract: 'TokenState', forContract: 'Tribeone' },
 		{ contract: 'TokenState', forContract: 'MintableTribeone' },
 		{ contract: 'TokenState', forContract: 'BaseTribeone' },
-		{ contract: 'TokenState', forContract: 'Synth' }, // for generic synth
+		{ contract: 'TokenState', forContract: 'Tribe' }, // for generic tribe
 		{ contract: 'RewardEscrow' },
 		{
 			contract: 'BaseRewardEscrowV2Frozen',
@@ -1212,7 +1212,7 @@ const setupAllContracts = async ({
 			mocks: ['Tribeone', 'FeePool', 'RewardEscrow', 'RewardEscrowV2', 'ProxyFeePool'],
 		},
 		{ contract: 'Depot', deps: ['AddressResolver', 'SystemStatus'] },
-		{ contract: 'SynthUtil', deps: ['AddressResolver'] },
+		{ contract: 'TribeUtil', deps: ['AddressResolver'] },
 		{ contract: 'DappMaintenance' },
 		{ contract: 'WETH' },
 		{
@@ -1223,7 +1223,7 @@ const setupAllContracts = async ({
 		{
 			contract: 'NativeEtherWrapper',
 			mocks: [],
-			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'SynthsETH'],
+			deps: ['AddressResolver', 'EtherWrapper', 'WETH', 'TribehETH'],
 		},
 		{
 			contract: 'WrapperFactory',
@@ -1231,7 +1231,7 @@ const setupAllContracts = async ({
 			deps: ['AddressResolver', 'SystemSettings'],
 		},
 		{
-			contract: 'SynthRedeemer',
+			contract: 'TribeRedeemer',
 			mocks: ['Issuer'],
 			deps: ['AddressResolver'],
 		},
@@ -1251,10 +1251,10 @@ const setupAllContracts = async ({
 				'FlexibleStorage',
 				'WrapperFactory',
 				'EtherWrapper',
-				'SynthRedeemer',
+				'TribeRedeemer',
 			],
 			deps: [
-				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorIssuedTribes',
 				'OneNetAggregatorDebtRatio',
 				'AddressResolver',
 				'SystemStatus',
@@ -1270,7 +1270,7 @@ const setupAllContracts = async ({
 		},
 		{
 			contract: 'ExchangeCircuitBreaker',
-			mocks: ['Tribeone', 'FeePool', 'DelegateApprovals', 'VirtualSynthMastercopy'],
+			mocks: ['Tribeone', 'FeePool', 'DelegateApprovals', 'VirtualTribeMastercopy'],
 			deps: ['AddressResolver', 'SystemStatus', 'ExchangeRates', 'FlexibleStorage', 'Issuer'],
 		},
 		{
@@ -1302,7 +1302,7 @@ const setupAllContracts = async ({
 				'ExchangeRates',
 				'FeePool',
 				'DelegateApprovals',
-				'VirtualSynthMastercopy',
+				'VirtualTribeMastercopy',
 			],
 			deps: [
 				'AddressResolver',
@@ -1317,10 +1317,10 @@ const setupAllContracts = async ({
 			],
 		},
 		{
-			contract: 'Synth',
+			contract: 'Tribe',
 			mocks: ['Issuer', 'Exchanger', 'FeePool', 'EtherWrapper', 'WrapperFactory'],
 			deps: ['TokenState', 'ProxyERC20', 'SystemStatus', 'AddressResolver'],
-		}, // a generic synth
+		}, // a generic tribe
 		{
 			contract: 'Tribeone',
 			mocks: [
@@ -1412,7 +1412,7 @@ const setupAllContracts = async ({
 				'TribeoneBridgeToOptimism',
 			],
 			deps: [
-				'OneNetAggregatorIssuedSynths',
+				'OneNetAggregatorIssuedTribes',
 				'OneNetAggregatorDebtRatio',
 				'SystemStatus',
 				'TribeoneDebtShare',
@@ -1506,7 +1506,7 @@ const setupAllContracts = async ({
 		{ contract: 'PerpsV2MarketData', deps: ['PerpsV2MarketSettings'] },
 		// PerpsV2 BTC
 		{
-			contract: 'PerpsV2MarketViewsBTC',
+			contract: 'PerpsV2MarketViewhBTC',
 			source: 'PerpsV2MarketViews',
 			deps: [
 				'ProxyPerpsV2MarketBTC',
@@ -1563,7 +1563,7 @@ const setupAllContracts = async ({
 			deps: [
 				'ProxyPerpsV2MarketBTC',
 				'PerpsV2MarketStateBTC',
-				'PerpsV2MarketViewsBTC',
+				'PerpsV2MarketViewhBTC',
 				'PerpsV2MarketLiquidateBTC',
 				'PerpsV2MarketDelayedIntentBTC',
 				'PerpsV2MarketDelayedExecutionBTC',
@@ -1583,7 +1583,7 @@ const setupAllContracts = async ({
 
 		// PerpsV2 ETH
 		{
-			contract: 'PerpsV2MarketViewsETH',
+			contract: 'PerpsV2MarketViewhETH',
 			source: 'PerpsV2MarketViews',
 			deps: [
 				'ProxyPerpsV2MarketETH',
@@ -1640,7 +1640,7 @@ const setupAllContracts = async ({
 			deps: [
 				'ProxyPerpsV2MarketETH',
 				'PerpsV2MarketStateETH',
-				'PerpsV2MarketViewsETH',
+				'PerpsV2MarketViewhETH',
 				'PerpsV2MarketLiquidateETH',
 				'PerpsV2MarketDelayedIntentETH',
 				'PerpsV2MarketDelayedExecutionETH',
@@ -1769,28 +1769,28 @@ const setupAllContracts = async ({
 		});
 	}
 
-	// SYNTHS
+	// TRIBES
 
-	const synthsToAdd = [];
+	const tribesToAdd = [];
 
-	// now setup each synth and its deps
-	for (const synth of synths) {
+	// now setup each tribe and its deps
+	for (const tribe of tribes) {
 		const { token, proxy, tokenState } = await mockToken({
 			accounts,
-			synth,
-			supply: 0, // add synths with 0 supply initially
+			tribe,
+			supply: 0, // add tribes with 0 supply initially
 			skipInitialAllocation: true,
-			name: `Synth ${synth}`,
-			symbol: synth,
+			name: `Tribe ${tribe}`,
+			symbol: tribe,
 		});
 
-		returnObj[`ProxyERC20${synth}`] = proxy;
-		returnObj[`TokenState${synth}`] = tokenState;
-		returnObj[`Synth${synth}`] = token;
+		returnObj[`ProxyERC20${tribe}`] = proxy;
+		returnObj[`TokenState${tribe}`] = tokenState;
+		returnObj[`Tribe${tribe}`] = token;
 
 		// We'll defer adding the tokens into the Issuer as it must
 		// be synchronised with the FlexibleStorage address first.
-		synthsToAdd.push(token.address);
+		tribesToAdd.push(token.address);
 	}
 
 	// now invoke AddressResolver to set all addresses
@@ -1825,14 +1825,14 @@ const setupAllContracts = async ({
 			})
 	);
 
-	// if deploying a real Tribeone, then we add the synths
+	// if deploying a real Tribeone, then we add the tribes
 	if (returnObj['Issuer'] && !mocks['Issuer']) {
-		if (returnObj['Synth']) {
-			returnObj['Issuer'].addSynth(returnObj['Synth'].address, { from: owner });
+		if (returnObj['Tribe']) {
+			returnObj['Issuer'].addTribe(returnObj['Tribe'].address, { from: owner });
 		}
 
-		for (const synthAddress of synthsToAdd) {
-			await returnObj['Issuer'].addSynth(synthAddress, { from: owner });
+		for (const tribeAddress of tribesToAdd) {
+			await returnObj['Issuer'].addTribe(tribeAddress, { from: owner });
 		}
 	}
 
@@ -1871,7 +1871,7 @@ const setupAllContracts = async ({
 			returnObj['SystemSettings'].setLiquidationPenalty(LIQUIDATION_PENALTY, {
 				from: owner,
 			}),
-			returnObj['SystemSettings'].setHakaLiquidationPenalty(HAKA_LIQUIDATION_PENALTY, {
+			returnObj['SystemSettings'].setSnxLiquidationPenalty(HAKA_LIQUIDATION_PENALTY, {
 				from: owner,
 			}),
 			returnObj['SystemSettings'].setSelfLiquidationPenalty(SELF_LIQUIDATION_PENALTY, {
@@ -2067,7 +2067,7 @@ const setupAllContracts = async ({
 		}
 	}
 
-	// finally if any of our contracts have setAddressResolver (from MockSynth), then invoke it
+	// finally if any of our contracts have setAddressResolver (from MockTribe), then invoke it
 	await Promise.all(
 		Object.values(returnObj)
 			.filter(contract => contract.setAddressResolver)

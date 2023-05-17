@@ -9,7 +9,7 @@ interface IWrapperFactory {
     function createWrapper(
         IERC20 token,
         bytes32 currencyKey,
-        bytes32 synthContractName
+        bytes32 tribeContractName
     ) external returns (address);
 
     function distributeFees() external;

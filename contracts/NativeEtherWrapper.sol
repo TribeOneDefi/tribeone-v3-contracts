@@ -5,7 +5,7 @@ pragma solidity ^0.5.16;
 import "./Owned.sol";
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/IEtherWrapper.sol";
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/IERC20.sol";
 
@@ -16,7 +16,7 @@ import "./interfaces/IEtherWrapper.sol";
 // https://docs.tribeone.io/contracts/source/contracts/nativeetherwrapper
 contract NativeEtherWrapper is Owned, MixinResolver {
     bytes32 private constant CONTRACT_ETHER_WRAPPER = "EtherWrapper";
-    bytes32 private constant CONTRACT_SYNTHSETH = "SynthsETH";
+    bytes32 private constant CONTRACT_TRIBEONEHETH = "TribehETH";
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinResolver(_resolver) {}
 
@@ -26,7 +26,7 @@ contract NativeEtherWrapper is Owned, MixinResolver {
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory addresses = new bytes32[](2);
         addresses[0] = CONTRACT_ETHER_WRAPPER;
-        addresses[1] = CONTRACT_SYNTHSETH;
+        addresses[1] = CONTRACT_TRIBEONEHETH;
         return addresses;
     }
 
@@ -38,8 +38,8 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         return etherWrapper().weth();
     }
 
-    function synthsETH() internal view returns (IERC20) {
-        return IERC20(requireAndGetAddress(CONTRACT_SYNTHSETH));
+    function tribehETH() internal view returns (IERC20) {
+        return IERC20(requireAndGetAddress(CONTRACT_TRIBEONEHETH));
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -57,8 +57,8 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         // Now call mint.
         etherWrapper().mint(amount);
 
-        // Transfer the sETH to msg.sender.
-        synthsETH().transfer(msg.sender, synthsETH().balanceOf(address(this)));
+        // Transfer the hETH to msg.sender.
+        tribehETH().transfer(msg.sender, tribehETH().balanceOf(address(this)));
 
         emit Minted(msg.sender, amount);
     }
@@ -67,11 +67,11 @@ contract NativeEtherWrapper is Owned, MixinResolver {
         require(amount > 0, "amount must be greater than 0");
         IWETH weth = weth();
 
-        // Transfer sETH from the msg.sender.
-        synthsETH().transferFrom(msg.sender, address(this), amount);
+        // Transfer hETH from the msg.sender.
+        tribehETH().transferFrom(msg.sender, address(this), amount);
 
         // Approve for the EtherWrapper.
-        synthsETH().approve(address(etherWrapper()), amount);
+        tribehETH().approve(address(etherWrapper()), amount);
 
         // Now call burn.
         etherWrapper().burn(amount);

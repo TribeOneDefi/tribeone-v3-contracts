@@ -34,17 +34,17 @@
 	{
 		"name": "COLLATERAL_MANAGER",
 		"value": {
-			"SYNTHS": [
+			"TRIBES": [
 				"hUSD",
-				"sBTC",
-				"sETH",
+				"hBTC",
+				"hETH",
 				"sLINK",
 				"sSOL",
 				"sAVAX",
 				"sMATIC",
 				"sEUR"
 			],
-			"SHORTS": ["sBTC", "sETH", "sLINK", "sSOL", "sAVAX", "sMATIC", "sEUR"],
+			"SHORTS": ["hBTC", "hETH", "sLINK", "sSOL", "sAVAX", "sMATIC", "sEUR"],
 			"MAX_DEBT": "75000000000000000000000000",
 			"MAX_SKEW_RATE": "200000000000000000",
 			"BASE_BORROW_RATE": "950662938",
@@ -54,9 +54,9 @@
 	{
 		"name": "COLLATERAL_SHORT",
 		"value": {
-			"SYNTHS": [
-				"sBTC",
-				"sETH",
+			"TRIBES": [
+				"hBTC",
+				"hETH",
 				"sLINK",
 				"sSOL",
 				"sAVAX",
@@ -74,7 +74,7 @@
 	{
 		"name": "COLLATERAL_ETH",
 		"value": {
-			"SYNTHS": ["hUSD", "sETH"],
+			"TRIBES": ["hUSD", "hETH"],
 			"ISSUE_FEE_RATE": "0"
 		}
 	},

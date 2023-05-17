@@ -86,7 +86,7 @@ contract FeePoolState is Owned, LimitedSetup {
      * @notice Logs an accounts issuance data in the current fee period which is then stored historically
      * @param account Message.Senders account address
      * @param debtRatio Debt of this account as a percentage of the global debt.
-     * @param debtEntryIndex The index in the global debt ledger. tribeone.tribeoneState().issuanceData(account)
+     * @param debtEntryIndex The index in the global debt ledger. tribeone.tribeetixState().issuanceData(account)
      * @param currentPeriodStartDebtIndex The startingDebtIndex of the current fee period
      * @dev onlyFeePool to call me on tribeone.issue() & tribeone.burn() calls to store the locked HAKA
      * per fee period so we know to allocate the correct proportions of fees and rewards per period
@@ -122,7 +122,7 @@ contract FeePoolState is Owned, LimitedSetup {
     }
 
     /**
-     * @notice Import issuer data from tribeoneState.issuerData on FeePeriodClose() block #
+     * @notice Import issuer data from tribeetixState.issuerData on FeePeriodClose() block #
      * @dev Only callable by the contract owner, and only for 6 weeks after deployment.
      * @param accounts Array of issuing addresses
      * @param ratios Array of debt ratios

@@ -8,7 +8,7 @@ import "./MixinResolver.sol";
 // Libraries
 import "./SafeDecimalMath.sol";
 
-// https://docs.tribeone.io/contracts/source/contracts/tribeonedebtshare
+// https://docs.tribeone.io/contracts/source/contracts/tribeetixdebtshare
 contract TribeoneDebtShare is Owned, MixinResolver, ITribeoneDebtShare {
     using SafeMath for uint;
     using SafeDecimalMath for uint;

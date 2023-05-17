@@ -66,9 +66,9 @@ const liquidatorRewardsRestitution = async ({
 	console.log(gray(`Using account with public key ${signer.address}`));
 
 	// Instantiate Tribeone contract
-	const { address: tribeoneAddress } = deployment.targets['Tribeone'];
-	const { abi: tribeoneABI } = deployment.sources[deployment.targets['Tribeone'].source];
-	const Tribeone = new ethers.Contract(tribeoneAddress, tribeoneABI, signer);
+	const { address: tribeetixAddress } = deployment.targets['Tribeone'];
+	const { abi: tribeetixABI } = deployment.sources[deployment.targets['Tribeone'].source];
+	const Tribeone = new ethers.Contract(tribeetixAddress, tribeetixABI, signer);
 
 	// Instantiate RewardEscrowV2 contract
 	const { address: rewardEscrowV2Address } = deployment.targets['RewardEscrowV2'];
@@ -396,6 +396,6 @@ module.exports = {
 				'Filter out small amounts that are not worth the gas cost',
 				'5'
 			)
-			.option('--csv <file>', 'CSV of all addresses to scan', 'haka.csv')
+			.option('--csv <file>', 'CSV of all addresses to scan', 'snx.csv')
 			.action(liquidatorRewardsRestitution),
 };

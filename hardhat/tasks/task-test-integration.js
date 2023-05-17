@@ -12,7 +12,7 @@ const {
 	connectInstances,
 } = require('../../test/integration/utils/deploy');
 
-const synthsToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
+const tribesToAdd = [{ name: 'sREDEEMER', asset: 'USD' }];
 
 task('test:integration:l1', 'run isolated layer 1 production tests')
 	.addFlag('compile', 'Compile an l1 instance before running the tests')
@@ -50,12 +50,12 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 			if (taskArguments.useFork) {
 				await prepareDeploy({
 					network: 'mainnet',
-					synthsToAdd,
+					tribesToAdd,
 					useOvm,
 					useSips: taskArguments.useSips,
 				});
 				await deployInstance({
-					addNewSynths: true,
+					addNewTribes: true,
 					buildPath,
 					freshDeploy: false,
 					network: 'mainnet',
@@ -74,7 +74,7 @@ task('test:integration:l1', 'run isolated layer 1 production tests')
 				});
 			}
 
-			hre.config.addedSynths = synthsToAdd;
+			hre.config.addedTribes = tribesToAdd;
 		}
 
 		await hre.run('test', taskArguments);
@@ -119,12 +119,12 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 			if (taskArguments.useFork) {
 				await prepareDeploy({
 					network: 'mainnet',
-					synthsToAdd,
+					tribesToAdd,
 					useOvm,
 					useSips: taskArguments.useSips,
 				});
 				await deployInstance({
-					addNewSynths: true,
+					addNewTribes: true,
 					buildPath,
 					freshDeploy: false,
 					network: 'mainnet',
@@ -142,7 +142,7 @@ task('test:integration:l2', 'run isolated layer 2 production tests')
 					buildPath: buildPath,
 				});
 			}
-			hre.config.addedSynths = synthsToAdd;
+			hre.config.addedTribes = tribesToAdd;
 		}
 
 		await hre.run('test', taskArguments);

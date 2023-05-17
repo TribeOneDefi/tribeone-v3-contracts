@@ -11,7 +11,7 @@ import "openzeppelin-solidity-2.3.0/contracts/math/SafeMath.sol";
 import "./AddressSetLib.sol";
 
 // Internal references
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IERC20.sol";
@@ -63,7 +63,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     bytes32 public constant CONTRACT_NAME = "FuturesMarketManager";
 
     bytes32 internal constant HUSD = "hUSD";
-    bytes32 internal constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 internal constant CONTRACT_TRIBEONEHUSD = "TribehUSD";
     bytes32 internal constant CONTRACT_FEEPOOL = "FeePool";
     bytes32 internal constant CONTRACT_EXCHANGER = "Exchanger";
 
@@ -75,13 +75,13 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         addresses = new bytes32[](3);
-        addresses[0] = CONTRACT_SYNTHSUSD;
+        addresses[0] = CONTRACT_TRIBEONEHUSD;
         addresses[1] = CONTRACT_FEEPOOL;
         addresses[2] = CONTRACT_EXCHANGER;
     }
 
-    function _sUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
+    function _hUSD() internal view returns (ITribe) {
+        return ITribe(requireAndGetAddress(CONTRACT_TRIBEONEHUSD));
     }
 
     function _feePool() internal view returns (IFeePool) {
@@ -369,9 +369,9 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
-    function issueSUSD(address account, uint amount) external onlyMarketImplementations {
-        // No settlement is required to issue synths into the target account.
-        _sUSD().issue(account, amount);
+    function issueHUSD(address account, uint amount) external onlyMarketImplementations {
+        // No settlement is required to issue tribes into the target account.
+        _hUSD().issue(account, amount);
     }
 
     /*
@@ -379,13 +379,13 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      * This function is not callable through the proxy, only underlying contracts interact;
      * it reverts if not called by a known market.
      */
-    function burnSUSD(address account, uint amount) external onlyMarketImplementations returns (uint postReclamationAmount) {
+    function burnHUSD(address account, uint amount) external onlyMarketImplementations returns (uint postReclamationAmount) {
         // We'll settle first, in order to ensure the user has sufficient balance.
         // If the settlement reduces the user's balance below the requested amount,
         // the settled remainder will be the resulting deposit.
 
-        // Exchanger.settle ensures synth is active
-        ISynth hUSD = _sUSD();
+        // Exchanger.settle ensures tribe is active
+        ITribe hUSD = _hUSD();
         (uint reclaimed, , ) = _exchanger().settle(account, HUSD);
 
         uint balanceAfter = amount;
@@ -418,7 +418,7 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
     function _payFee(uint amount, bytes32 trackingCode) internal {
         delete trackingCode; // unused for now, will be used SIP 203
         IFeePool pool = _feePool();
-        _sUSD().issue(pool.FEE_ADDRESS(), amount);
+        _hUSD().issue(pool.FEE_ADDRESS(), amount);
         pool.recordFeePaid(amount);
     }
 

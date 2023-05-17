@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 // https://docs.tribeone.io/contracts/source/libraries/bytes32setlib/
 library Bytes32SetLib {
     struct Bytes32Set {

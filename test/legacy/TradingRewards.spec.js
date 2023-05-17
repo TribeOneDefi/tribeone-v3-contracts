@@ -4,7 +4,7 @@ const { assert, addSnapshotBeforeRestoreAfter } = require('../contracts/common')
 const { setupAllContracts } = require('../contracts/setup');
 const { toUnit, multiplyDecimal } = require('../utils')();
 const {
-	setExchangeFeeRateForSynths,
+	setExchangeFeeRateForTribes,
 	getDecodedLogs,
 	decodedEventEqual,
 	setupPriceAggregators,
@@ -21,12 +21,12 @@ const { toBytes32 } = require('../..');
 contract('TradingRewards', accounts => {
 	const [, owner, account1] = accounts;
 
-	const synths = ['hUSD', 'sETH', 'sBTC', 'HAKA'];
-	const synthKeys = synths.map(toBytes32);
-	const [hUSD, sETH, sBTC, HAKA] = synthKeys;
+	const tribes = ['hUSD', 'hETH', 'hBTC', 'HAKA'];
+	const tribeKeys = tribes.map(toBytes32);
+	const [hUSD, hETH, hBTC, HAKA] = tribeKeys;
 
 	let tribeone, exchanger, exchangeRates, rewards, resolver, systemSettings;
-	let sUSDContract, sETHContract, sBTCContract;
+	let hUSDContract, hETHContract, hBTCContract;
 
 	let exchangeLogs;
 
@@ -35,8 +35,8 @@ contract('TradingRewards', accounts => {
 	const amountIssued = toUnit('1000');
 	const allExchangeFeeRates = toUnit('0.001');
 	const rates = {
-		[sETH]: toUnit('100'),
-		[sBTC]: toUnit('12000'),
+		[hETH]: toUnit('100'),
+		[hBTC]: toUnit('12000'),
 		[HAKA]: toUnit('0.2'),
 	};
 
@@ -81,13 +81,13 @@ contract('TradingRewards', accounts => {
 				AddressResolver: resolver,
 				Exchanger: exchanger,
 				ExchangeRates: exchangeRates,
-				SynthsUSD: sUSDContract,
-				SynthsETH: sETHContract,
-				SynthsBTC: sBTCContract,
+				TribehUSD: hUSDContract,
+				TribehETH: hETHContract,
+				TribehBTC: hBTCContract,
 				SystemSettings: systemSettings,
 			} = await setupAllContracts({
 				accounts,
-				synths,
+				tribes,
 				contracts: [
 					'Tribeone',
 					'TradingRewards',
@@ -99,30 +99,30 @@ contract('TradingRewards', accounts => {
 				],
 			}));
 
-			await setupPriceAggregators(exchangeRates, owner, [sETH, sBTC]);
+			await setupPriceAggregators(exchangeRates, owner, [hETH, hBTC]);
 		});
 
 		before('BRRRRRR', async () => {
-			await sUSDContract.issue(account1, amountIssued);
-			await sETHContract.issue(account1, amountIssued);
-			await sBTCContract.issue(account1, amountIssued);
+			await hUSDContract.issue(account1, amountIssued);
+			await hETHContract.issue(account1, amountIssued);
+			await hBTCContract.issue(account1, amountIssued);
 		});
 
 		before('set exchange rates', async () => {
-			await updateAggregatorRates(exchangeRates, null, [sETH, sBTC, HAKA], Object.values(rates));
+			await updateAggregatorRates(exchangeRates, null, [hETH, hBTC, HAKA], Object.values(rates));
 
-			await setExchangeFeeRateForSynths({
+			await setExchangeFeeRateForTribes({
 				owner,
 				systemSettings,
-				synthKeys,
-				exchangeFeeRates: synthKeys.map(() => allExchangeFeeRates),
+				tribeKeys,
+				exchangeFeeRates: tribeKeys.map(() => allExchangeFeeRates),
 			});
 		});
 
 		it('has expected balances for accounts', async () => {
-			assert.bnEqual(amountIssued, await sUSDContract.balanceOf(account1));
-			assert.bnEqual(amountIssued, await sETHContract.balanceOf(account1));
-			assert.bnEqual(amountIssued, await sBTCContract.balanceOf(account1));
+			assert.bnEqual(amountIssued, await hUSDContract.balanceOf(account1));
+			assert.bnEqual(amountIssued, await hETHContract.balanceOf(account1));
+			assert.bnEqual(amountIssued, await hBTCContract.balanceOf(account1));
 		});
 
 		it('has expected parameters', async () => {
@@ -146,12 +146,12 @@ contract('TradingRewards', accounts => {
 						account: account1,
 						fromCurrencyKey: hUSD,
 						fromCurrencyAmount: toUnit('100'),
-						toCurrencyKey: sETH,
+						toCurrencyKey: hETH,
 					});
 				});
 
-				it('emitted a SynthExchange event', async () => {
-					assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+				it('emitted a TribeExchange event', async () => {
+					assert.isTrue(exchangeLogs.some(log => log.name === 'TribeExchange'));
 				});
 
 				it('did not emit an ExchangeFeeRecorded event', async () => {
@@ -192,8 +192,8 @@ contract('TradingRewards', accounts => {
 						});
 					});
 
-					it('emitted a SynthExchange event', async () => {
-						assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+					it('emitted a TribeExchange event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'TribeExchange'));
 					});
 
 					it('emitted an ExchangeFeeRecorded event', async () => {
@@ -221,28 +221,28 @@ contract('TradingRewards', accounts => {
 				account: account1,
 				fromCurrencyKey: hUSD,
 				fromCurrencyAmount: toUnit('100'),
-				toCurrencyKey: sETH,
+				toCurrencyKey: hETH,
 			});
 
 			itCorrectlyPerformsAnExchange({
 				account: account1,
 				fromCurrencyKey: hUSD,
 				fromCurrencyAmount: toUnit('100'),
-				toCurrencyKey: sBTC,
+				toCurrencyKey: hBTC,
 			});
 
 			itCorrectlyPerformsAnExchange({
 				account: account1,
-				fromCurrencyKey: sETH,
+				fromCurrencyKey: hETH,
 				fromCurrencyAmount: toUnit('10'),
-				toCurrencyKey: sBTC,
+				toCurrencyKey: hBTC,
 			});
 
 			itCorrectlyPerformsAnExchange({
 				account: account1,
-				fromCurrencyKey: sBTC,
+				fromCurrencyKey: hBTC,
 				fromCurrencyAmount: toUnit('1'),
-				toCurrencyKey: sETH,
+				toCurrencyKey: hETH,
 			});
 
 			describe('when exchangeFeeRate is set to 0', () => {
@@ -251,11 +251,11 @@ contract('TradingRewards', accounts => {
 				before('set fee rate', async () => {
 					const zeroRate = toBN(0);
 
-					await setExchangeFeeRateForSynths({
+					await setExchangeFeeRateForTribes({
 						owner,
 						systemSettings,
-						synthKeys,
-						exchangeFeeRates: synthKeys.map(() => zeroRate),
+						tribeKeys,
+						exchangeFeeRates: tribeKeys.map(() => zeroRate),
 					});
 				});
 
@@ -265,12 +265,12 @@ contract('TradingRewards', accounts => {
 							account: account1,
 							fromCurrencyKey: hUSD,
 							fromCurrencyAmount: toUnit('100'),
-							toCurrencyKey: sETH,
+							toCurrencyKey: hETH,
 						});
 					});
 
-					it('emitted a SynthExchange event', async () => {
-						assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+					it('emitted a TribeExchange event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'TribeExchange'));
 					});
 
 					it('did not emit an ExchangeFeeRecorded event', async () => {
@@ -287,7 +287,7 @@ contract('TradingRewards', accounts => {
 						const exchangeTx = await tribeone.exchangeWithTracking(
 							hUSD,
 							toUnit('100'),
-							sETH,
+							hETH,
 							account1,
 							toBytes32('1INCH'),
 							{
@@ -298,8 +298,8 @@ contract('TradingRewards', accounts => {
 						exchangeLogs = await getExchangeLogs({ exchangeTx });
 					});
 
-					it('emitted a SynthExchange event', async () => {
-						assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+					it('emitted a TribeExchange event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'TribeExchange'));
 					});
 
 					it('emitted an ExchangeFeeRecorded event', async () => {
@@ -312,7 +312,7 @@ contract('TradingRewards', accounts => {
 						const exchangeTx = await tribeone.exchangeWithTracking(
 							hUSD,
 							toUnit('100'),
-							sETH,
+							hETH,
 							zeroAddress, // No reward address = 0x0
 							toBytes32('1INCH'),
 							{
@@ -323,8 +323,8 @@ contract('TradingRewards', accounts => {
 						exchangeLogs = await getExchangeLogs({ exchangeTx });
 					});
 
-					it('emitted a SynthExchange event', async () => {
-						assert.isTrue(exchangeLogs.some(log => log.name === 'SynthExchange'));
+					it('emitted a TribeExchange event', async () => {
+						assert.isTrue(exchangeLogs.some(log => log.name === 'TribeExchange'));
 					});
 
 					it('did not emit an ExchangeFeeRecorded event', async () => {

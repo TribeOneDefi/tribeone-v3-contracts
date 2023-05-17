@@ -2,9 +2,9 @@ pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 interface IPerpsV2MarketManagerInternal {
-    function issueSUSD(address account, uint amount) external;
+    function issueHUSD(address account, uint amount) external;
 
-    function burnSUSD(address account, uint amount) external;
+    function burnHUSD(address account, uint amount) external;
 
     function payFee(uint amount) external;
 
@@ -56,12 +56,12 @@ contract MockPerpsV2Market {
         return (debt, invalid);
     }
 
-    function issueSUSD(address account, uint amount) external {
-        manager.issueSUSD(account, amount);
+    function issueHUSD(address account, uint amount) external {
+        manager.issueHUSD(account, amount);
     }
 
-    function burnSUSD(address account, uint amount) external {
-        manager.burnSUSD(account, amount);
+    function burnHUSD(address account, uint amount) external {
+        manager.burnHUSD(account, amount);
     }
 
     function payFee(uint amount) external {

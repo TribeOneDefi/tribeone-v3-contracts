@@ -9,6 +9,6 @@ contract MockToken is ERC20, ERC20Detailed {
         string memory symbol,
         uint8 decimals
     ) public ERC20Detailed(name, symbol, decimals) {
-        _mint(msg.sender, 1000000 * (10**uint256(decimals)));
+        _mint(msg.sender, 10000000 * (10**uint256(decimals)));
     }
 }

@@ -28,16 +28,16 @@ async function _getAmount({ ctx, symbol, user, amount }) {
 	} else if (symbol === 'WETH') {
 		await _getWETH({ ctx, user, amount });
 	} else if (symbol === 'hUSD') {
-		await _getsUSD({ ctx, user, amount });
-	} else if (symbol === 'sETHBTC') {
-		await _getSynth({ ctx, symbol, user, amount });
-	} else if (symbol === 'sETH') {
-		await _getSynth({ ctx, symbol, user, amount });
+		await _gethUSD({ ctx, user, amount });
+	} else if (symbol === 'hETHBTC') {
+		await _getTribe({ ctx, symbol, user, amount });
+	} else if (symbol === 'hETH') {
+		await _getTribe({ ctx, symbol, user, amount });
 	} else if (symbol === 'ETH') {
 		await _getETHFromOtherUsers({ ctx, user, amount });
 	} else {
 		throw new Error(
-			`Symbol ${symbol} not yet supported. TODO: Support via exchanging hUSD to other Synths.`
+			`Symbol ${symbol} not yet supported. TODO: Support via exchanging hUSD to other Tribes.`
 		);
 	}
 
@@ -147,17 +147,17 @@ async function _getHAKAForOwnerOnL2ByHackMinting({ ctx, amount }) {
 	await tx.wait();
 }
 
-async function _getsUSD({ ctx, user, amount }) {
-	const { ProxyTribeone, ProxysUSD } = ctx.contracts;
-	let { Tribeone, SynthsUSD } = ctx.contracts;
+async function _gethUSD({ ctx, user, amount }) {
+	const { ProxyTribeone, ProxyhUSD } = ctx.contracts;
+	let { Tribeone, TribehUSD } = ctx.contracts;
 
 	// connect via proxy
 	Tribeone = new ethers.Contract(ProxyTribeone.address, Tribeone.interface, ctx.provider);
-	SynthsUSD = new ethers.Contract(ProxysUSD.address, SynthsUSD.interface, ctx.provider);
+	TribehUSD = new ethers.Contract(ProxyhUSD.address, TribehUSD.interface, ctx.provider);
 
 	let tx;
 
-	const requiredHAKA = await _getHAKAAmountRequiredForsUSDAmount({ ctx, amount });
+	const requiredHAKA = await _getHAKAAmountRequiredForhUSDAmount({ ctx, amount });
 	await ensureBalance({ ctx, symbol: 'HAKA', user, balance: requiredHAKA });
 
 	Tribeone = Tribeone.connect(ctx.users.owner);
@@ -179,14 +179,14 @@ async function _getsUSD({ ctx, user, amount }) {
 	tx = await Tribeone.transfer(tmpWallet.address, requiredHAKA.mul(2));
 	await tx.wait();
 
-	tx = await Tribeone.connect(tmpWallet).issueSynths(amount);
+	tx = await Tribeone.connect(tmpWallet).issueTribes(amount);
 	await tx.wait();
 
-	tx = await SynthsUSD.connect(tmpWallet).transfer(user.address, amount);
+	tx = await TribehUSD.connect(tmpWallet).transfer(user.address, amount);
 	await tx.wait();
 }
 
-async function _getSynth({ ctx, user, symbol, amount }) {
+async function _getTribe({ ctx, user, symbol, amount }) {
 	let spent = ethers.utils.parseEther('0');
 	let partialAmount = ethers.utils.parseEther('1000'); // choose a "reasonable" amount to start with
 
@@ -195,10 +195,10 @@ async function _getSynth({ ctx, user, symbol, amount }) {
 	const token = _getTokenFromSymbol({ ctx, symbol });
 
 	// requiring from within function to prevent circular dependency
-	const { exchangeSynths } = require('./exchanging');
+	const { exchangeTribes } = require('./exchanging');
 
 	while (remaining.gt(0)) {
-		await exchangeSynths({
+		await exchangeTribes({
 			ctx,
 			dest: symbol,
 			src: 'hUSD',
@@ -210,7 +210,7 @@ async function _getSynth({ ctx, user, symbol, amount }) {
 		const newBalance = await token.balanceOf(user.address);
 
 		if (newBalance.eq(0)) {
-			throw new Error('received no synths from exchange, did breaker trip? is rate set?');
+			throw new Error('received no tribes from exchange, did breaker trip? is rate set?');
 		}
 
 		remaining = amount.sub(newBalance);
@@ -220,7 +220,7 @@ async function _getSynth({ ctx, user, symbol, amount }) {
 	}
 }
 
-async function _getHAKAAmountRequiredForsUSDAmount({ ctx, amount }) {
+async function _getHAKAAmountRequiredForhUSDAmount({ ctx, amount }) {
 	const { Exchanger, SystemSettings } = ctx.contracts;
 
 	const ratio = await SystemSettings.issuanceRatio();
@@ -247,7 +247,7 @@ function _getTokenFromSymbol({ ctx, symbol }) {
 	} else if (symbol === 'WETH') {
 		return ctx.contracts.WETH;
 	} else {
-		return ctx.contracts[`Synth${symbol}`];
+		return ctx.contracts[`Tribe${symbol}`];
 	}
 }
 

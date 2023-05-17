@@ -1,6 +1,5 @@
 pragma solidity ^0.5.16;
 
-
 pragma experimental ABIEncoderV2;
 
 import "openzeppelin-solidity-2.3.0/contracts/token/ERC20/SafeERC20.sol";
@@ -19,7 +18,7 @@ import "./interfaces/ICollateralManager.sol";
 import "./interfaces/ISystemStatus.sol";
 import "./interfaces/IFeePool.sol";
 import "./interfaces/IIssuer.sol";
-import "./interfaces/ISynth.sol";
+import "./interfaces/ITribe.sol";
 import "./interfaces/IExchangeRates.sol";
 import "./interfaces/IExchanger.sol";
 import "./interfaces/IShortingRewards.sol";
@@ -36,7 +35,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     // ========== STATE VARIABLES ==========
 
-    // The synth corresponding to the collateral.
+    // The tribe corresponding to the collateral.
     bytes32 public collateralKey;
 
     // Stores open loans.
@@ -44,11 +43,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     ICollateralManager public manager;
 
-    // The synths that this contract can issue.
-    bytes32[] public synths;
+    // The tribes that this contract can issue.
+    bytes32[] public tribes;
 
-    // Map from currency key to synth contract name.
-    mapping(bytes32 => bytes32) public synthsByKey;
+    // Map from currency key to tribe contract name.
+    mapping(bytes32 => bytes32) public tribesByKey;
 
     // Map from currency key to the shorting rewards contract
     mapping(bytes32 => address) public shortingRewards;
@@ -72,7 +71,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
     bytes32 private constant CONTRACT_EXRATES = "ExchangeRates";
     bytes32 private constant CONTRACT_EXCHANGER = "Exchanger";
     bytes32 private constant CONTRACT_FEEPOOL = "FeePool";
-    bytes32 private constant CONTRACT_SYNTHSUSD = "SynthsUSD";
+    bytes32 private constant CONTRACT_TRIBEONEHUSD = "TribehUSD";
     bytes32 private constant CONTRACT_COLLATERALUTIL = "CollateralUtil";
 
     /* ========== CONSTRUCTOR ========== */
@@ -100,12 +99,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         newAddresses[1] = CONTRACT_EXRATES;
         newAddresses[2] = CONTRACT_EXCHANGER;
         newAddresses[3] = CONTRACT_SYSTEMSTATUS;
-        newAddresses[4] = CONTRACT_SYNTHSUSD;
+        newAddresses[4] = CONTRACT_TRIBEONEHUSD;
         newAddresses[5] = CONTRACT_COLLATERALUTIL;
 
         bytes32[] memory combined = combineArrays(existingAddresses, newAddresses);
 
-        addresses = combineArrays(combined, synths);
+        addresses = combineArrays(combined, tribes);
     }
 
     /* ---------- Related Contracts ---------- */
@@ -114,12 +113,12 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function _synth(bytes32 synthName) internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(synthName));
+    function _tribe(bytes32 tribeName) internal view returns (ITribe) {
+        return ITribe(requireAndGetAddress(tribeName));
     }
 
-    function _synthsUSD() internal view returns (ISynth) {
-        return ISynth(requireAndGetAddress(CONTRACT_SYNTHSUSD));
+    function _tribehUSD() internal view returns (ITribe) {
+        return ITribe(requireAndGetAddress(CONTRACT_TRIBEONEHUSD));
     }
 
     function _exchangeRates() internal view returns (IExchangeRates) {
@@ -150,26 +149,26 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         return _collateralUtil().liquidationAmount(loan, minCratio, collateralKey);
     }
 
-    // The maximum number of synths issuable for this amount of collateral
+    // The maximum number of tribes issuable for this amount of collateral
     function maxLoan(uint amount, bytes32 currency) public view returns (uint max) {
         return _collateralUtil().maxLoan(amount, currency, minCratio, collateralKey);
     }
 
-    function areSynthsAndCurrenciesSet(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys)
+    function areTribesAndCurrenciesSet(bytes32[] calldata _tribeNamesInResolver, bytes32[] calldata _tribeKeys)
         external
         view
         returns (bool)
     {
-        if (synths.length != _synthNamesInResolver.length) {
+        if (tribes.length != _tribeNamesInResolver.length) {
             return false;
         }
 
-        for (uint i = 0; i < _synthNamesInResolver.length; i++) {
-            bytes32 synthName = _synthNamesInResolver[i];
-            if (synths[i] != synthName) {
+        for (uint i = 0; i < _tribeNamesInResolver.length; i++) {
+            bytes32 tribeName = _tribeNamesInResolver[i];
+            if (tribes[i] != tribeName) {
                 return false;
             }
-            if (synthsByKey[_synthKeys[i]] != synths[i]) {
+            if (tribesByKey[_tribeKeys[i]] != tribes[i]) {
                 return false;
             }
         }
@@ -196,13 +195,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- UTILITIES ---------- */
 
-    // Check the account has enough of the synth to make the payment
-    function _checkSynthBalance(
+    // Check the account has enough of the tribe to make the payment
+    function _checkTribeBalance(
         address payer,
         bytes32 key,
         uint amount
     ) internal view {
-        require(IERC20(address(_synth(synthsByKey[key]))).balanceOf(payer) >= amount, "Not enough balance");
+        require(IERC20(address(_tribe(tribesByKey[key]))).balanceOf(payer) >= amount, "Not enough balance");
     }
 
     // We set the interest index to 0 to indicate the loan has been closed.
@@ -217,15 +216,15 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    /* ---------- Synths ---------- */
+    /* ---------- Tribes ---------- */
 
-    function addSynths(bytes32[] calldata _synthNamesInResolver, bytes32[] calldata _synthKeys) external onlyOwner {
-        require(_synthNamesInResolver.length == _synthKeys.length, "Array length mismatch");
+    function addTribes(bytes32[] calldata _tribeNamesInResolver, bytes32[] calldata _tribeKeys) external onlyOwner {
+        require(_tribeNamesInResolver.length == _tribeKeys.length, "Array length mismatch");
 
-        for (uint i = 0; i < _synthNamesInResolver.length; i++) {
-            bytes32 synthName = _synthNamesInResolver[i];
-            synths.push(synthName);
-            synthsByKey[_synthKeys[i]] = synthName;
+        for (uint i = 0; i < _tribeNamesInResolver.length; i++) {
+            bytes32 tribeName = _tribeNamesInResolver[i];
+            tribes.push(tribeName);
+            tribesByKey[_tribeKeys[i]] = tribeName;
         }
 
         // ensure cache has the latest
@@ -234,8 +233,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
     /* ---------- Rewards Contracts ---------- */
 
-    function addRewardsContracts(address rewardsContract, bytes32 synth) external onlyOwner {
-        shortingRewards[synth] = rewardsContract;
+    function addRewardsContracts(address rewardsContract, bytes32 tribe) external onlyOwner {
+        shortingRewards[tribe] = rewardsContract;
     }
 
     /* ---------- LOAN INTERACTIONS ---------- */
@@ -249,16 +248,16 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 0. Check if able to open loans.
         require(canOpenLoans, "Open disabled");
 
-        // 1. We can only issue certain synths.
-        require(synthsByKey[currency] > 0, "Not allowed to issue");
+        // 1. We can only issue certain tribes.
+        require(tribesByKey[currency] > 0, "Not allowed to issue");
 
-        // 2. Make sure the synth rate is not invalid.
+        // 2. Make sure the tribe rate is not invalid.
         require(!_exchangeRates().rateIsInvalid(currency), "Invalid rate");
 
         // 3. Collateral >= minimum collateral size.
         require(collateral >= minCollateral, "Not enough collateral");
 
-        // 4. Check we haven't hit the debt cap for non haka collateral.
+        // 4. Check we haven't hit the debt cap for non snx collateral.
         (bool canIssue, bool anyRateIsInvalid) = manager.exceedsDebtLimit(amount, currency);
 
         // 5. Check if we've hit the debt cap or any rate is invalid.
@@ -297,14 +296,14 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
 
         // 13. If its short, convert back to hUSD, otherwise issue the loan.
         if (short) {
-            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(currency, loanAmountMinusFee, hUSD));
+            _tribehUSD().issue(msg.sender, _exchangeRates().effectiveValue(currency, loanAmountMinusFee, hUSD));
             manager.incrementShorts(currency, amount);
 
             if (shortingRewards[currency] != address(0)) {
                 IShortingRewards(shortingRewards[currency]).enrol(msg.sender, amount);
             }
         } else {
-            _synth(synthsByKey[currency]).issue(msg.sender, loanAmountMinusFee);
+            _tribe(tribesByKey[currency]).issue(msg.sender, loanAmountMinusFee);
             manager.incrementLongs(currency, amount);
         }
 
@@ -351,11 +350,11 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 2. Return collateral to the child class so it knows how much to transfer.
         collateral = loan.collateral;
 
-        // 3. Check that the liquidator has enough synths.
-        _checkSynthBalance(liquidator, loan.currency, total);
+        // 3. Check that the liquidator has enough tribes.
+        _checkTribeBalance(liquidator, loan.currency, total);
 
-        // 4. Burn the synths.
-        _synth(synthsByKey[loan.currency]).burn(liquidator, total);
+        // 4. Burn the tribes.
+        _tribe(tribesByKey[loan.currency]).burn(liquidator, total);
 
         // 5. Tell the manager.
         if (loan.short) {
@@ -429,7 +428,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         Loan storage loan = _getLoanAndAccrueInterest(id, borrower);
 
         // 1. Check they have enough balance to make the payment.
-        _checkSynthBalance(msg.sender, loan.currency, payment);
+        _checkTribeBalance(msg.sender, loan.currency, payment);
 
         // 2. Check they are eligible for liquidation.
         // Note: this will revert if collateral is 0, however that should only be possible if the loan amount is 0.
@@ -451,7 +450,7 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         }
 
         // 7. Check they have enough balance to liquidate the loan.
-        _checkSynthBalance(msg.sender, loan.currency, amountToLiquidate);
+        _checkTribeBalance(msg.sender, loan.currency, amountToLiquidate);
 
         // 8. Process the payment to workout interest/principal split.
         _processPayment(loan, amountToLiquidate);
@@ -460,8 +459,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         collateralLiquidated = _collateralUtil().collateralRedeemed(loan.currency, amountToLiquidate, collateralKey);
         loan.collateral = loan.collateral.sub(collateralLiquidated);
 
-        // 10. Burn the synths from the liquidator.
-        _synth(synthsByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
+        // 10. Burn the tribes from the liquidator.
+        _tribe(tribesByKey[loan.currency]).burn(msg.sender, amountToLiquidate);
 
         // 11. Emit the event for the partial liquidation.
         emit LoanPartiallyLiquidated(borrower, id, msg.sender, amountToLiquidate, collateralLiquidated);
@@ -480,8 +479,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 1. Check loan is open and last interaction time.
         _checkLoanAvailable(loan);
 
-        // 2. Check the spender has enough synths to make the repayment
-        _checkSynthBalance(repayer, loan.currency, payment);
+        // 2. Check the spender has enough tribes to make the repayment
+        _checkTribeBalance(repayer, loan.currency, payment);
 
         // 3. Accrue interest on the loan.
         _accrueInterest(loan);
@@ -489,8 +488,8 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 4. Process the payment.
         _processPayment(loan, payment);
 
-        // 5. Burn synths from the payer
-        _synth(synthsByKey[loan.currency]).burn(repayer, payment);
+        // 5. Burn tribes from the payer
+        _tribe(tribesByKey[loan.currency]).burn(repayer, payment);
 
         // 6. Update the last interaction time.
         loan.lastInteraction = block.timestamp;
@@ -521,17 +520,17 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         // 5. Calculate the minting fee and subtract it from the draw amount
         uint amountMinusFee = amount.sub(issueFee);
 
-        // 6. If its short, issue the synths.
+        // 6. If its short, issue the tribes.
         if (loan.short) {
             manager.incrementShorts(loan.currency, amount);
-            _synthsUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, hUSD));
+            _tribehUSD().issue(msg.sender, _exchangeRates().effectiveValue(loan.currency, amountMinusFee, hUSD));
 
             if (shortingRewards[loan.currency] != address(0)) {
                 IShortingRewards(shortingRewards[loan.currency]).enrol(msg.sender, amount);
             }
         } else {
             manager.incrementLongs(loan.currency, amount);
-            _synth(synthsByKey[loan.currency]).issue(msg.sender, amountMinusFee);
+            _tribe(tribesByKey[loan.currency]).issue(msg.sender, amountMinusFee);
         }
 
         // 7. Pay the minting fees to the fee pool
@@ -587,13 +586,13 @@ contract Collateral is ICollateralLoan, Owned, MixinSystemSettings {
         }
     }
 
-    // Take an amount of fees in a certain synth and convert it to hUSD before paying the fee pool.
-    function _payFees(uint amount, bytes32 synth) internal {
+    // Take an amount of fees in a certain tribe and convert it to hUSD before paying the fee pool.
+    function _payFees(uint amount, bytes32 tribe) internal {
         if (amount > 0) {
-            if (synth != hUSD) {
-                amount = _exchangeRates().effectiveValue(synth, amount, hUSD);
+            if (tribe != hUSD) {
+                amount = _exchangeRates().effectiveValue(tribe, amount, hUSD);
             }
-            _synthsUSD().issue(_feePool().FEE_ADDRESS(), amount);
+            _tribehUSD().issue(_feePool().FEE_ADDRESS(), amount);
             _feePool().recordFeePaid(amount);
         }
     }

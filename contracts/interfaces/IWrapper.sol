@@ -10,7 +10,7 @@ interface IWrapper {
 
     function capacity() external view returns (uint);
 
-    function totalIssuedSynths() external view returns (uint);
+    function totalIssuedTribes() external view returns (uint);
 
     function calculateMintFee(uint amount) external view returns (uint, bool);
 

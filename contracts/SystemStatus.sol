@@ -14,8 +14,8 @@ contract SystemStatus is Owned, ISystemStatus {
     bytes32 public constant SECTION_ISSUANCE = "Issuance";
     bytes32 public constant SECTION_EXCHANGE = "Exchange";
     bytes32 public constant SECTION_FUTURES = "Futures";
-    bytes32 public constant SECTION_SYNTH_EXCHANGE = "SynthExchange";
-    bytes32 public constant SECTION_SYNTH = "Synth";
+    bytes32 public constant SECTION_TRIBEONE_EXCHANGE = "TribeExchange";
+    bytes32 public constant SECTION_TRIBEONE = "Tribe";
 
     bytes32 public constant CONTRACT_NAME = "SystemStatus";
 
@@ -27,9 +27,9 @@ contract SystemStatus is Owned, ISystemStatus {
 
     Suspension public futuresSuspension;
 
-    mapping(bytes32 => Suspension) public synthExchangeSuspension;
+    mapping(bytes32 => Suspension) public tribeExchangeSuspension;
 
-    mapping(bytes32 => Suspension) public synthSuspension;
+    mapping(bytes32 => Suspension) public tribeSuspension;
 
     mapping(bytes32 => Suspension) public futuresMarketSuspension;
 
@@ -60,10 +60,10 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalRequireExchangeActive();
     }
 
-    function requireSynthExchangeActive(bytes32 currencyKey) external view {
-        // Synth exchange and transfer requires the system be active
+    function requireTribeExchangeActive(bytes32 currencyKey) external view {
+        // Tribe exchange and transfer requires the system be active
         _internalRequireSystemActive();
-        _internalRequireSynthExchangeActive(currencyKey);
+        _internalRequireTribeExchangeActive(currencyKey);
     }
 
     function requireFuturesActive() external view {
@@ -80,68 +80,68 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalRequireFuturesMarketActive(marketKey); // specific futures market flag
     }
 
-    function synthSuspended(bytes32 currencyKey) external view returns (bool) {
-        return systemSuspension.suspended || synthSuspension[currencyKey].suspended;
+    function tribeSuspended(bytes32 currencyKey) external view returns (bool) {
+        return systemSuspension.suspended || tribeSuspension[currencyKey].suspended;
     }
 
-    function requireSynthActive(bytes32 currencyKey) external view {
-        // Synth exchange and transfer requires the system be active
+    function requireTribeActive(bytes32 currencyKey) external view {
+        // Tribe exchange and transfer requires the system be active
         _internalRequireSystemActive();
-        _internalRequireSynthActive(currencyKey);
+        _internalRequireTribeActive(currencyKey);
     }
 
-    function requireSynthsActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
-        // Synth exchange and transfer requires the system be active
+    function requireTribesActive(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
+        // Tribe exchange and transfer requires the system be active
         _internalRequireSystemActive();
-        _internalRequireSynthActive(sourceCurrencyKey);
-        _internalRequireSynthActive(destinationCurrencyKey);
+        _internalRequireTribeActive(sourceCurrencyKey);
+        _internalRequireTribeActive(destinationCurrencyKey);
     }
 
-    function requireExchangeBetweenSynthsAllowed(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
-        // Synth exchange and transfer requires the system be active
+    function requireExchangeBetweenTribesAllowed(bytes32 sourceCurrencyKey, bytes32 destinationCurrencyKey) external view {
+        // Tribe exchange and transfer requires the system be active
         _internalRequireSystemActive();
 
         // and exchanging must be active
         _internalRequireExchangeActive();
 
-        // and the synth exchanging between the synths must be active
-        _internalRequireSynthExchangeActive(sourceCurrencyKey);
-        _internalRequireSynthExchangeActive(destinationCurrencyKey);
+        // and the tribe exchanging between the tribes must be active
+        _internalRequireTribeExchangeActive(sourceCurrencyKey);
+        _internalRequireTribeExchangeActive(destinationCurrencyKey);
 
-        // and finally, the synths cannot be suspended
-        _internalRequireSynthActive(sourceCurrencyKey);
-        _internalRequireSynthActive(destinationCurrencyKey);
+        // and finally, the tribes cannot be suspended
+        _internalRequireTribeActive(sourceCurrencyKey);
+        _internalRequireTribeActive(destinationCurrencyKey);
     }
 
     function isSystemUpgrading() external view returns (bool) {
         return systemSuspension.suspended && systemSuspension.reason == SUSPENSION_REASON_UPGRADE;
     }
 
-    function getSynthExchangeSuspensions(bytes32[] calldata synths)
+    function getTribeExchangeSuspensions(bytes32[] calldata tribes)
         external
         view
         returns (bool[] memory exchangeSuspensions, uint256[] memory reasons)
     {
-        exchangeSuspensions = new bool[](synths.length);
-        reasons = new uint256[](synths.length);
+        exchangeSuspensions = new bool[](tribes.length);
+        reasons = new uint256[](tribes.length);
 
-        for (uint i = 0; i < synths.length; i++) {
-            exchangeSuspensions[i] = synthExchangeSuspension[synths[i]].suspended;
-            reasons[i] = synthExchangeSuspension[synths[i]].reason;
+        for (uint i = 0; i < tribes.length; i++) {
+            exchangeSuspensions[i] = tribeExchangeSuspension[tribes[i]].suspended;
+            reasons[i] = tribeExchangeSuspension[tribes[i]].reason;
         }
     }
 
-    function getSynthSuspensions(bytes32[] calldata synths)
+    function getTribeSuspensions(bytes32[] calldata tribes)
         external
         view
         returns (bool[] memory suspensions, uint256[] memory reasons)
     {
-        suspensions = new bool[](synths.length);
-        reasons = new uint256[](synths.length);
+        suspensions = new bool[](tribes.length);
+        reasons = new uint256[](tribes.length);
 
-        for (uint i = 0; i < synths.length; i++) {
-            suspensions[i] = synthSuspension[synths[i]].suspended;
-            reasons[i] = synthSuspension[synths[i]].reason;
+        for (uint i = 0; i < tribes.length; i++) {
+            suspensions[i] = tribeSuspension[tribes[i]].suspended;
+            reasons[i] = tribeSuspension[tribes[i]].reason;
         }
     }
 
@@ -267,44 +267,44 @@ contract SystemStatus is Owned, ISystemStatus {
         _internalResumeFuturesMarkets(marketKeys);
     }
 
-    function suspendSynthExchange(bytes32 currencyKey, uint256 reason) external {
+    function suspendTribeExchange(bytes32 currencyKey, uint256 reason) external {
         bytes32[] memory currencyKeys = new bytes32[](1);
         currencyKeys[0] = currencyKey;
-        _internalSuspendSynthExchange(currencyKeys, reason);
+        _internalSuspendTribeExchange(currencyKeys, reason);
     }
 
-    function suspendSynthsExchange(bytes32[] calldata currencyKeys, uint256 reason) external {
-        _internalSuspendSynthExchange(currencyKeys, reason);
+    function suspendTribesExchange(bytes32[] calldata currencyKeys, uint256 reason) external {
+        _internalSuspendTribeExchange(currencyKeys, reason);
     }
 
-    function resumeSynthExchange(bytes32 currencyKey) external {
+    function resumeTribeExchange(bytes32 currencyKey) external {
         bytes32[] memory currencyKeys = new bytes32[](1);
         currencyKeys[0] = currencyKey;
-        _internalResumeSynthsExchange(currencyKeys);
+        _internalResumeTribesExchange(currencyKeys);
     }
 
-    function resumeSynthsExchange(bytes32[] calldata currencyKeys) external {
-        _internalResumeSynthsExchange(currencyKeys);
+    function resumeTribesExchange(bytes32[] calldata currencyKeys) external {
+        _internalResumeTribesExchange(currencyKeys);
     }
 
-    function suspendSynth(bytes32 currencyKey, uint256 reason) external {
+    function suspendTribe(bytes32 currencyKey, uint256 reason) external {
         bytes32[] memory currencyKeys = new bytes32[](1);
         currencyKeys[0] = currencyKey;
-        _internalSuspendSynths(currencyKeys, reason);
+        _internalSuspendTribes(currencyKeys, reason);
     }
 
-    function suspendSynths(bytes32[] calldata currencyKeys, uint256 reason) external {
-        _internalSuspendSynths(currencyKeys, reason);
+    function suspendTribes(bytes32[] calldata currencyKeys, uint256 reason) external {
+        _internalSuspendTribes(currencyKeys, reason);
     }
 
-    function resumeSynth(bytes32 currencyKey) external {
+    function resumeTribe(bytes32 currencyKey) external {
         bytes32[] memory currencyKeys = new bytes32[](1);
         currencyKeys[0] = currencyKey;
-        _internalResumeSynths(currencyKeys);
+        _internalResumeTribes(currencyKeys);
     }
 
-    function resumeSynths(bytes32[] calldata currencyKeys) external {
-        _internalResumeSynths(currencyKeys);
+    function resumeTribes(bytes32[] calldata currencyKeys) external {
+        _internalResumeTribes(currencyKeys);
     }
 
     /* ========== INTERNAL FUNCTIONS ========== */
@@ -338,53 +338,53 @@ contract SystemStatus is Owned, ISystemStatus {
         require(!futuresSuspension.suspended, "Futures markets are suspended. Operation prohibited");
     }
 
-    function _internalRequireSynthExchangeActive(bytes32 currencyKey) internal view {
-        require(!synthExchangeSuspension[currencyKey].suspended, "Synth exchange suspended. Operation prohibited");
+    function _internalRequireTribeExchangeActive(bytes32 currencyKey) internal view {
+        require(!tribeExchangeSuspension[currencyKey].suspended, "Tribe exchange suspended. Operation prohibited");
     }
 
-    function _internalRequireSynthActive(bytes32 currencyKey) internal view {
-        require(!synthSuspension[currencyKey].suspended, "Synth is suspended. Operation prohibited");
+    function _internalRequireTribeActive(bytes32 currencyKey) internal view {
+        require(!tribeSuspension[currencyKey].suspended, "Tribe is suspended. Operation prohibited");
     }
 
     function _internalRequireFuturesMarketActive(bytes32 marketKey) internal view {
         require(!futuresMarketSuspension[marketKey].suspended, "Market suspended");
     }
 
-    function _internalSuspendSynths(bytes32[] memory currencyKeys, uint256 reason) internal {
-        _requireAccessToSuspend(SECTION_SYNTH);
+    function _internalSuspendTribes(bytes32[] memory currencyKeys, uint256 reason) internal {
+        _requireAccessToSuspend(SECTION_TRIBEONE);
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
-            synthSuspension[currencyKey].suspended = true;
-            synthSuspension[currencyKey].reason = uint248(reason);
-            emit SynthSuspended(currencyKey, reason);
+            tribeSuspension[currencyKey].suspended = true;
+            tribeSuspension[currencyKey].reason = uint248(reason);
+            emit TribeSuspended(currencyKey, reason);
         }
     }
 
-    function _internalResumeSynths(bytes32[] memory currencyKeys) internal {
-        _requireAccessToResume(SECTION_SYNTH);
+    function _internalResumeTribes(bytes32[] memory currencyKeys) internal {
+        _requireAccessToResume(SECTION_TRIBEONE);
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
-            emit SynthResumed(currencyKey, uint256(synthSuspension[currencyKey].reason));
-            delete synthSuspension[currencyKey];
+            emit TribeResumed(currencyKey, uint256(tribeSuspension[currencyKey].reason));
+            delete tribeSuspension[currencyKey];
         }
     }
 
-    function _internalSuspendSynthExchange(bytes32[] memory currencyKeys, uint256 reason) internal {
-        _requireAccessToSuspend(SECTION_SYNTH_EXCHANGE);
+    function _internalSuspendTribeExchange(bytes32[] memory currencyKeys, uint256 reason) internal {
+        _requireAccessToSuspend(SECTION_TRIBEONE_EXCHANGE);
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
-            synthExchangeSuspension[currencyKey].suspended = true;
-            synthExchangeSuspension[currencyKey].reason = uint248(reason);
-            emit SynthExchangeSuspended(currencyKey, reason);
+            tribeExchangeSuspension[currencyKey].suspended = true;
+            tribeExchangeSuspension[currencyKey].reason = uint248(reason);
+            emit TribeExchangeSuspended(currencyKey, reason);
         }
     }
 
-    function _internalResumeSynthsExchange(bytes32[] memory currencyKeys) internal {
-        _requireAccessToResume(SECTION_SYNTH_EXCHANGE);
+    function _internalResumeTribesExchange(bytes32[] memory currencyKeys) internal {
+        _requireAccessToResume(SECTION_TRIBEONE_EXCHANGE);
         for (uint i = 0; i < currencyKeys.length; i++) {
             bytes32 currencyKey = currencyKeys[i];
-            emit SynthExchangeResumed(currencyKey, uint256(synthExchangeSuspension[currencyKey].reason));
-            delete synthExchangeSuspension[currencyKey];
+            emit TribeExchangeResumed(currencyKey, uint256(tribeExchangeSuspension[currencyKey].reason));
+            delete tribeExchangeSuspension[currencyKey];
         }
     }
 
@@ -418,8 +418,8 @@ contract SystemStatus is Owned, ISystemStatus {
                 section == SECTION_ISSUANCE ||
                 section == SECTION_EXCHANGE ||
                 section == SECTION_FUTURES ||
-                section == SECTION_SYNTH_EXCHANGE ||
-                section == SECTION_SYNTH,
+                section == SECTION_TRIBEONE_EXCHANGE ||
+                section == SECTION_TRIBEONE,
             "Invalid section supplied"
         );
         accessControl[section][account].canSuspend = canSuspend;
@@ -441,11 +441,11 @@ contract SystemStatus is Owned, ISystemStatus {
     event FuturesSuspended(uint256 reason);
     event FuturesResumed(uint256 reason);
 
-    event SynthExchangeSuspended(bytes32 currencyKey, uint256 reason);
-    event SynthExchangeResumed(bytes32 currencyKey, uint256 reason);
+    event TribeExchangeSuspended(bytes32 currencyKey, uint256 reason);
+    event TribeExchangeResumed(bytes32 currencyKey, uint256 reason);
 
-    event SynthSuspended(bytes32 currencyKey, uint256 reason);
-    event SynthResumed(bytes32 currencyKey, uint256 reason);
+    event TribeSuspended(bytes32 currencyKey, uint256 reason);
+    event TribeResumed(bytes32 currencyKey, uint256 reason);
 
     event FuturesMarketSuspended(bytes32 marketKey, uint256 reason);
     event FuturesMarketResumed(bytes32 marketKey, uint256 reason);

@@ -35,10 +35,10 @@ const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, dexPriceAggregator, accountOne, accountTwo] = accounts;
-	const [HAKA, sJPY, sETH, sXTZ, sBNB, hUSD, sEUR, sAUD, GOLD, fastGasPrice, debtRatio] = [
+	const [HAKA, sJPY, hETH, sXTZ, sBNB, hUSD, sEUR, sAUD, GOLD, fastGasPrice, debtRatio] = [
 		'HAKA',
 		'sJPY',
-		'sETH',
+		'hETH',
 		'sXTZ',
 		'sBNB',
 		'hUSD',
@@ -296,7 +296,7 @@ contract('Exchange Rates', async accounts => {
 							from: owner,
 						});
 					});
-					describe('when aggregated synth has rates', () => {
+					describe('when aggregated tribe has rates', () => {
 						beforeEach(async () => {
 							const timestamp = await currentTime();
 							await aggregatorJPY.setLatestAnswer(convertToDecimals(100, 8), timestamp);
@@ -1262,24 +1262,24 @@ contract('Exchange Rates', async accounts => {
 		describe('src/dest do not have an atomic equivalent for dex pricing', () => {
 			beforeEach(async () => {
 				const MockToken = artifacts.require('MockToken');
-				const sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
-				// set sETH equivalent but don't set hUSD equivalent
+				const hethDexEquivalentToken = await MockToken.new('ehETH equivalent', 'ehETH', '18');
+				// set hETH equivalent but don't set hUSD equivalent
 				await systemSettings.setAtomicEquivalentForDexPricing(
-					sETH,
-					sethDexEquivalentToken.address,
+					hETH,
+					hethDexEquivalentToken.address,
 					{ from: owner }
 				);
 			});
 
 			it('reverts on src not having equivalent', async () => {
 				await assert.revert(
-					instance.effectiveAtomicValueAndRates(hUSD, toUnit('1'), sETH),
+					instance.effectiveAtomicValueAndRates(hUSD, toUnit('1'), hETH),
 					'No atomic equivalent for source'
 				);
 			});
 			it('reverts on dest not having equivalent', async () => {
 				await assert.revert(
-					instance.effectiveAtomicValueAndRates(sETH, toUnit('1'), hUSD),
+					instance.effectiveAtomicValueAndRates(hETH, toUnit('1'), hUSD),
 					'No atomic equivalent for dest'
 				);
 			});
@@ -1291,7 +1291,7 @@ contract('Exchange Rates', async accounts => {
 			const unitIn8 = convertToDecimals(1, 8);
 
 			let dexPriceAggregator, ethAggregator;
-			let susdDexEquivalentToken, sethDexEquivalentToken;
+			let husdDexEquivalentToken, hethDexEquivalentToken;
 
 			function itGivesTheCorrectRates({
 				inputs: { amountIn, srcToken, destToken },
@@ -1331,8 +1331,8 @@ contract('Exchange Rates', async accounts => {
 					};
 
 					beforeEach(async () => {
-						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, one);
-						await dexPriceAggregator.setAssetToAssetRate(sethDexEquivalentToken.address, pDex);
+						await dexPriceAggregator.setAssetToAssetRate(husdDexEquivalentToken.address, one);
+						await dexPriceAggregator.setAssetToAssetRate(hethDexEquivalentToken.address, pDex);
 
 						await ethAggregator.setLatestAnswer(pClInUsdIn8, await currentTime());
 
@@ -1379,14 +1379,14 @@ contract('Exchange Rates', async accounts => {
 				const MockDexPriceAggregator = artifacts.require('MockDexPriceAggregator');
 				dexPriceAggregator = await MockDexPriceAggregator.new();
 
-				susdDexEquivalentToken = await MockToken.new('esUSD equivalent', 'esUSD', '18');
-				sethDexEquivalentToken = await MockToken.new('esETH equivalent', 'esETH', '18');
+				husdDexEquivalentToken = await MockToken.new('ehUSD equivalent', 'ehUSD', '18');
+				hethDexEquivalentToken = await MockToken.new('ehETH equivalent', 'ehETH', '18');
 			});
 
 			beforeEach('set initial configuration', async () => {
 				await ethAggregator.setDecimals('8');
 				await ethAggregator.setLatestAnswer(convertToDecimals(1, 8), await currentTime()); // this will be overwritten by the appropriate rate as needed
-				await instance.addAggregator(sETH, ethAggregator.address, {
+				await instance.addAggregator(hETH, ethAggregator.address, {
 					from: owner,
 				});
 				await instance.setDexPriceAggregator(dexPriceAggregator.address, {
@@ -1394,14 +1394,14 @@ contract('Exchange Rates', async accounts => {
 				});
 				await systemSettings.setAtomicEquivalentForDexPricing(
 					hUSD,
-					susdDexEquivalentToken.address,
+					husdDexEquivalentToken.address,
 					{
 						from: owner,
 					}
 				);
 				await systemSettings.setAtomicEquivalentForDexPricing(
-					sETH,
-					sethDexEquivalentToken.address,
+					hETH,
+					hethDexEquivalentToken.address,
 					{
 						from: owner,
 					}
@@ -1423,16 +1423,16 @@ contract('Exchange Rates', async accounts => {
 				});
 				it('reverts', async () => {
 					await assert.revert(
-						instance.effectiveAtomicValueAndRates(hUSD, one, sETH),
+						instance.effectiveAtomicValueAndRates(hUSD, one, hETH),
 						'mock assetToAsset() reverted'
 					);
 				});
 			});
 
-			describe('trades hUSD -> sETH', () => {
+			describe('trades hUSD -> hETH', () => {
 				const amountIn = toUnit('1000');
 				const srcToken = hUSD;
-				const destToken = sETH;
+				const destToken = hETH;
 
 				// P_DEX of 0.01, P_CL of 0.011
 				itGivesTheCorrectRates({
@@ -1513,9 +1513,9 @@ contract('Exchange Rates', async accounts => {
 				});
 			});
 
-			describe('trades sETH -> hUSD', () => {
+			describe('trades hETH -> hUSD', () => {
 				const amountIn = toUnit('10');
-				const srcToken = sETH;
+				const srcToken = hETH;
 				const destToken = hUSD;
 
 				// P_DEX of 100, P_CL of 110
@@ -1599,36 +1599,36 @@ contract('Exchange Rates', async accounts => {
 
 			describe('when tokens use non-18 decimals', () => {
 				beforeEach('set up non-18 decimal tokens', async () => {
-					susdDexEquivalentToken = await MockToken.new('hUSD equivalent', 'esUSD', '6'); // mimic USDC and USDT
-					sethDexEquivalentToken = await MockToken.new('sETH equivalent', 'esETH', '8'); // mimic WBTC
+					husdDexEquivalentToken = await MockToken.new('hUSD equivalent', 'ehUSD', '6'); // mimic USDC and USDT
+					hethDexEquivalentToken = await MockToken.new('hETH equivalent', 'ehETH', '8'); // mimic WBTC
 					await systemSettings.setAtomicEquivalentForDexPricing(
 						hUSD,
-						susdDexEquivalentToken.address,
+						husdDexEquivalentToken.address,
 						{
 							from: owner,
 						}
 					);
 					await systemSettings.setAtomicEquivalentForDexPricing(
-						sETH,
-						sethDexEquivalentToken.address,
+						hETH,
+						hethDexEquivalentToken.address,
 						{
 							from: owner,
 						}
 					);
 				});
 
-				describe('hUSD -> sETH', () => {
+				describe('hUSD -> hETH', () => {
 					const rate = '100';
-					// esETH has 8 decimals
+					// ehETH has 8 decimals
 					const rateIn8 = convertToDecimals(rate, 8);
 
 					const amountIn = toUnit('1000');
 					const amountIn6 = convertToDecimals(1000, 6); // in input token's decimals
 
 					beforeEach('set up rates', async () => {
-						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit(1));
+						await dexPriceAggregator.setAssetToAssetRate(husdDexEquivalentToken.address, toUnit(1));
 						await dexPriceAggregator.setAssetToAssetRate(
-							sethDexEquivalentToken.address,
+							hethDexEquivalentToken.address,
 							toUnit(rate)
 						);
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
@@ -1636,9 +1636,9 @@ contract('Exchange Rates', async accounts => {
 
 					it('dex aggregator mock provides expected results', async () => {
 						const twapOutput = await dexPriceAggregator.assetToAsset(
-							susdDexEquivalentToken.address,
+							husdDexEquivalentToken.address,
 							amountIn6,
-							sethDexEquivalentToken.address,
+							hethDexEquivalentToken.address,
 							'2'
 						);
 						const expectedOutput = divideDecimal(amountIn6, toUnit(rate)); // uses UNIT as decimal base to get 6 decimals (output token's decimals)
@@ -1648,15 +1648,15 @@ contract('Exchange Rates', async accounts => {
 
 					// TODO: update decimals test
 					xit('still provides results in 18 decimals', async () => {
-						const rates = await instance.effectiveAtomicValueAndRates(hUSD, amountIn, sETH);
+						const rates = await instance.effectiveAtomicValueAndRates(hUSD, amountIn, hETH);
 						const expectedOutput = multiplyDecimal(amountIn, rateIn8, unitIn8); // use 8 as decimal base to get 18 decimals
 						assert.bnEqual(rates.value, expectedOutput);
 					});
 				});
 
-				describe('sETH -> hUSD', () => {
+				describe('hETH -> hUSD', () => {
 					const rate = '100';
-					// esUSD has 6 decimals
+					// ehUSD has 6 decimals
 					const rateIn6 = convertToDecimals(rate, 6);
 					const rateIn8 = convertToDecimals(rate, 8);
 
@@ -1666,9 +1666,9 @@ contract('Exchange Rates', async accounts => {
 					const unitIn6 = convertToDecimals(1, 6);
 
 					beforeEach('set up rates', async () => {
-						await dexPriceAggregator.setAssetToAssetRate(susdDexEquivalentToken.address, toUnit(1));
+						await dexPriceAggregator.setAssetToAssetRate(husdDexEquivalentToken.address, toUnit(1));
 						await dexPriceAggregator.setAssetToAssetRate(
-							sethDexEquivalentToken.address,
+							hethDexEquivalentToken.address,
 							toUnit(rate)
 						);
 						await ethAggregator.setLatestAnswer(rateIn8, await currentTime()); // CL requires 8 decimals
@@ -1676,9 +1676,9 @@ contract('Exchange Rates', async accounts => {
 
 					it('dex aggregator mock provides expected results', async () => {
 						const twapOutput = await dexPriceAggregator.assetToAsset(
-							sethDexEquivalentToken.address,
+							hethDexEquivalentToken.address,
 							amountIn8,
-							susdDexEquivalentToken.address,
+							husdDexEquivalentToken.address,
 							'2'
 						);
 						const expectedOutput = multiplyDecimal(amountIn, rateIn6); // uses UNIT as decimal base to get 6 decimals (output token's decimals)
@@ -1686,7 +1686,7 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					it('still provides results in 18 decimals', async () => {
-						const rates = await instance.effectiveAtomicValueAndRates(sETH, amountIn, hUSD);
+						const rates = await instance.effectiveAtomicValueAndRates(hETH, amountIn, hUSD);
 						const expectedOutput = multiplyDecimal(amountIn, rateIn6, unitIn6); // use 6 as decimal base to get 18 decimals
 						assert.bnEqual(rates.value, expectedOutput);
 					});
@@ -1699,7 +1699,7 @@ contract('Exchange Rates', async accounts => {
 		describe('Atomic exchange pricing', () => {
 			it('errors with not implemented when attempting to fetch atomic rate', async () => {
 				await assert.revert(
-					instance.effectiveAtomicValueAndRates(sETH, toUnit('10'), hUSD),
+					instance.effectiveAtomicValueAndRates(hETH, toUnit('10'), hUSD),
 					'Cannot be run on this layer'
 				);
 			});
@@ -1707,31 +1707,31 @@ contract('Exchange Rates', async accounts => {
 	};
 
 	const itReportsRateTooVolatileForAtomicExchanges = () => {
-		describe('synthTooVolatileForAtomicExchange', async () => {
+		describe('tribeTooVolatileForAtomicExchange', async () => {
 			const minute = 60;
-			const synth = sETH;
+			const tribe = hETH;
 			let aggregator;
 
 			beforeEach('set up eth aggregator mock', async () => {
 				aggregator = await MockAggregator.new({ from: owner });
 				await aggregator.setDecimals('8');
-				await instance.addAggregator(synth, aggregator.address, {
+				await instance.addAggregator(tribe, aggregator.address, {
 					from: owner,
 				});
 			});
 
 			describe('when consideration window is not set', () => {
-				it('does not consider synth to be volatile', async () => {
+				it('does not consider tribe to be volatile', async () => {
 					assert.isFalse(
-						await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+						await instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](tribe)
 					);
 				});
 			});
 
 			describe('when update threshold is not set', () => {
-				it('does not consider synth to be volatile', async () => {
+				it('does not consider tribe to be volatile', async () => {
 					assert.isFalse(
-						await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+						await instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](tribe)
 					);
 				});
 			});
@@ -1741,10 +1741,10 @@ contract('Exchange Rates', async accounts => {
 
 				beforeEach('set system settings', async () => {
 					// Window of 10min and threshold of 2 (i.e. max two updates allowed)
-					await systemSettings.setAtomicVolatilityConsiderationWindow(synth, considerationWindow, {
+					await systemSettings.setAtomicVolatilityConsiderationWindow(tribe, considerationWindow, {
 						from: owner,
 					});
-					await systemSettings.setAtomicVolatilityUpdateThreshold(synth, 2, {
+					await systemSettings.setAtomicVolatilityUpdateThreshold(tribe, 2, {
 						from: owner,
 					});
 				});
@@ -1757,15 +1757,15 @@ contract('Exchange Rates', async accounts => {
 						);
 					});
 
-					it('does not consider synth to be volatile', async () => {
+					it('does not consider tribe to be volatile', async () => {
 						assert.isFalse(
-							await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+							await instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](tribe)
 						);
 					});
 				});
 
 				describe('when last aggregator update is inside consideration window', () => {
-					function itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+					function itReportsTheTribesVolatilityBasedOnOracleUpdates({
 						oracleUpdateTimesFromNow = [],
 						volatile,
 					}) {
@@ -1778,16 +1778,16 @@ contract('Exchange Rates', async accounts => {
 							}
 						});
 
-						it(`${volatile ? 'considers' : 'does not consider'} synth to be volatile`, async () => {
+						it(`${volatile ? 'considers' : 'does not consider'} tribe to be volatile`, async () => {
 							assert.equal(
-								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth),
+								await instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](tribe),
 								volatile
 							);
 						});
 					}
 
 					describe('when the allowed update threshold is not reached', () => {
-						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+						itReportsTheTribesVolatilityBasedOnOracleUpdates({
 							oracleUpdateTimesFromNow: [
 								considerationWindow + 10 * minute,
 								considerationWindow + 5 * minute,
@@ -1798,7 +1798,7 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					describe('when the allowed update threshold is reached', () => {
-						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+						itReportsTheTribesVolatilityBasedOnOracleUpdates({
 							oracleUpdateTimesFromNow: [
 								considerationWindow + 10 * minute,
 								considerationWindow - 5 * minute,
@@ -1810,7 +1810,7 @@ contract('Exchange Rates', async accounts => {
 
 					describe('when the allowed update threshold is reached with updates at the edge of the consideration window', () => {
 						// The consideration window is inclusive on both sides (i.e. [])
-						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+						itReportsTheTribesVolatilityBasedOnOracleUpdates({
 							oracleUpdateTimesFromNow: [
 								considerationWindow + 10 * minute,
 								considerationWindow - 5, // small 5s fudge for block times and querying speed
@@ -1821,7 +1821,7 @@ contract('Exchange Rates', async accounts => {
 					});
 
 					describe('when there is not enough oracle history to assess', () => {
-						itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+						itReportsTheTribesVolatilityBasedOnOracleUpdates({
 							oracleUpdateTimesFromNow: [considerationWindow - 5 * minute],
 							volatile: true,
 						});
@@ -1829,7 +1829,7 @@ contract('Exchange Rates', async accounts => {
 
 					describe('when there is just enough oracle history to assess', () => {
 						describe('when all updates are inside consideration window', () => {
-							itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+							itReportsTheTribesVolatilityBasedOnOracleUpdates({
 								oracleUpdateTimesFromNow: [
 									considerationWindow - 5 * minute,
 									considerationWindow - 7 * minute,
@@ -1839,7 +1839,7 @@ contract('Exchange Rates', async accounts => {
 						});
 
 						describe('when not all updates are inside consideration window', () => {
-							itReportsTheSynthsVolatilityBasedOnOracleUpdates({
+							itReportsTheTribesVolatilityBasedOnOracleUpdates({
 								oracleUpdateTimesFromNow: [
 									considerationWindow + 5 * minute,
 									considerationWindow - 5 * minute,
@@ -1859,9 +1859,9 @@ contract('Exchange Rates', async accounts => {
 							);
 						});
 
-						it('does not consider synth to be volatile', async () => {
+						it('does not consider tribe to be volatile', async () => {
 							assert.isFalse(
-								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+								await instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](tribe)
 							);
 						});
 					});
@@ -1874,9 +1874,9 @@ contract('Exchange Rates', async accounts => {
 							);
 						});
 
-						it('considers synth to be volatile', async () => {
+						it('considers tribe to be volatile', async () => {
 							assert.isTrue(
-								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+								await instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](tribe)
 							);
 						});
 					});
@@ -1886,9 +1886,9 @@ contract('Exchange Rates', async accounts => {
 							await aggregator.setAllRoundDataShouldRevert(true);
 						});
 
-						it('considers synth to be volatile', async () => {
+						it('considers tribe to be volatile', async () => {
 							assert.isTrue(
-								await instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](synth)
+								await instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](tribe)
 							);
 						});
 					});
@@ -1901,7 +1901,7 @@ contract('Exchange Rates', async accounts => {
 		describe('Atomic exchange volatility control', () => {
 			it('errors with not implemented when attempting to assess volatility for atomic exchanges', async () => {
 				await assert.revert(
-					instance.methods['synthTooVolatileForAtomicExchange(bytes32)'](sETH),
+					instance.methods['tribeTooVolatileForAtomicExchange(bytes32)'](hETH),
 					'Cannot be run on this layer'
 				);
 			});

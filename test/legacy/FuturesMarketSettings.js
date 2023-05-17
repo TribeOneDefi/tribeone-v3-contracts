@@ -21,7 +21,7 @@ contract('FuturesMarketSettings', accounts => {
 
 	const owner = accounts[1];
 
-	const marketKey = toBytes32('sBTC');
+	const marketKey = toBytes32('hBTC');
 	const takerFee = toUnit('0.003');
 	const makerFee = toUnit('0.001');
 	const takerFeeNextPrice = toUnit('0.0005');
@@ -39,7 +39,7 @@ contract('FuturesMarketSettings', accounts => {
 			FuturesMarketManager: futuresMarketManager,
 		} = await setupAllContracts({
 			accounts,
-			synths: ['hUSD'],
+			tribes: ['hUSD'],
 			contracts: [
 				'FuturesMarketSettings',
 				'FuturesMarketManager',
@@ -74,14 +74,14 @@ contract('FuturesMarketSettings', accounts => {
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'baseAsset',
-			returns: [toBytes32('sBTC')],
+			returns: [toBytes32('hBTC')],
 		});
 
 		await mockGenericContractFnc({
 			instance: mockFuturesMarketBTC,
 			mock: 'FuturesMarket',
 			fncName: 'marketKey',
-			returns: [toBytes32('sBTC')],
+			returns: [toBytes32('hBTC')],
 		});
 
 		// add the market
@@ -392,7 +392,7 @@ contract('FuturesMarketSettings', accounts => {
 	});
 
 	describe('migration scenario: different parameters for two markets for same asset', () => {
-		const firstMarketKey = toBytes32('sBTC');
+		const firstMarketKey = toBytes32('hBTC');
 		const secondMarketKey = toBytes32('SomethingElse');
 
 		let secondBTCMarket;
@@ -419,7 +419,7 @@ contract('FuturesMarketSettings', accounts => {
 				instance: secondBTCMarket,
 				mock: 'FuturesMarket',
 				fncName: 'baseAsset',
-				returns: [toBytes32('sBTC')],
+				returns: [toBytes32('hBTC')],
 			});
 
 			await mockGenericContractFnc({

@@ -17,7 +17,7 @@ const { setupAllContracts } = require('../contracts/setup');
 
 const {
 	ensureOnlyExpectedMutativeFunctions,
-	setExchangeFeeRateForSynths,
+	setExchangeFeeRateForTribes,
 	setupPriceAggregators,
 	updateAggregatorRates,
 } = require('../contracts/helpers');
@@ -31,8 +31,8 @@ contract('CollateralShort', async accounts => {
 	const YEAR = 31556926;
 
 	const hUSD = toBytes32('hUSD');
-	const sETH = toBytes32('sETH');
-	const sBTC = toBytes32('sBTC');
+	const hETH = toBytes32('hETH');
+	const hBTC = toBytes32('hBTC');
 
 	const [, owner, , , account1, account2] = accounts;
 
@@ -42,10 +42,10 @@ contract('CollateralShort', async accounts => {
 		exchanger,
 		exchangeRates,
 		addressResolver,
-		sUSDSynth,
-		sBTCSynth,
-		sETHSynth,
-		synths,
+		hUSDTribe,
+		hBTCTribe,
+		hETHTribe,
+		tribes,
 		manager,
 		issuer,
 		debtCache,
@@ -64,24 +64,24 @@ contract('CollateralShort', async accounts => {
 		await updateRatesWithDefaults();
 	};
 
-	const issue = async (synth, issueAmount, receiver) => {
-		await synth.issue(receiver, issueAmount, { from: owner });
+	const issue = async (tribe, issueAmount, receiver) => {
+		await tribe.issue(receiver, issueAmount, { from: owner });
 	};
 
 	const updateRatesWithDefaults = async () => {
-		const sBTC = toBytes32('sBTC');
+		const hBTC = toBytes32('hBTC');
 
-		await updateAggregatorRates(exchangeRates, null, [sETH, sBTC], [100, 10000].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [hETH, hBTC], [100, 10000].map(toUnit));
 	};
 
 	const setupShort = async () => {
-		synths = ['hUSD', 'sBTC', 'sETH'];
+		tribes = ['hUSD', 'hBTC', 'hETH'];
 		({
 			ExchangeRates: exchangeRates,
 			Exchanger: exchanger,
-			SynthsUSD: sUSDSynth,
-			SynthsBTC: sBTCSynth,
-			SynthsETH: sETHSynth,
+			TribehUSD: hUSDTribe,
+			TribehBTC: hBTCTribe,
+			TribehETH: hETHTribe,
 			FeePool: feePool,
 			AddressResolver: addressResolver,
 			Issuer: issuer,
@@ -92,7 +92,7 @@ contract('CollateralShort', async accounts => {
 			CollateralManagerState: managerState,
 		} = await setupAllContracts({
 			accounts,
-			synths,
+			tribes,
 			contracts: [
 				'Tribeone',
 				'FeePool',
@@ -110,7 +110,7 @@ contract('CollateralShort', async accounts => {
 			],
 		}));
 
-		await setupPriceAggregators(exchangeRates, owner, [sBTC, sETH]);
+		await setupPriceAggregators(exchangeRates, owner, [hBTC, hETH]);
 
 		await managerState.setAssociatedContract(manager.address, { from: owner });
 
@@ -131,67 +131,67 @@ contract('CollateralShort', async accounts => {
 
 		await manager.addCollaterals([short.address], { from: owner });
 
-		await short.addSynths(
-			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+		await short.addTribes(
+			['TribehBTC', 'TribehETH'].map(toBytes32),
+			['hBTC', 'hETH'].map(toBytes32),
 			{ from: owner }
 		);
 
-		await manager.addSynths(
-			[toBytes32('SynthsUSD'), toBytes32('SynthsBTC'), toBytes32('SynthsETH')],
-			[toBytes32('hUSD'), toBytes32('sBTC'), toBytes32('sETH')],
+		await manager.addTribes(
+			[toBytes32('TribehUSD'), toBytes32('TribehBTC'), toBytes32('TribehETH')],
+			[toBytes32('hUSD'), toBytes32('hBTC'), toBytes32('hETH')],
 			{
 				from: owner,
 			}
 		);
 
-		await manager.addShortableSynths(
-			['SynthsBTC', 'SynthsETH'].map(toBytes32),
-			['sBTC', 'sETH'].map(toBytes32),
+		await manager.addShortableTribes(
+			['TribehBTC', 'TribehETH'].map(toBytes32),
+			['hBTC', 'hETH'].map(toBytes32),
 			{ from: owner }
 		);
 
-		// check synths are set and currencyKeys set
+		// check tribes are set and currencyKeys set
 		assert.isTrue(
-			await manager.areSynthsAndCurrenciesSet(
-				['SynthsUSD', 'SynthsBTC', 'SynthsETH'].map(toBytes32),
-				['hUSD', 'sBTC', 'sETH'].map(toBytes32)
+			await manager.areTribesAndCurrenciesSet(
+				['TribehUSD', 'TribehBTC', 'TribehETH'].map(toBytes32),
+				['hUSD', 'hBTC', 'hETH'].map(toBytes32)
 			)
 		);
 
 		assert.isTrue(
-			await short.areSynthsAndCurrenciesSet(
-				['SynthsBTC', 'SynthsETH'].map(toBytes32),
-				['sBTC', 'sETH'].map(toBytes32)
+			await short.areTribesAndCurrenciesSet(
+				['TribehBTC', 'TribehETH'].map(toBytes32),
+				['hBTC', 'hETH'].map(toBytes32)
 			)
 		);
 
-		assert.isTrue(await manager.isSynthManaged(hUSD));
-		assert.isTrue(await manager.isSynthManaged(sETH));
-		assert.isTrue(await manager.isSynthManaged(sBTC));
+		assert.isTrue(await manager.isTribeManaged(hUSD));
+		assert.isTrue(await manager.isTribeManaged(hETH));
+		assert.isTrue(await manager.isTribeManaged(hBTC));
 
 		assert.isTrue(await manager.hasAllCollaterals([short.address]));
 
-		await sUSDSynth.approve(short.address, toUnit(100000), { from: account1 });
+		await hUSDTribe.approve(short.address, toUnit(100000), { from: account1 });
 	};
 
 	before(async () => {
 		await setupShort();
 		await updateRatesWithDefaults();
 
-		// set a 0.15% default exchange fee rate on each synth
+		// set a 0.15% default exchange fee rate on each tribe
 		const exchangeFeeRate = toUnit('0.0015');
-		const synthKeys = [sETH, hUSD];
-		await setExchangeFeeRateForSynths({
+		const tribeKeys = [hETH, hUSD];
+		await setExchangeFeeRateForTribes({
 			owner,
 			systemSettings,
-			synthKeys,
-			exchangeFeeRates: synthKeys.map(() => exchangeFeeRate),
+			tribeKeys,
+			exchangeFeeRates: tribeKeys.map(() => exchangeFeeRate),
 		});
 
-		await issue(sUSDSynth, toUnit(100000), owner);
-		await issue(sBTCSynth, toUnit(1), owner);
-		await issue(sETHSynth, toUnit(1), owner);
+		await issue(hUSDTribe, toUnit(100000), owner);
+		await issue(hBTCTribe, toUnit(1), owner);
+		await issue(hETHTribe, toUnit(1), owner);
 		await debtCache.takeDebtSnapshot();
 	});
 
@@ -220,14 +220,14 @@ contract('CollateralShort', async accounts => {
 			assert.equal(await short.owner(), owner);
 			assert.equal(await short.resolver(), addressResolver.address);
 			assert.equal(await short.collateralKey(), hUSD);
-			assert.equal(await short.synths(0), toBytes32('SynthsBTC'));
-			assert.equal(await short.synths(1), toBytes32('SynthsETH'));
+			assert.equal(await short.tribes(0), toBytes32('TribehBTC'));
+			assert.equal(await short.tribes(1), toBytes32('TribehETH'));
 			assert.bnEqual(await short.minCratio(), toUnit(1.2));
 			assert.bnEqual(await systemSettings.liquidationPenalty(), LIQUIDATION_PENALTY); // 10% penalty
 		});
 
 		it('should access its dependencies via the address resolver', async () => {
-			assert.equal(await addressResolver.getAddress(toBytes32('SynthsUSD')), sUSDSynth.address);
+			assert.equal(await addressResolver.getAddress(toBytes32('TribehUSD')), hUSDTribe.address);
 			assert.equal(await addressResolver.getAddress(toBytes32('FeePool')), feePool.address);
 			assert.equal(
 				await addressResolver.getAddress(toBytes32('ExchangeRates')),
@@ -238,12 +238,12 @@ contract('CollateralShort', async accounts => {
 		describe('opening shorts', async () => {
 			describe('should open a btc short', async () => {
 				const oneBTC = toUnit(1);
-				const susdCollateral = toUnit(15000);
+				const husdCollateral = toUnit(15000);
 
 				beforeEach(async () => {
-					await issue(sUSDSynth, susdCollateral, account1);
+					await issue(hUSDTribe, husdCollateral, account1);
 
-					tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
+					tx = await short.open(husdCollateral, oneBTC, hBTC, { from: account1 });
 
 					id = getid(tx);
 					loan = await short.loans(id);
@@ -254,43 +254,43 @@ contract('CollateralShort', async accounts => {
 						account: account1,
 						id: id,
 						amount: oneBTC,
-						collateral: susdCollateral,
-						currency: sBTC,
+						collateral: husdCollateral,
+						currency: hBTC,
 					});
 				});
 
 				it('should create the short correctly', async () => {
 					assert.equal(loan.account, account1);
-					assert.equal(loan.collateral, susdCollateral.toString());
-					assert.equal(loan.currency, sBTC);
+					assert.equal(loan.collateral, husdCollateral.toString());
+					assert.equal(loan.currency, hBTC);
 					assert.equal(loan.short, true);
 					assert.equal(loan.amount, oneBTC.toString());
 					assert.bnEqual(loan.accruedInterest, toUnit(0));
 				});
 
 				it('should correclty issue the right balance to the shorter', async () => {
-					const sUSDProceeds = toUnit(10000);
+					const hUSDProceeds = toUnit(10000);
 
-					assert.bnEqual(await sUSDSynth.balanceOf(account1), sUSDProceeds);
+					assert.bnEqual(await hUSDTribe.balanceOf(account1), hUSDProceeds);
 				});
 
 				it('should tell the manager about the short', async () => {
-					assert.bnEqual(await manager.short(sBTC), oneBTC);
+					assert.bnEqual(await manager.short(hBTC), oneBTC);
 				});
 
 				it('should transfer the hUSD to the contract', async () => {
-					assert.bnEqual(await sUSDSynth.balanceOf(short.address), susdCollateral);
+					assert.bnEqual(await hUSDTribe.balanceOf(short.address), husdCollateral);
 				});
 			});
 
 			describe('should open an eth short', async () => {
 				const oneETH = toUnit(1);
-				const susdCollateral = toUnit(1000);
+				const husdCollateral = toUnit(1000);
 
 				beforeEach(async () => {
-					await issue(sUSDSynth, susdCollateral, account1);
+					await issue(hUSDTribe, husdCollateral, account1);
 
-					tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+					tx = await short.open(husdCollateral, oneETH, hETH, { from: account1 });
 
 					id = getid(tx);
 
@@ -302,34 +302,34 @@ contract('CollateralShort', async accounts => {
 						account: account1,
 						id: id,
 						amount: oneETH,
-						collateral: susdCollateral,
-						currency: sETH,
+						collateral: husdCollateral,
+						currency: hETH,
 					});
 				});
 
 				it('should create the short correctly', async () => {
 					assert.equal(loan.account, account1);
-					assert.equal(loan.collateral, susdCollateral.toString());
-					assert.equal(loan.currency, sETH);
+					assert.equal(loan.collateral, husdCollateral.toString());
+					assert.equal(loan.currency, hETH);
 					assert.equal(loan.short, true);
 					assert.equal(loan.amount, oneETH.toString());
 					assert.bnEqual(loan.accruedInterest, toUnit(0));
 				});
 
 				it('should correclty issue the right balance to the shorter', async () => {
-					const sUSDProceeds = toUnit(100);
+					const hUSDProceeds = toUnit(100);
 
-					assert.bnEqual(await sUSDSynth.balanceOf(account1), sUSDProceeds);
+					assert.bnEqual(await hUSDTribe.balanceOf(account1), hUSDProceeds);
 				});
 
 				it('should tell the manager about the short', async () => {
-					assert.bnEqual(await manager.short(sETH), oneETH);
+					assert.bnEqual(await manager.short(hETH), oneETH);
 				});
 			});
 		});
 
 		describe('Repaying shorts', async () => {
-			const susdCollateral = toUnit(1000);
+			const husdCollateral = toUnit(1000);
 			const ethAmountToShort = toUnit(1);
 
 			let ethAmountToRepay;
@@ -342,13 +342,13 @@ contract('CollateralShort', async accounts => {
 
 				// create the conditions to get some accruedInterest
 				await manager.setMaxSkewRate(toUnit(0.2), { from: owner });
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
 				// open another short to set a long/short skew
-				tx = await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
+				tx = await short.open(husdCollateral, ethAmountToShort, hETH, { from: account1 });
 
 				// Adjust before* balances
-				beforeShortBalance = beforeShortBalance.add(susdCollateral);
+				beforeShortBalance = beforeShortBalance.add(husdCollateral);
 				beforeUserBalance = beforeUserBalance.add(toUnit(100));
 
 				// after a year we should have accrued 6.67%.
@@ -358,7 +358,7 @@ contract('CollateralShort', async accounts => {
 				tx = await short.deposit(account1, id, toUnit(1), { from: account1 });
 
 				// Adjust before* balances
-				beforeLoanCollateral = susdCollateral.add(toUnit(1));
+				beforeLoanCollateral = husdCollateral.add(toUnit(1));
 				beforeShortBalance = beforeShortBalance.add(toUnit(1));
 				beforeUserBalance = beforeUserBalance.sub(toUnit(1));
 
@@ -375,9 +375,9 @@ contract('CollateralShort', async accounts => {
 			};
 
 			beforeEach(async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
+				tx = await short.open(husdCollateral, ethAmountToShort, hETH, { from: account1 });
 
 				id = getid(tx);
 
@@ -385,9 +385,9 @@ contract('CollateralShort', async accounts => {
 
 				beforeInteractionTime = loan.lastInteraction;
 
-				beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
-				beforeShortBalance = await sUSDSynth.balanceOf(short.address);
-				beforeUserBalance = await sUSDSynth.balanceOf(account1);
+				beforeFeePoolBalance = await hUSDTribe.balanceOf(FEE_ADDRESS);
+				beforeShortBalance = await hUSDTribe.balanceOf(short.address);
+				beforeUserBalance = await hUSDTribe.balanceOf(account1);
 				beforeLoanCollateral = 0;
 
 				await fastForwardAndUpdateRates(3600);
@@ -397,7 +397,7 @@ contract('CollateralShort', async accounts => {
 				const { principal, collateral } = await short.getShortAndCollateral(account1, id);
 
 				assert.bnEqual(principal, ethAmountToShort);
-				assert.bnEqual(collateral, susdCollateral);
+				assert.bnEqual(collateral, husdCollateral);
 			});
 
 			it('should repay with collateral and update the loan', async () => {
@@ -420,16 +420,16 @@ contract('CollateralShort', async accounts => {
 				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
 				const {
-					amountReceived: susdAmountRepaidMinusFees,
+					amountReceived: husdAmountRepaidMinusFees,
 					fee: exchangeFee,
-				} = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, hUSD);
+				} = await exchanger.getAmountsForExchange(ethAmountToRepay, hETH, hUSD);
 
 				// The collateral to use is the equivalent amount used while repaying + fees.
-				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
+				const collateralToUse = husdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
 
 				// The fee pool should have received fees
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					await hUSDTribe.balanceOf(FEE_ADDRESS),
 					beforeFeePoolBalance.add(exchangeFee),
 					'The fee pool did not receive enough fees'
 				);
@@ -444,20 +444,20 @@ contract('CollateralShort', async accounts => {
 				// The loan collateral should have been reduced by the expected amount
 				assert.deepEqual(
 					loan.collateral,
-					susdCollateral.sub(collateralToUse),
+					husdCollateral.sub(collateralToUse),
 					'The loan collateral was not reduced correctly'
 				);
 
 				// The contract hUSD balance should have been reduced by the expected amount
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(short.address),
+					await hUSDTribe.balanceOf(short.address),
 					beforeShortBalance.sub(collateralToUse),
 					'The short contracts holds excess hUSD'
 				);
 
 				// The user hUSD balance should remain unchanged
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(account1),
+					await hUSDTribe.balanceOf(account1),
 					beforeUserBalance,
 					'The user hUSD balance is unexpected'
 				);
@@ -484,16 +484,16 @@ contract('CollateralShort', async accounts => {
 				});
 
 				const {
-					amountReceived: susdAmountRepaidMinusFees,
+					amountReceived: husdAmountRepaidMinusFees,
 					fee: exchangeFee,
-				} = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, hUSD);
+				} = await exchanger.getAmountsForExchange(ethAmountToRepay, hETH, hUSD);
 
 				// The collateral to use is the equivalent amount used while repaying + fees.
-				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
+				const collateralToUse = husdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
 
 				// The fee pool should have received fees
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					await hUSDTribe.balanceOf(FEE_ADDRESS),
 					beforeFeePoolBalance.add(exchangeFee),
 					'The fee pool did not receive enough fees'
 				);
@@ -508,20 +508,20 @@ contract('CollateralShort', async accounts => {
 				// The loan collateral should have been reduced by the expected amount
 				assert.deepEqual(
 					loan.collateral,
-					susdCollateral.sub(collateralToUse),
+					husdCollateral.sub(collateralToUse),
 					'The loan collateral was not reduced correctly'
 				);
 
 				// The contract hUSD balance should have been reduced by the expected amount
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(short.address),
-					susdCollateral.sub(collateralToUse),
+					await hUSDTribe.balanceOf(short.address),
+					husdCollateral.sub(collateralToUse),
 					'The short contracts holds excess hUSD'
 				);
 
 				// The user hUSD balance should remain unchanged
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(account1),
+					await hUSDTribe.balanceOf(account1),
 					beforeUserBalance,
 					'The user hUSD balance is unexpected'
 				);
@@ -538,7 +538,7 @@ contract('CollateralShort', async accounts => {
 
 				loan = await short.loans(id);
 
-				const sUSDAccruedInterest = await exchangeRates.effectiveValue(
+				const hUSDAccruedInterest = await exchangeRates.effectiveValue(
 					loan.currency,
 					accruedInterest,
 					hUSD
@@ -556,17 +556,17 @@ contract('CollateralShort', async accounts => {
 				assert.isAbove(parseInt(loan.lastInteraction), parseInt(beforeInteractionTime));
 
 				const {
-					amountReceived: susdAmountRepaidMinusFees,
+					amountReceived: husdAmountRepaidMinusFees,
 					fee: exchangeFee,
-				} = await exchanger.getAmountsForExchange(ethAmountToRepay, sETH, hUSD); // ethAmountToRepay
+				} = await exchanger.getAmountsForExchange(ethAmountToRepay, hETH, hUSD); // ethAmountToRepay
 
 				// The collateral to use is the equivalent amount used while repaying + fees.
-				const collateralToUse = susdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
+				const collateralToUse = husdAmountRepaidMinusFees.add(exchangeFee).add(exchangeFee);
 
 				// The fee pool should have received fees (exchange + accrued interest)
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
-					beforeFeePoolBalance.add(sUSDAccruedInterest).add(exchangeFee),
+					await hUSDTribe.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(hUSDAccruedInterest).add(exchangeFee),
 					'The fee pool did not receive enough fees'
 				);
 
@@ -587,14 +587,14 @@ contract('CollateralShort', async accounts => {
 
 				// The contract hUSD balance should have been reduced by the expected amount
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(short.address),
+					await hUSDTribe.balanceOf(short.address),
 					beforeShortBalance.sub(collateralToUse),
 					'The short contracts holds excess hUSD'
 				);
 
 				// The user hUSD balance should remain unchanged
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(account1),
+					await hUSDTribe.balanceOf(account1),
 					beforeUserBalance,
 					'The user hUSD balance is unexpected'
 				);
@@ -616,7 +616,7 @@ contract('CollateralShort', async accounts => {
 		});
 
 		describe('Closing shorts', () => {
-			const susdCollateral = toUnit(1000);
+			const husdCollateral = toUnit(1000);
 			const ethAmountToShort = toUnit(1);
 
 			let ethAmountToRepay;
@@ -629,15 +629,15 @@ contract('CollateralShort', async accounts => {
 
 				// create the conditions to get some accruedInterest
 				await manager.setMaxSkewRate(toUnit(0.2), { from: owner });
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
 				// open another short to set a long/short skew
-				await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
+				await short.open(husdCollateral, ethAmountToShort, hETH, { from: account1 });
 
 				// Adjust before* balances
 				beforeUserBalance = beforeUserBalance.add(toUnit(100));
 				beforeUserShortBalance = beforeUserShortBalance.add(toUnit(100));
-				beforeShortBalance = beforeShortBalance.add(susdCollateral);
+				beforeShortBalance = beforeShortBalance.add(husdCollateral);
 
 				// after a year we should have accrued 6.67%.
 				await fastForwardAndUpdateRates(YEAR);
@@ -661,9 +661,9 @@ contract('CollateralShort', async accounts => {
 			};
 
 			beforeEach(async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(susdCollateral, ethAmountToShort, sETH, { from: account1 });
+				tx = await short.open(husdCollateral, ethAmountToShort, hETH, { from: account1 });
 
 				id = getid(tx);
 
@@ -671,10 +671,10 @@ contract('CollateralShort', async accounts => {
 
 				beforeInteractionTime = loan.lastInteraction;
 
-				beforeFeePoolBalance = await sUSDSynth.balanceOf(FEE_ADDRESS);
-				beforeShortBalance = await sUSDSynth.balanceOf(short.address);
-				beforeUserBalance = await sUSDSynth.balanceOf(account1);
-				beforeUserShortBalance = susdCollateral;
+				beforeFeePoolBalance = await hUSDTribe.balanceOf(FEE_ADDRESS);
+				beforeShortBalance = await hUSDTribe.balanceOf(short.address);
+				beforeUserBalance = await hUSDTribe.balanceOf(account1);
+				beforeUserShortBalance = husdCollateral;
 
 				await fastForwardAndUpdateRates(3600);
 			});
@@ -682,11 +682,11 @@ contract('CollateralShort', async accounts => {
 			it('should repay with collateral and close the loan', async () => {
 				ethAmountToRepay = ethAmountToShort;
 
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(100));
 
 				const { fee: exchangeFee } = await exchanger.getAmountsForExchange(
 					ethAmountToRepay,
-					sETH,
+					hETH,
 					hUSD
 				);
 
@@ -704,7 +704,7 @@ contract('CollateralShort', async accounts => {
 
 				// The fee pool should have received fees
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
+					await hUSDTribe.balanceOf(FEE_ADDRESS),
 					beforeFeePoolBalance.add(exchangeFee),
 					'The fee pool did not receive enough fees'
 				);
@@ -725,15 +725,15 @@ contract('CollateralShort', async accounts => {
 
 				// The contract hUSD balance should have been reduced by the expected amount
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(short.address),
-					beforeShortBalance.sub(susdCollateral),
+					await hUSDTribe.balanceOf(short.address),
+					beforeShortBalance.sub(husdCollateral),
 					'The short contracts holds excess hUSD'
 				);
 
 				// The user hUSD balance should increase
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(account1),
-					susdCollateral.sub(exchangeFee),
+					await hUSDTribe.balanceOf(account1),
+					husdCollateral.sub(exchangeFee),
 					'The user hUSD balance is unexpected'
 				);
 			});
@@ -741,7 +741,7 @@ contract('CollateralShort', async accounts => {
 			it('should repay with collateral and close the loan considering interest accrued', async () => {
 				const accruedInterest = await accrueInterest();
 
-				const sUSDAccruedInterest = await exchangeRates.effectiveValue(
+				const hUSDAccruedInterest = await exchangeRates.effectiveValue(
 					loan.currency,
 					accruedInterest,
 					hUSD
@@ -749,11 +749,11 @@ contract('CollateralShort', async accounts => {
 
 				ethAmountToRepay = ethAmountToShort;
 
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), beforeUserBalance);
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), beforeUserBalance);
 
 				const { fee: exchangeFee } = await exchanger.getAmountsForExchange(
 					ethAmountToRepay.add(accruedInterest),
-					sETH,
+					hETH,
 					hUSD
 				);
 
@@ -771,8 +771,8 @@ contract('CollateralShort', async accounts => {
 
 				// The fee pool should have received fees
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(FEE_ADDRESS),
-					beforeFeePoolBalance.add(exchangeFee).add(sUSDAccruedInterest),
+					await hUSDTribe.balanceOf(FEE_ADDRESS),
+					beforeFeePoolBalance.add(exchangeFee).add(hUSDAccruedInterest),
 					'The fee pool did not receive enough fees'
 				);
 
@@ -792,15 +792,15 @@ contract('CollateralShort', async accounts => {
 
 				// The contract hUSD balance should have been reduced by the expected amount
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(short.address),
-					beforeShortBalance.sub(susdCollateral),
+					await hUSDTribe.balanceOf(short.address),
+					beforeShortBalance.sub(husdCollateral),
 					'The short contracts holds excess hUSD'
 				);
 
 				// The user hUSD balance should reduce by the fees paid
 				assert.deepEqual(
-					await sUSDSynth.balanceOf(account1),
-					beforeUserShortBalance.sub(exchangeFee).sub(sUSDAccruedInterest),
+					await hUSDTribe.balanceOf(account1),
+					beforeUserShortBalance.sub(exchangeFee).sub(hUSDAccruedInterest),
 					'The user hUSD balance is unexpected'
 				);
 			});
@@ -808,12 +808,12 @@ contract('CollateralShort', async accounts => {
 
 		describe('Drawing shorts', async () => {
 			const oneETH = toUnit(1);
-			const susdCollateral = toUnit(1000);
+			const husdCollateral = toUnit(1000);
 
 			beforeEach(async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+				tx = await short.open(husdCollateral, oneETH, hETH, { from: account1 });
 
 				id = getid(tx);
 
@@ -828,7 +828,7 @@ contract('CollateralShort', async accounts => {
 			});
 
 			it('should transfer the proceeds to the user', async () => {
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(600));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(600));
 			});
 
 			it('should not let them draw too much', async () => {
@@ -839,17 +839,17 @@ contract('CollateralShort', async accounts => {
 
 		describe('Withdrawing shorts', async () => {
 			const oneETH = toUnit(1);
-			const susdCollateral = toUnit(1000);
+			const husdCollateral = toUnit(1000);
 			let previousBalance;
 
 			beforeEach(async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(susdCollateral, oneETH, sETH, { from: account1 });
+				tx = await short.open(husdCollateral, oneETH, hETH, { from: account1 });
 
 				id = getid(tx);
 
-				previousBalance = await sUSDSynth.balanceOf(account1);
+				previousBalance = await hUSDTribe.balanceOf(account1);
 
 				await fastForwardAndUpdateRates(3600);
 
@@ -862,7 +862,7 @@ contract('CollateralShort', async accounts => {
 			});
 
 			it('should transfer the withdrawn collateral to the user', async () => {
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(100).add(previousBalance));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(100).add(previousBalance));
 			});
 
 			it('should not let them withdraw too much', async () => {
@@ -873,57 +873,57 @@ contract('CollateralShort', async accounts => {
 
 		describe('Closing shorts', async () => {
 			const oneETH = toUnit(1);
-			const susdCollateral = toUnit(1000);
+			const husdCollateral = toUnit(1000);
 
 			it('if the eth price goes down, the shorter makes profit', async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
+				tx = await short.open(toUnit(500), oneETH, hETH, { from: account1 });
 
 				id = getid(tx);
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, null, [hETH], [toUnit(50)]);
 
-				// simulate buying sETH for 50 husd.
-				await sUSDSynth.transfer(owner, toUnit(50), { from: account1 });
-				await issue(sETHSynth, oneETH, account1);
+				// simulate buying hETH for 50 husd.
+				await hUSDTribe.transfer(owner, toUnit(50), { from: account1 });
+				await issue(hETHTribe, oneETH, account1);
 
 				// now close the short
 				await short.close(id, { from: account1 });
 
 				// shorter has made 50 hUSD profit
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(1050));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(1050));
 			});
 
 			it('if the eth price goes up, the shorter makes a loss', async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
+				tx = await short.open(toUnit(500), oneETH, hETH, { from: account1 });
 
 				id = getid(tx);
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, null, [hETH], [toUnit(150)]);
 
-				// simulate buying sETH for 150 husd.
-				await sUSDSynth.transfer(owner, toUnit(150), { from: account1 });
-				await issue(sETHSynth, oneETH, account1);
+				// simulate buying hETH for 150 husd.
+				await hUSDTribe.transfer(owner, toUnit(150), { from: account1 });
+				await issue(hETHTribe, oneETH, account1);
 
 				// now close the short
 				await short.close(id, { from: account1 });
 
 				// shorter has made 50 hUSD loss
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(950));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(950));
 			});
 		});
 
 		describe('Liquidating shorts', async () => {
 			const oneETH = toUnit(1);
 			const initialLoan = oneETH;
-			const susdCollateral = toUnit('130');
+			const husdCollateral = toUnit('130');
 
 			// getExpectedValues takes into account penalty, rate and cratio
 			const getExpectedValues = async ({
@@ -939,12 +939,12 @@ contract('CollateralShort', async accounts => {
 				// apply formula to get collateralUtil formula to get liquidationAmount
 				const dividend = currentDebt.sub(divideDecimal(initialCollateral, cratio));
 				const divisor = one.sub(divideDecimal(one.add(penalty), cratio));
-				const liquidatedAmountsUSD = divideDecimal(dividend, divisor);
+				const liquidatedAmounthUSD = divideDecimal(dividend, divisor);
 
-				const liquidatedLoan = await exchangeRates.effectiveValue(hUSD, liquidatedAmountsUSD, sETH);
+				const liquidatedLoan = await exchangeRates.effectiveValue(hUSD, liquidatedAmounthUSD, hETH);
 				const remainingLoan = initialLoan.sub(liquidatedLoan);
 				const liquidatedCollateral = multiplyDecimal(
-					await exchangeRates.effectiveValue(sETH, liquidatedLoan, hUSD),
+					await exchangeRates.effectiveValue(hETH, liquidatedLoan, hUSD),
 					one.add(penalty)
 				);
 				const remainingCollateral = initialCollateral.sub(liquidatedCollateral);
@@ -953,9 +953,9 @@ contract('CollateralShort', async accounts => {
 			};
 
 			beforeEach(async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(susdCollateral, initialLoan, sETH, { from: account1 });
+				tx = await short.open(husdCollateral, initialLoan, hETH, { from: account1 });
 
 				id = getid(tx);
 				await fastForwardAndUpdateRates(3600);
@@ -967,7 +967,7 @@ contract('CollateralShort', async accounts => {
 				const currentEthRate = toUnit(110);
 				const currentDebt = multiplyDecimal(initialLoan, currentEthRate);
 
-				await updateAggregatorRates(exchangeRates, null, [sETH], [currentEthRate]);
+				await updateAggregatorRates(exchangeRates, null, [hETH], [currentEthRate]);
 
 				const {
 					liquidatedCollateral,
@@ -975,7 +975,7 @@ contract('CollateralShort', async accounts => {
 					liquidatedLoan,
 					remainingLoan,
 				} = await getExpectedValues({
-					initialCollateral: susdCollateral,
+					initialCollateral: husdCollateral,
 					initialLoan,
 					currentDebt,
 					cratio,
@@ -987,7 +987,7 @@ contract('CollateralShort', async accounts => {
 				// which started at 130% should allow 0.18 ETH
 				// to be liquidated to restore its c ratio and no more.
 
-				await issue(sETHSynth, oneETH, account2);
+				await issue(hETHTribe, oneETH, account2);
 
 				tx = await short.liquidate(account1, id, oneETH, { from: account2 });
 
@@ -1013,16 +1013,16 @@ contract('CollateralShort', async accounts => {
 		describe('System debt', async () => {
 			const oneETH = toUnit(1);
 			const twoETH = toUnit(2);
-			const susdCollateral = toUnit(1000);
+			const husdCollateral = toUnit(1000);
 
 			it('If there is 1 ETH and 1 short ETH, then the system debt is constant before and after a price change', async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
 				await debtCache.takeDebtSnapshot();
 				let result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
 
-				tx = await short.open(toUnit(500), oneETH, sETH, { from: account1 });
+				tx = await short.open(toUnit(500), oneETH, hETH, { from: account1 });
 
 				id = getid(tx);
 
@@ -1032,14 +1032,14 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, null, [hETH], [toUnit(150)]);
 				await debtCache.takeDebtSnapshot();
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
 
-				// simulate buying sETH for 150 husd.
-				await sUSDSynth.burn(account1, toUnit(150));
-				await issue(sETHSynth, oneETH, account1);
+				// simulate buying hETH for 150 husd.
+				await hUSDTribe.burn(account1, toUnit(150));
+				await issue(hETHTribe, oneETH, account1);
 
 				await debtCache.takeDebtSnapshot();
 				result = await debtCache.cachedDebt();
@@ -1053,17 +1053,17 @@ contract('CollateralShort', async accounts => {
 				assert.bnEqual(result, toUnit(111100));
 
 				// shorter has made 50 hUSD loss
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(950));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(950));
 			});
 
 			it('If there is 1 ETH and 2 short ETH, then the system debt decreases if the price goes up', async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
 				await debtCache.takeDebtSnapshot();
 				let result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
 
-				tx = await short.open(toUnit(500), twoETH, sETH, { from: account1 });
+				tx = await short.open(toUnit(500), twoETH, hETH, { from: account1 });
 
 				id = getid(tx);
 
@@ -1073,7 +1073,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(150)]);
+				await updateAggregatorRates(exchangeRates, null, [hETH], [toUnit(150)]);
 
 				// 111100 + 50 - (2 * 50) = 111,050
 
@@ -1081,9 +1081,9 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111050));
 
-				// simulate buying 2 sETH for 300 husd.
-				await sUSDSynth.burn(account1, toUnit(300));
-				await issue(sETHSynth, twoETH, account1);
+				// simulate buying 2 hETH for 300 husd.
+				await hUSDTribe.burn(account1, toUnit(300));
+				await issue(hETHTribe, twoETH, account1);
 
 				await debtCache.takeDebtSnapshot();
 				result = await debtCache.cachedDebt();
@@ -1097,17 +1097,17 @@ contract('CollateralShort', async accounts => {
 				assert.bnEqual(result, toUnit(111050));
 
 				// shorter has made 50 hUSD loss
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(900));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(900));
 			});
 
 			it('If there is 1 ETH and 2 short ETH, then the system debt increases if the price goes down', async () => {
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
 				await debtCache.takeDebtSnapshot();
 				let result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111100));
 
-				tx = await short.open(toUnit(500), twoETH, sETH, { from: account1 });
+				tx = await short.open(toUnit(500), twoETH, hETH, { from: account1 });
 
 				id = getid(tx);
 
@@ -1117,7 +1117,7 @@ contract('CollateralShort', async accounts => {
 
 				await fastForwardAndUpdateRates(3600);
 
-				await updateAggregatorRates(exchangeRates, null, [sETH], [toUnit(50)]);
+				await updateAggregatorRates(exchangeRates, null, [hETH], [toUnit(50)]);
 
 				// 111100 - 50 + (2 * 50) = 111,150
 
@@ -1125,9 +1125,9 @@ contract('CollateralShort', async accounts => {
 				result = await debtCache.cachedDebt();
 				assert.bnEqual(result, toUnit(111150));
 
-				// simulate buying 2 sETH for 100 husd.
-				await sUSDSynth.burn(account1, toUnit(100));
-				await issue(sETHSynth, twoETH, account1);
+				// simulate buying 2 hETH for 100 husd.
+				await hUSDTribe.burn(account1, toUnit(100));
+				await issue(hETHTribe, twoETH, account1);
 
 				await debtCache.takeDebtSnapshot();
 				result = await debtCache.cachedDebt();
@@ -1141,7 +1141,7 @@ contract('CollateralShort', async accounts => {
 				assert.bnEqual(result, toUnit(111150));
 
 				// shorter has made 100 hUSD profit
-				assert.bnEqual(await sUSDSynth.balanceOf(account1), toUnit(1100));
+				assert.bnEqual(await hUSDTribe.balanceOf(account1), toUnit(1100));
 			});
 		});
 
@@ -1151,20 +1151,20 @@ contract('CollateralShort', async accounts => {
 
 				// Open a short to make the long/short supply balanced.
 				const oneBTC = toUnit(1);
-				const susdCollateral = toUnit(15000);
+				const husdCollateral = toUnit(15000);
 
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
+				await short.open(husdCollateral, oneBTC, hBTC, { from: account1 });
 			});
 
 			it('should correctly determine the interest on a short', async () => {
 				const oneBTC = toUnit(1);
-				const susdCollateral = toUnit(15000);
+				const husdCollateral = toUnit(15000);
 
-				await issue(sUSDSynth, susdCollateral, account1);
+				await issue(hUSDTribe, husdCollateral, account1);
 
-				tx = await short.open(susdCollateral, oneBTC, sBTC, { from: account1 });
+				tx = await short.open(husdCollateral, oneBTC, hBTC, { from: account1 });
 				id = getid(tx);
 
 				// after a year we should have accrued 6.67%.

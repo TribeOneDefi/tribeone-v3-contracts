@@ -17,7 +17,7 @@ const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'mainnet', 'goerli', 'bsc_testnet', 'goerli-arbitrum'];
+const networks = ['local', 'mainnet', 'goerli', 'goerli-arbitrum'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -26,8 +26,8 @@ const chainIdMapping = Object.entries({
 	5: {
 		network: 'goerli',
 	},
-	97: {
-		network: 'bsc_testnet',
+	421613: {
+		network: 'goerli-arbitrum',
 	},
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
@@ -43,9 +43,6 @@ const chainIdMapping = Object.entries({
 	420: {
 		network: 'goerli',
 		useOvm: true,
-	},
-	421613: {
-		network: 'goerli-arbitrum',
 	},
 	'-1': {
 		// no chain ID for this currently
@@ -79,7 +76,7 @@ const constants = {
 	CONFIG_FILENAME: 'config.json',
 	RELEASES_FILENAME: 'releases.json',
 	PARAMS_FILENAME: 'params.json',
-	SYNTHS_FILENAME: 'synths.json',
+	TRIBEONES_FILENAME: 'tribes.json',
 	STAKING_REWARDS_FILENAME: 'rewards.json',
 	SHORTING_REWARDS_FILENAME: 'shorting-rewards.json',
 	OWNER_ACTIONS_FILENAME: 'owner-actions.json',
@@ -94,7 +91,6 @@ const constants = {
 
 	ZERO_ADDRESS: '0x' + '0'.repeat(40),
 	ZERO_BYTES32: '0x' + '0'.repeat(64),
-	HAKA_ORIGIN_ADDRESS: '0xd85ad783cc94bd04196a13dc042a3054a9b52210',
 
 	inflationStartTimestampInSecs: 1551830400, // 2019-03-06T00:00:00+00:00
 };
@@ -163,7 +159,6 @@ const defaults = {
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		goerli: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
-		'goerli-arbitrum': '0xdbf31df14b66535af65aac99c32e9ea844e14501',
 		// TODO: get actual goerli address
 	},
 	WETH_ERC20_ADDRESSES: {
@@ -183,27 +178,27 @@ const defaults = {
 	CROSS_DOMAIN_FEE_PERIOD_CLOSE_GAS_LIMIT: `${8e6}`,
 
 	COLLATERAL_MANAGER: {
-		SYNTHS: ['hUSD', 'sBTC', 'sETH'],
-		SHORTS: ['sBTC', 'sETH'],
+		TRIBES: ['hUSD', 'hBTC', 'hETH'],
+		SHORTS: ['hBTC', 'hETH'],
 		MAX_DEBT: w3utils.toWei('75000000'), // 75 million hUSD
 		MAX_SKEW_RATE: w3utils.toWei('0.2'),
 		BASE_BORROW_RATE: Math.round((0.005 * 1e18) / 31556926).toString(), // 31556926 is CollateralManager seconds per year
 		BASE_SHORT_RATE: Math.round((0.005 * 1e18) / 31556926).toString(),
 	},
 	COLLATERAL_ETH: {
-		SYNTHS: ['hUSD', 'sETH'],
+		TRIBES: ['hUSD', 'hETH'],
 		MIN_CRATIO: w3utils.toWei('1.3'),
 		MIN_COLLATERAL: w3utils.toWei('2'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
 	},
 	COLLATERAL_RENBTC: {
-		SYNTHS: ['hUSD', 'sBTC'],
+		TRIBES: ['hUSD', 'hBTC'],
 		MIN_CRATIO: w3utils.toWei('1.3'),
 		MIN_COLLATERAL: w3utils.toWei('0.05'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.001'),
 	},
 	COLLATERAL_SHORT: {
-		SYNTHS: ['sBTC', 'sETH'],
+		TRIBES: ['hBTC', 'hETH'],
 		MIN_CRATIO: w3utils.toWei('1.2'),
 		MIN_COLLATERAL: w3utils.toWei('1000'),
 		ISSUE_FEE_RATE: w3utils.toWei('0.005'),
@@ -388,10 +383,10 @@ const getOffchainFeeds = ({ network, path, fs, deploymentPath, useOvm = false } 
 };
 
 /**
- * Retrieve ths list of synths for the network - returning their names, assets underlying, category, sign, description, and
+ * Retrieve ths list of tribes for the network - returning their names, assets underlying, category, sign, description, and
  * optional index and inverse properties
  */
-const getSynths = ({
+const getTribes = ({
 	network = 'mainnet',
 	path,
 	fs,
@@ -399,55 +394,55 @@ const getSynths = ({
 	useOvm = false,
 	skipPopulate = false,
 } = {}) => {
-	let synths;
+	let tribes;
 
 	if (!deploymentPath && (!path || !fs)) {
-		synths = data[getFolderNameForNetwork({ network, useOvm })].synths;
+		tribes = data[getFolderNameForNetwork({ network, useOvm })].tribes;
 	} else {
-		const pathToSynthList = deploymentPath
-			? path.join(deploymentPath, constants.SYNTHS_FILENAME)
-			: getPathToNetwork({ network, useOvm, path, file: constants.SYNTHS_FILENAME });
-		if (!fs.existsSync(pathToSynthList)) {
-			throw Error(`Cannot find synth list.`);
+		const pathToTribeList = deploymentPath
+			? path.join(deploymentPath, constants.TRIBEONES_FILENAME)
+			: getPathToNetwork({ network, useOvm, path, file: constants.TRIBEONES_FILENAME });
+		if (!fs.existsSync(pathToTribeList)) {
+			throw Error(`Cannot find tribe list.`);
 		}
-		synths = JSON.parse(fs.readFileSync(pathToSynthList));
+		tribes = JSON.parse(fs.readFileSync(pathToTribeList));
 	}
 
 	if (skipPopulate) {
-		return synths;
+		return tribes;
 	}
 
 	const feeds = getFeeds({ network, useOvm, path, fs, deploymentPath });
 
 	// copy all necessary index parameters from the longs to the corresponding shorts
-	return synths.map(synth => {
+	return tribes.map(tribe => {
 		// mixin the asset details
-		synth = Object.assign({}, assets[synth.asset], synth);
+		tribe = Object.assign({}, assets[tribe.asset], tribe);
 
-		if (feeds[synth.asset]) {
-			const { feed } = feeds[synth.asset];
+		if (feeds[tribe.asset]) {
+			const { feed } = feeds[tribe.asset];
 
-			synth = Object.assign({ feed }, synth);
+			tribe = Object.assign({ feed }, tribe);
 		}
 
 		// replace an index placeholder with the index details
-		if (typeof synth.index === 'string') {
-			const { index } = synths.find(({ name }) => name === synth.index) || {};
+		if (typeof tribe.index === 'string') {
+			const { index } = tribes.find(({ name }) => name === tribe.index) || {};
 			if (!index) {
 				throw Error(
-					`While processing ${synth.name}, it's index mapping "${synth.index}" cannot be found - this is an error in the deployment config and should be fixed`
+					`While processing ${tribe.name}, it's index mapping "${tribe.index}" cannot be found - this is an error in the deployment config and should be fixed`
 				);
 			}
-			synth = Object.assign({}, synth, { index });
+			tribe = Object.assign({}, tribe, { index });
 		}
 
-		if (synth.index) {
-			synth.index = synth.index.map(indexEntry => {
+		if (tribe.index) {
+			tribe.index = tribe.index.map(indexEntry => {
 				return Object.assign({}, assets[indexEntry.asset], indexEntry);
 			});
 		}
 
-		return synth;
+		return tribe;
 	});
 };
 
@@ -480,10 +475,10 @@ const getFuturesMarkets = ({
 	return futuresMarkets.map(futuresMarket => {
 		/**
 		 * We expect the asset key to not start with an 's'. ie. AVAX rather than sAVAX
-		 * Unfortunately due to some historical reasons 'sBTC', 'sETH' and 'sLINK' does not follow this format
+		 * Unfortunately due to some historical reasons 'hBTC', 'hETH' and 'sLINK' does not follow this format
 		 * We adjust for that here.
 		 */
-		const marketsWithIncorrectAssetKey = ['sBTC', 'sETH', 'sLINK'];
+		const marketsWithIncorrectAssetKey = ['hBTC', 'hETH', 'sLINK'];
 		const assetKeyNeedsAdjustment = marketsWithIncorrectAssetKey.includes(futuresMarket.asset);
 		const assetKey = assetKeyNeedsAdjustment ? futuresMarket.asset.slice(1) : futuresMarket.asset;
 		// mixin the asset details
@@ -521,10 +516,10 @@ const getPerpsMarkets = ({
 	return perpsMarkets.map(perpsMarket => {
 		/**
 		 * We expect the asset key to not start with an 's'. ie. AVAX rather than sAVAX
-		 * Unfortunately due to some historical reasons 'sBTC' and 'sETH' does not follow this format
+		 * Unfortunately due to some historical reasons 'hBTC' and 'hETH' does not follow this format
 		 * We adjust for that here.
 		 */
-		const marketsWithIncorrectAssetKey = ['sBTC', 'sETH'];
+		const marketsWithIncorrectAssetKey = ['hBTC', 'hETH'];
 		const assetKeyNeedsAdjustment = marketsWithIncorrectAssetKey.includes(perpsMarket.asset);
 		const assetKey = assetKeyNeedsAdjustment ? perpsMarket.asset.slice(1) : perpsMarket.asset;
 		// mixin the asset details
@@ -734,10 +729,6 @@ const getUsers = ({ network = 'mainnet', user, useOvm = false } = {}) => {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 		}),
-		'goerli-arbitrum': Object.assign({}, base, {
-			owner: '0xf1745380C35120cE202350eE6DC0cdaacf495D97',
-			deployer: '0xf1745380C35120cE202350eE6DC0cdaacf495D97',
-		}),
 		'goerli-ovm': Object.assign({}, base, {
 			owner: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
 			deployer: '0x48914229deDd5A9922f44441ffCCfC2Cb7856Ee9',
@@ -803,7 +794,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
 	const suspensionReasonMap = {
 		1: 'System Upgrade',
 		2: 'Market Closure',
-		4: 'iSynth Reprice',
+		4: 'iTribe Reprice',
 		6: 'Index Rebalance',
 		55: 'Circuit Breaker (Phase one)', // https://sips.tribeone.io/SIPS/sip-55
 		65: 'Decentralized Circuit Breaker (Phase two)', // https://sips.tribeone.io/SIPS/sip-65
@@ -819,7 +810,7 @@ const getSuspensionReasons = ({ code = undefined } = {}) => {
  * Retrieve the list of tokens used in the Tribeone protocol
  */
 const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
-	const synths = getSynths({ network, useOvm, path, fs });
+	const tribes = getTribes({ network, useOvm, path, fs });
 	const targets = getTarget({ network, useOvm, path, fs });
 	const feeds = getFeeds({ network, useOvm, path, fs });
 
@@ -835,16 +826,16 @@ const getTokens = ({ network = 'mainnet', path, fs, useOvm = false } = {}) => {
 			feeds['HAKA'].feed ? { feed: feeds['HAKA'].feed } : {}
 		),
 	].concat(
-		synths
+		tribes
 			.filter(({ category }) => category !== 'internal')
-			.map(synth => ({
-				symbol: synth.name,
-				asset: synth.asset,
-				name: synth.description,
-				address: (targets[`Proxy${synth.name}`] || {}).address,
-				index: synth.index,
+			.map(tribe => ({
+				symbol: tribe.name,
+				asset: tribe.asset,
+				name: tribe.description,
+				address: (targets[`Proxy${tribe.name}`] || {}).address,
+				index: tribe.index,
 				decimals: 18,
-				feed: synth.feed,
+				feed: tribe.feed,
 			}))
 			.sort((a, b) => (a.symbol > b.symbol ? 1 : -1))
 	);
@@ -966,7 +957,7 @@ const wrap = ({ network, deploymentPath, fs, path, useOvm = false }) =>
 		'getShortingRewards',
 		'getFeeds',
 		'getOffchainFeeds',
-		'getSynths',
+		'getTribes',
 		'getTarget',
 		'getFuturesMarkets',
 		'getPerpsMarkets',
@@ -1001,7 +992,7 @@ module.exports = {
 	getSuspensionReasons,
 	getFeeds,
 	getOffchainFeeds,
-	getSynths,
+	getTribes,
 	getFuturesMarkets,
 	getPerpsMarkets,
 	getPerpsV2ProxiedMarkets,

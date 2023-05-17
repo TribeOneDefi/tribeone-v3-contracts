@@ -8,18 +8,18 @@ const { createMockAggregatorFactory } = require('../../utils/index')();
 function itCanStake({ ctx }) {
 	describe('staking and claiming', () => {
 		const HAKAAmount = ethers.utils.parseEther('1000');
-		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
+		const amountToIssueAndBurnhUSD = ethers.utils.parseEther('1');
 
 		let tx;
 		let user, owner;
 		let aggregator;
-		let AddressResolver, Tribeone, TribeoneDebtShare, SynthsUSD, Issuer;
-		let balancesUSD, debtsUSD;
+		let AddressResolver, Tribeone, TribeoneDebtShare, TribehUSD, Issuer;
+		let balancehUSD, debthUSD;
 
 		addSnapshotBeforeRestoreAfter();
 
 		before('target contracts and users', () => {
-			({ AddressResolver, Tribeone, TribeoneDebtShare, SynthsUSD, Issuer } = ctx.contracts);
+			({ AddressResolver, Tribeone, TribeoneDebtShare, TribehUSD, Issuer } = ctx.contracts);
 
 			user = ctx.users.otherUser;
 			owner = ctx.users.owner;
@@ -58,63 +58,63 @@ function itCanStake({ ctx }) {
 
 		describe('when the user issues hUSD', () => {
 			before('record balances', async () => {
-				balancesUSD = await SynthsUSD.balanceOf(user.address);
-				debtsUSD = await TribeoneDebtShare.balanceOf(user.address);
+				balancehUSD = await TribehUSD.balanceOf(user.address);
+				debthUSD = await TribeoneDebtShare.balanceOf(user.address);
 			});
 
 			before('issue hUSD', async () => {
 				Tribeone = Tribeone.connect(user);
 
-				const tx = await Tribeone.issueSynths(amountToIssueAndBurnsUSD);
+				const tx = await Tribeone.issueTribes(amountToIssueAndBurnhUSD);
 				const { gasUsed } = await tx.wait();
-				console.log(`issueSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+				console.log(`issueTribes() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 			});
 
 			it('issues the expected amount of hUSD', async () => {
 				assert.bnEqual(
-					await SynthsUSD.balanceOf(user.address),
-					balancesUSD.add(amountToIssueAndBurnsUSD)
+					await TribehUSD.balanceOf(user.address),
+					balancehUSD.add(amountToIssueAndBurnhUSD)
 				);
 			});
 
 			it('issues the expected amount of debt shares', async () => {
-				// mints (amountToIssueAndBurnsUSD / ratio) = debt shares
+				// mints (amountToIssueAndBurnhUSD / ratio) = debt shares
 				assert.bnEqual(
 					await TribeoneDebtShare.balanceOf(user.address),
-					debtsUSD.add(amountToIssueAndBurnsUSD.mul(2))
+					debthUSD.add(amountToIssueAndBurnhUSD.mul(2))
 				);
 			});
 
 			describe('when the user issues hUSD again', () => {
 				before('record balances', async () => {
-					balancesUSD = await SynthsUSD.balanceOf(user.address);
-					debtsUSD = await TribeoneDebtShare.balanceOf(user.address);
+					balancehUSD = await TribehUSD.balanceOf(user.address);
+					debthUSD = await TribeoneDebtShare.balanceOf(user.address);
 				});
 
 				before('issue hUSD', async () => {
-					const tx = await Tribeone.issueSynths(amountToIssueAndBurnsUSD.mul(2));
+					const tx = await Tribeone.issueTribes(amountToIssueAndBurnhUSD.mul(2));
 					await tx.wait();
 				});
 
 				it('issues the expected amount of hUSD', async () => {
 					assert.bnEqual(
-						await SynthsUSD.balanceOf(user.address),
-						balancesUSD.add(amountToIssueAndBurnsUSD.mul(2))
+						await TribehUSD.balanceOf(user.address),
+						balancehUSD.add(amountToIssueAndBurnhUSD.mul(2))
 					);
 				});
 
 				it('issues the expected amount of debt shares', async () => {
-					// mints (amountToIssueAndBurnsUSD / ratio) = debt shares
+					// mints (amountToIssueAndBurnhUSD / ratio) = debt shares
 					assert.bnEqual(
 						await TribeoneDebtShare.balanceOf(user.address),
-						debtsUSD.add(amountToIssueAndBurnsUSD.mul(4))
+						debthUSD.add(amountToIssueAndBurnhUSD.mul(4))
 					);
 				});
 
 				describe('when the user burns this new amount of hUSD', () => {
 					before('record balances', async () => {
-						balancesUSD = await SynthsUSD.balanceOf(user.address);
-						debtsUSD = await TribeoneDebtShare.balanceOf(user.address);
+						balancehUSD = await TribehUSD.balanceOf(user.address);
+						debthUSD = await TribeoneDebtShare.balanceOf(user.address);
 					});
 
 					before('skip min stake time', async () => {
@@ -122,22 +122,22 @@ function itCanStake({ ctx }) {
 					});
 
 					before('burn hUSD', async () => {
-						const tx = await Tribeone.burnSynths(amountToIssueAndBurnsUSD);
+						const tx = await Tribeone.burnTribes(amountToIssueAndBurnhUSD);
 						await tx.wait();
 					});
 
 					it('debt should decrease', async () => {
 						assert.bnEqual(
-							await SynthsUSD.balanceOf(user.address),
-							balancesUSD.sub(amountToIssueAndBurnsUSD)
+							await TribehUSD.balanceOf(user.address),
+							balancehUSD.sub(amountToIssueAndBurnhUSD)
 						);
 					});
 
 					it('debt share should decrease correctly', async () => {
-						// burns (amountToIssueAndBurnsUSD / ratio) = debt shares
+						// burns (amountToIssueAndBurnhUSD / ratio) = debt shares
 						assert.bnEqual(
 							await TribeoneDebtShare.balanceOf(user.address),
-							debtsUSD.sub(amountToIssueAndBurnsUSD.mul(2))
+							debthUSD.sub(amountToIssueAndBurnhUSD.mul(2))
 						);
 					});
 				});
@@ -150,34 +150,34 @@ function itCanStake({ ctx }) {
 			});
 
 			before('record debt', async () => {
-				debtsUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
+				debthUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
 			});
 
 			before('burn hUSD', async () => {
 				Tribeone = Tribeone.connect(user);
 
-				const tx = await Tribeone.burnSynths(amountToIssueAndBurnsUSD);
+				const tx = await Tribeone.burnTribes(amountToIssueAndBurnhUSD);
 				const { gasUsed } = await tx.wait();
-				console.log(`burnSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+				console.log(`burnTribes() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 			});
 
 			it('reduces the expected amount of debt', async () => {
-				const newDebtsUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
-				const debtReduction = debtsUSD.sub(newDebtsUSD);
+				const newDebthUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
+				const debtReduction = debthUSD.sub(newDebthUSD);
 
 				const tolerance = ethers.utils.parseUnits('0.01', 'ether');
 				assert.bnClose(
 					debtReduction.toString(),
-					amountToIssueAndBurnsUSD.toString(),
+					amountToIssueAndBurnhUSD.toString(),
 					tolerance.toString()
 				);
 			});
 
 			it('reduces the expected amount of debt shares', async () => {
-				// burns (amountToIssueAndBurnsUSD / ratio) = debt shares
+				// burns (amountToIssueAndBurnhUSD / ratio) = debt shares
 				assert.bnEqual(
 					await TribeoneDebtShare.balanceOf(user.address),
-					amountToIssueAndBurnsUSD.mul(2)
+					amountToIssueAndBurnhUSD.mul(2)
 				);
 			});
 		});

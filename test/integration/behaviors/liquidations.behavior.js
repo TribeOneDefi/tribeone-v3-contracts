@@ -40,7 +40,7 @@ function itCanLiquidate({ ctx }) {
 		before('system settings are set', async () => {
 			await SystemSettings.setIssuanceRatio(ethers.utils.parseEther('0.25')); // 400% c-ratio
 			await SystemSettings.setLiquidationRatio(ethers.utils.parseEther('0.5')); // 200% c-ratio
-			await SystemSettings.setHakaLiquidationPenalty(ethers.utils.parseEther('0.3')); // 30% penalty
+			await SystemSettings.setSnxLiquidationPenalty(ethers.utils.parseEther('0.3')); // 30% penalty
 			await SystemSettings.setSelfLiquidationPenalty(ethers.utils.parseEther('0.2')); // 20% penalty
 			await SystemSettings.setFlagReward(ethers.utils.parseEther('1')); // 1 HAKA
 			await SystemSettings.setLiquidateReward(ethers.utils.parseEther('2')); // 2 HAKA
@@ -92,11 +92,11 @@ function itCanLiquidate({ ctx }) {
 		});
 
 		before('liquidatedUser stakes their HAKA', async () => {
-			await Tribeone.connect(liquidatedUser).issueMaxSynths();
+			await Tribeone.connect(liquidatedUser).issueMaxTribes();
 		});
 
 		before('someUser stakes their HAKA', async () => {
-			await Tribeone.connect(someUser).issueMaxSynths();
+			await Tribeone.connect(someUser).issueMaxTribes();
 		});
 
 		it('cannot be liquidated at this point', async () => {
@@ -141,16 +141,16 @@ function itCanLiquidate({ ctx }) {
 					let tx;
 					let beforeCRatio;
 					let beforeDebtShares, beforeSharesSupply;
-					let beforeFlagRewardCredittedHaka,
-						beforeLiquidateRewardCredittedHaka,
-						beforeRemainingRewardCredittedHaka;
+					let beforeFlagRewardCredittedSnx,
+						beforeLiquidateRewardCredittedSnx,
+						beforeRemainingRewardCredittedSnx;
 
 					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
 						beforeDebtShares = await TribeoneDebtShare.balanceOf(liquidatedUser.address);
 						beforeSharesSupply = await TribeoneDebtShare.totalSupply();
-						beforeFlagRewardCredittedHaka = await Tribeone.balanceOf(flaggerUser.address);
-						beforeLiquidateRewardCredittedHaka = await Tribeone.balanceOf(liquidatorUser.address);
-						beforeRemainingRewardCredittedHaka = await Tribeone.balanceOf(
+						beforeFlagRewardCredittedSnx = await Tribeone.balanceOf(flaggerUser.address);
+						beforeLiquidateRewardCredittedSnx = await Tribeone.balanceOf(liquidatorUser.address);
+						beforeRemainingRewardCredittedSnx = await Tribeone.balanceOf(
 							LiquidatorRewards.address
 						);
 
@@ -194,7 +194,7 @@ function itCanLiquidate({ ctx }) {
 						const flagReward = await Liquidator.flagReward();
 						assert.bnEqual(
 							await Tribeone.balanceOf(flaggerUser.address),
-							beforeFlagRewardCredittedHaka.add(flagReward)
+							beforeFlagRewardCredittedSnx.add(flagReward)
 						);
 					});
 
@@ -202,17 +202,17 @@ function itCanLiquidate({ ctx }) {
 						const liquidateReward = await Liquidator.liquidateReward();
 						assert.bnEqual(
 							await Tribeone.balanceOf(liquidatorUser.address),
-							beforeLiquidateRewardCredittedHaka.add(liquidateReward)
+							beforeLiquidateRewardCredittedSnx.add(liquidateReward)
 						);
 					});
 
 					it('transfers the redeemed HAKA to LiquidatorRewards', async () => {
 						const { events } = await tx.wait();
 						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
-						const hakaRedeemed = liqEvent.args.hakaRedeemed;
+						const snxRedeemed = liqEvent.args.snxRedeemed;
 						assert.bnEqual(
 							await Tribeone.balanceOf(LiquidatorRewards.address),
-							beforeRemainingRewardCredittedHaka.add(hakaRedeemed)
+							beforeRemainingRewardCredittedSnx.add(snxRedeemed)
 						);
 					});
 
@@ -248,7 +248,7 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			before('user7 stakes their HAKA', async () => {
-				await Tribeone.connect(user7).issueMaxSynths();
+				await Tribeone.connect(user7).issueMaxTribes();
 			});
 
 			before('exchange rate changes to allow liquidation', async () => {
@@ -289,9 +289,9 @@ function itCanLiquidate({ ctx }) {
 					let collateralBefore;
 					let flagReward, liquidateReward;
 					let beforeDebtShares, beforeSharesSupply, beforeDebtBalance;
-					let beforeFlagRewardCredittedHaka,
-						beforeLiquidateRewardCredittedHaka,
-						beforeRemainingRewardCredittedHaka;
+					let beforeFlagRewardCredittedSnx,
+						beforeLiquidateRewardCredittedSnx,
+						beforeRemainingRewardCredittedSnx;
 
 					before('liquidatorUser calls liquidateDelinquentAccount', async () => {
 						flagReward = await Liquidator.flagReward();
@@ -300,9 +300,9 @@ function itCanLiquidate({ ctx }) {
 						collateralBefore = await Tribeone.collateral(user7.address);
 						beforeDebtShares = await TribeoneDebtShare.balanceOf(user7.address);
 						beforeSharesSupply = await TribeoneDebtShare.totalSupply();
-						beforeFlagRewardCredittedHaka = await Tribeone.balanceOf(flaggerUser.address);
-						beforeLiquidateRewardCredittedHaka = await Tribeone.balanceOf(liquidatorUser.address);
-						beforeRemainingRewardCredittedHaka = await Tribeone.balanceOf(
+						beforeFlagRewardCredittedSnx = await Tribeone.balanceOf(flaggerUser.address);
+						beforeLiquidateRewardCredittedSnx = await Tribeone.balanceOf(liquidatorUser.address);
+						beforeRemainingRewardCredittedSnx = await Tribeone.balanceOf(
 							LiquidatorRewards.address
 						);
 						beforeDebtBalance = await Tribeone.debtBalanceOf(user7.address, toBytes32('hUSD'));
@@ -349,7 +349,7 @@ function itCanLiquidate({ ctx }) {
 						const flagReward = await Liquidator.flagReward();
 						assert.bnEqual(
 							await Tribeone.balanceOf(flaggerUser.address),
-							beforeFlagRewardCredittedHaka.add(flagReward)
+							beforeFlagRewardCredittedSnx.add(flagReward)
 						);
 					});
 
@@ -357,17 +357,17 @@ function itCanLiquidate({ ctx }) {
 						const liquidateReward = await Liquidator.liquidateReward();
 						assert.bnEqual(
 							await Tribeone.balanceOf(liquidatorUser.address),
-							beforeLiquidateRewardCredittedHaka.add(liquidateReward)
+							beforeLiquidateRewardCredittedSnx.add(liquidateReward)
 						);
 					});
 
 					it('transfers the redeemed HAKA to LiquidatorRewards', async () => {
 						const { events } = await tx.wait();
 						const liqEvent = events.find(l => l.event === 'AccountLiquidated');
-						const hakaRedeemed = liqEvent.args.hakaRedeemed;
+						const snxRedeemed = liqEvent.args.snxRedeemed;
 						assert.bnEqual(
 							await Tribeone.balanceOf(LiquidatorRewards.address),
-							beforeRemainingRewardCredittedHaka.add(hakaRedeemed)
+							beforeRemainingRewardCredittedSnx.add(snxRedeemed)
 						);
 					});
 
@@ -397,7 +397,7 @@ function itCanLiquidate({ ctx }) {
 			let flagReward, liquidateReward;
 			let beforeEscrowBalance, beforeDebtBalance;
 			let beforeDebtShares, beforeSharesSupply;
-			let beforeHakaBalance, beforeRewardsCredittedHaka;
+			let beforeSnxBalance, beforeRewardsCredittedSnx;
 
 			before('ensure exchange rate is set', async () => {
 				exchangeRate = await getRate({ ctx, symbol: 'HAKA' });
@@ -426,7 +426,7 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			before('user8 stakes their HAKA', async () => {
-				await Tribeone.connect(user8).issueMaxSynths();
+				await Tribeone.connect(user8).issueMaxTribes();
 			});
 
 			before('exchange rate changes to allow liquidation', async () => {
@@ -457,12 +457,12 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			before('liquidatorUser calls liquidateDelinquentAccount', async () => {
-				beforeHakaBalance = await Tribeone.balanceOf(user8.address);
+				beforeSnxBalance = await Tribeone.balanceOf(user8.address);
 				beforeEscrowBalance = await RewardEscrowV2.totalEscrowedAccountBalance(user8.address);
 				beforeDebtShares = await TribeoneDebtShare.balanceOf(user8.address);
 				beforeSharesSupply = await TribeoneDebtShare.totalSupply();
 				beforeDebtBalance = await Tribeone.debtBalanceOf(user8.address, toBytes32('hUSD'));
-				beforeRewardsCredittedHaka = await Tribeone.balanceOf(LiquidatorRewards.address);
+				beforeRewardsCredittedSnx = await Tribeone.balanceOf(LiquidatorRewards.address);
 
 				viewResults = await Liquidator.liquidationAmounts(user8.address, false);
 				tx = await Tribeone.connect(liquidatorUser).liquidateDelinquentAccount(user8.address);
@@ -484,8 +484,8 @@ function itCanLiquidate({ ctx }) {
 			});
 
 			it('should remove all transferable collateral', async () => {
-				const afterHakaBalance = await Tribeone.balanceOf(user8.address);
-				assert.bnEqual(afterHakaBalance, '0');
+				const afterSnxBalance = await Tribeone.balanceOf(user8.address);
+				assert.bnEqual(afterSnxBalance, '0');
 			});
 
 			it('should remove all escrow', async () => {
@@ -501,7 +501,7 @@ function itCanLiquidate({ ctx }) {
 			it('results correspond to view before liquidation', async () => {
 				assert.bnEqual(
 					viewResults.totalRedeemed,
-					beforeHakaBalance.add(beforeEscrowBalance).sub(flagReward.add(liquidateReward))
+					beforeSnxBalance.add(beforeEscrowBalance).sub(flagReward.add(liquidateReward))
 				);
 				assert.bnEqual(viewResults.escrowToLiquidate, beforeEscrowBalance);
 				assert.bnEqual(viewResults.initialDebtBalance, beforeDebtBalance);
@@ -514,11 +514,11 @@ function itCanLiquidate({ ctx }) {
 				const { events } = await tx.wait();
 				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
 				const amountLiquidated = liqEvent.args.amountLiquidated;
-				const hakaRedeemed = liqEvent.args.hakaRedeemed;
+				const snxRedeemed = liqEvent.args.snxRedeemed;
 
 				assert.bnEqual(
-					hakaRedeemed,
-					beforeHakaBalance.add(beforeEscrowBalance).sub(flagReward.add(liquidateReward))
+					snxRedeemed,
+					beforeSnxBalance.add(beforeEscrowBalance).sub(flagReward.add(liquidateReward))
 				);
 				assert.bnEqual(amountLiquidated.toString(), beforeDebtBalance.toString()); // the variance is due to a rounding error as a result of multiplication of the HAKA rate
 			});
@@ -539,10 +539,10 @@ function itCanLiquidate({ ctx }) {
 			it('transfers the redeemed HAKA + escrow to LiquidatorRewards', async () => {
 				const { events } = await tx.wait();
 				const liqEvent = events.find(l => l.event === 'AccountLiquidated');
-				const hakaRedeemed = liqEvent.args.hakaRedeemed;
+				const snxRedeemed = liqEvent.args.snxRedeemed;
 				assert.bnEqual(
 					await Tribeone.balanceOf(LiquidatorRewards.address),
-					beforeRewardsCredittedHaka.add(hakaRedeemed)
+					beforeRewardsCredittedSnx.add(snxRedeemed)
 				);
 			});
 

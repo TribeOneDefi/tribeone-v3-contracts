@@ -2,7 +2,6 @@ pragma solidity ^0.5.16;
 
 pragma experimental ABIEncoderV2;
 
-
 // Inheritance
 import "./interfaces/IAddressResolver.sol";
 import "./interfaces/ICollateralUtil.sol";
@@ -63,7 +62,7 @@ contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings
      * D = debt value in hUSD
      * V = collateral value in hUSD
      * P = liquidation penalty
-     * Calculates amount of synths = (D - V * r) / (1 - (1 + P) * r)
+     * Calculates amount of tribes = (D - V * r) / (1 - (1 + P) * r)
      * Note: if you pass a loan in here that is not eligible for liquidation it will revert.
      * We check the ratio first in liquidateInternal and only pass eligible loans in.
      */
@@ -80,9 +79,9 @@ contract CollateralUtil is ICollateralUtil, ICollateralLoan, MixinSystemSettings
         uint dividend = debtValue.sub(collateralValue.divideDecimal(minCratio));
         uint divisor = unit.sub(unit.add(liquidationPenalty).divideDecimal(minCratio));
 
-        uint sUSDamount = dividend.divideDecimal(divisor);
+        uint hUSDamount = dividend.divideDecimal(divisor);
 
-        return _exchangeRates().effectiveValue(hUSD, sUSDamount, loan.currency);
+        return _exchangeRates().effectiveValue(hUSD, hUSDamount, loan.currency);
     }
 
     function collateralRedeemed(

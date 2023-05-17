@@ -15,14 +15,14 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 
 	describe('staking and claiming', () => {
 		const HAKAAmount = ethers.utils.parseEther('1000');
-		const amountToIssueAndBurnsUSD = ethers.utils.parseEther('1');
+		const amountToIssueAndBurnhUSD = ethers.utils.parseEther('1');
 
 		let user;
-		let Tribeone, SynthsUSD, FeePool;
-		let balancesUSD, debtsUSD;
+		let Tribeone, TribehUSD, FeePool;
+		let balancehUSD, debthUSD;
 
 		before('target contracts and users', () => {
-			({ Tribeone, SynthsUSD, FeePool } = ctx.l1.contracts);
+			({ Tribeone, TribehUSD, FeePool } = ctx.l1.contracts);
 
 			user = ctx.l1.users.someUser;
 		});
@@ -33,21 +33,21 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 
 		describe('when the user issues hUSD', () => {
 			before('record balances', async () => {
-				balancesUSD = await SynthsUSD.balanceOf(user.address);
+				balancehUSD = await TribehUSD.balanceOf(user.address);
 			});
 
 			before('issue hUSD', async () => {
 				Tribeone = Tribeone.connect(user);
 
-				const tx = await Tribeone.issueSynths(amountToIssueAndBurnsUSD);
+				const tx = await Tribeone.issueTribes(amountToIssueAndBurnhUSD);
 				const { gasUsed } = await tx.wait();
-				console.log(`issueSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+				console.log(`issueTribes() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 			});
 
 			it('issues the expected amount of hUSD', async () => {
 				assert.bnEqual(
-					await SynthsUSD.balanceOf(user.address),
-					balancesUSD.add(amountToIssueAndBurnsUSD)
+					await TribehUSD.balanceOf(user.address),
+					balancehUSD.add(amountToIssueAndBurnhUSD)
 				);
 			});
 
@@ -70,7 +70,7 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 
 					describe('when the user claims rewards', () => {
 						before('record balances', async () => {
-							balancesUSD = await SynthsUSD.balanceOf(user.address);
+							balancehUSD = await TribehUSD.balanceOf(user.address);
 						});
 
 						before('claim', async () => {
@@ -82,7 +82,7 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 						});
 
 						it('shows no change in the users hUSD balance', async () => {
-							assert.bnEqual(await SynthsUSD.balanceOf(user.address), balancesUSD);
+							assert.bnEqual(await TribehUSD.balanceOf(user.address), balancehUSD);
 						});
 					});
 				});
@@ -94,25 +94,25 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 				});
 
 				before('record debt', async () => {
-					debtsUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
+					debthUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
 				});
 
 				before('burn hUSD', async () => {
 					Tribeone = Tribeone.connect(user);
 
-					const tx = await Tribeone.burnSynths(amountToIssueAndBurnsUSD);
+					const tx = await Tribeone.burnTribes(amountToIssueAndBurnhUSD);
 					const { gasUsed } = await tx.wait();
-					console.log(`burnSynths() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
+					console.log(`burnTribes() gas used: ${Math.round(gasUsed / 1000).toString()}k`);
 				});
 
 				it('reduced the expected amount of debt', async () => {
-					const newDebtsUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
-					const debtReduction = debtsUSD.sub(newDebtsUSD);
+					const newDebthUSD = await Tribeone.debtBalanceOf(user.address, toBytes32('hUSD'));
+					const debtReduction = debthUSD.sub(newDebthUSD);
 
 					const tolerance = ethers.utils.parseUnits('0.01', 'ether');
 					assert.bnClose(
 						debtReduction.toString(),
-						amountToIssueAndBurnsUSD.toString(),
+						amountToIssueAndBurnhUSD.toString(),
 						tolerance.toString()
 					);
 				});

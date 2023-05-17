@@ -8,7 +8,7 @@ const BaseMigration = artifacts.require('BaseMigration');
 const MockMigration = artifacts.require('MockMigration');
 const TokenState = artifacts.require('TokenState');
 const LegacyTokenState = artifacts.require('LegacyTokenState');
-const VirtualSynth = artifacts.require('VirtualSynth');
+const VirtualTribe = artifacts.require('VirtualTribe');
 
 const { ensureOnlyExpectedMutativeFunctions } = require('./helpers');
 
@@ -95,7 +95,7 @@ contract('BaseMigration', async accounts => {
 			describe('when returnOwnership is invoked on something that is not Owned', () => {
 				let forSomethingNotOwned;
 				beforeEach(async () => {
-					forSomethingNotOwned = await VirtualSynth.new();
+					forSomethingNotOwned = await VirtualTribe.new();
 				});
 				it('then the function reverts', async () => {
 					await assert.revert(

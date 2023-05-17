@@ -1,7 +1,7 @@
 [
 	{
-		"marketKey": "sBTCPERP",
-		"asset": "sBTC",
+		"marketKey": "hBTCPERP",
+		"asset": "hBTC",
 		"takerFee": "0.003",
 		"makerFee": "0.002",
 
@@ -29,8 +29,8 @@
 		"offchainPaused": false
 	},
 	{
-		"marketKey": "sETHPERP",
-		"asset": "sETH",
+		"marketKey": "hETHPERP",
+		"asset": "hETH",
 		"takerFee": "0.003",
 		"makerFee": "0.002",
 

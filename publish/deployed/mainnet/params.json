@@ -15,13 +15,13 @@
 				"equivalent": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
 				"token": "USDC"
 			},
-			"sETH": {
-				"currencyKey": "sETH",
+			"hETH": {
+				"currencyKey": "hETH",
 				"equivalent": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 				"token": "WETH"
 			},
-			"sBTC": {
-				"currencyKey": "sBTC",
+			"hBTC": {
+				"currencyKey": "hBTC",
 				"equivalent": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
 				"token": "WBTC"
 			}
@@ -30,23 +30,23 @@
 	{
 		"name": "ATOMIC_EXCHANGE_FEE_RATES",
 		"value": {
-			"sETH": "3000000000000000",
-			"sBTC": "3000000000000000",
+			"hETH": "3000000000000000",
+			"hBTC": "3000000000000000",
 			"hUSD": "3000000000000000"
 		}
 	},
 	{
 		"name": "ATOMIC_VOLATILITY_CONSIDERATION_WINDOW",
 		"value": {
-			"sETH": "600",
-			"sBTC": "600"
+			"hETH": "600",
+			"hBTC": "600"
 		}
 	},
 	{
 		"name": "ATOMIC_VOLATILITY_UPDATE_THRESHOLD",
 		"value": {
-			"sETH": "3",
-			"sBTC": "3"
+			"hETH": "3",
+			"hBTC": "3"
 		}
 	},
 	{
@@ -60,7 +60,7 @@
 	{
 		"name": "COLLATERAL_ETH",
 		"value": {
-			"SYNTHS": ["hUSD", "sETH"],
+			"TRIBES": ["hUSD", "hETH"],
 			"ISSUE_FEE_RATE": "0",
 			"MIN_CRATIO": "1300000000000000000",
 			"MIN_COLLATERAL": "2000000000000000000"
