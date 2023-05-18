@@ -41,7 +41,7 @@ const MockExchanger = artifacts.require('MockExchanger');
 const FlexibleStorage = artifacts.require('FlexibleStorage');
 
 contract('Liquidator', accounts => {
-	const [hUSD, HAKA] = ['hUSD', 'HAKA'].map(toBytes32);
+	const [hUSD, wHAKA] = ['hUSD', 'wHAKA'].map(toBytes32);
 	const [deployerAccount, owner, , account1, alice, bob, carol, david] = accounts;
 	const week = 3600 * 24 * 7;
 
@@ -125,7 +125,7 @@ contract('Liquidator', accounts => {
 	};
 
 	const updateHAKAPrice = async rate => {
-		await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], [rate].map(toUnit));
+		await updateAggregatorRates(exchangeRates, circuitBreaker, [wHAKA], [rate].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 	};
 
@@ -136,7 +136,7 @@ contract('Liquidator', accounts => {
 		await tribeone.transfer(owner, await tribeone.balanceOf(account), {
 			from: account,
 		});
-		// send HAKA from owner
+		// send wHAKA from owner
 		await tribeone.transfer(account, amount, { from: owner });
 	};
 
@@ -218,7 +218,7 @@ contract('Liquidator', accounts => {
 			await updateRatesWithDefaults();
 		});
 		describe('system staleness checks', () => {
-			describe('when HAKA is stale', () => {
+			describe('when wHAKA is stale', () => {
 				beforeEach(async () => {
 					const rateStalePeriod = await exchangeRates.rateStalePeriod();
 
@@ -349,7 +349,7 @@ contract('Liquidator', accounts => {
 					penalty = toUnit('0.1');
 				});
 				describe('given liquidation penalty is 10%', () => {
-					it('calculates hUSD to fix ratio from 200%, with $600 HAKA collateral and $300 debt', async () => {
+					it('calculates hUSD to fix ratio from 200%, with $600 wHAKA collateral and $300 debt', async () => {
 						const expectedAmount = toUnit('260.869565217391304347');
 
 						// amount of debt to redeem to fix
@@ -372,7 +372,7 @@ contract('Liquidator', accounts => {
 
 						assert.bnEqual(collateralRatio, ratio);
 					});
-					it('calculates hUSD to fix ratio from 300%, with $600 HAKA collateral and $200 debt', async () => {
+					it('calculates hUSD to fix ratio from 300%, with $600 wHAKA collateral and $200 debt', async () => {
 						debtBefore = toUnit('200');
 						const expectedAmount = toUnit('144.927536231884057971');
 
@@ -415,7 +415,7 @@ contract('Liquidator', accounts => {
 			});
 			describe('when Alice is undercollateralized', () => {
 				beforeEach(async () => {
-					// wen HAKA 6 dolla
+					// wen wHAKA 6 dolla
 					await updateHAKAPrice('6');
 
 					// Alice issues hUSD $600
@@ -426,7 +426,7 @@ contract('Liquidator', accounts => {
 					await tribeone.transfer(bob, toUnit('8000'), { from: owner });
 					await tribeone.issueMaxTribes({ from: bob });
 
-					// Drop HAKA value to $1 (Collateral worth $800 after)
+					// Drop wHAKA value to $1 (Collateral worth $800 after)
 					await updateHAKAPrice('1');
 				});
 				it('and liquidation Collateral Ratio is 150%', async () => {
@@ -435,7 +435,7 @@ contract('Liquidator', accounts => {
 				it('and self liquidation penalty is 20%', async () => {
 					assert.bnEqual(await liquidator.selfLiquidationPenalty(), SELF_LIQUIDATION_PENALTY);
 				});
-				describe('when Alice issuance ratio is fixed as HAKA price increases', () => {
+				describe('when Alice issuance ratio is fixed as wHAKA price increases', () => {
 					beforeEach(async () => {
 						await updateHAKAPrice('6');
 
@@ -495,11 +495,11 @@ contract('Liquidator', accounts => {
 						const isSelfLiquidationOpen = await liquidator.isLiquidationOpen(alice, true);
 						assert.bnEqual(isSelfLiquidationOpen, false);
 					});
-					it('then Alice still has 800 HAKA', async () => {
+					it('then Alice still has 800 wHAKA', async () => {
 						assert.bnEqual(await tribeone.collateral(alice), toUnit('800'));
 					});
 				});
-				describe('given Alice has $600 Debt, $800 worth of HAKA Collateral and c-ratio at 133.33%', () => {
+				describe('given Alice has $600 Debt, $800 worth of wHAKA Collateral and c-ratio at 133.33%', () => {
 					describe('when Alice calls self liquidate', () => {
 						let txn;
 						let ratio;
@@ -565,7 +565,7 @@ contract('Liquidator', accounts => {
 							// Alice should not be open for liquidation anymore
 							assert.isFalse(await liquidator.isLiquidationOpen(alice, false));
 
-							// Check that the redeemed HAKA is sent to the LiquidatorRewards contract
+							// Check that the redeemed wHAKA is sent to the LiquidatorRewards contract
 							const logs = artifacts.require('Tribeone').decodeLogs(txn.receipt.rawLogs);
 							assert.eventEqual(
 								logs.find(log => log.event === 'AccountLiquidated'),
@@ -576,7 +576,7 @@ contract('Liquidator', accounts => {
 								}
 							);
 
-							// Make sure the other staker, Bob, gets the redeemed HAKA bonus.
+							// Make sure the other staker, Bob, gets the redeemed wHAKA bonus.
 							const bobDebtValueAfter = await tribeone.debtBalanceOf(bob, hUSD);
 							const bobRewardsBalanceAfter = await liquidatorRewards.earned(bob);
 
@@ -589,7 +589,7 @@ contract('Liquidator', accounts => {
 						});
 					});
 				});
-				describe('with some HAKA in escrow', () => {
+				describe('with some wHAKA in escrow', () => {
 					let escrowBalance;
 					beforeEach(async () => {
 						escrowBalance = await createEscrowEntries(alice, toUnit('1'), 100);
@@ -610,7 +610,7 @@ contract('Liquidator', accounts => {
 						assert.bnEqual(await rewardEscrowV2.balanceOf(alice), escrowBalance);
 						// system debt is the same
 						assert.bnEqual(await tribeone.totalIssuedTribes(hUSD), totalDebt);
-						// debt shares forgiven matching the liquidated HAKA
+						// debt shares forgiven matching the liquidated wHAKA
 						// redeemed = (liquidatedSnx * HAKAPrice / (1 + penalty))
 						// debt is fewer shares (but of higher debt per share), by (total - redeemed / total) more debt per share
 						const liquidatedSnx = snxBalanceBefore.sub(snxBalanceAfter);
@@ -623,7 +623,7 @@ contract('Liquidator', accounts => {
 						);
 					});
 				});
-				describe('with only escrowed HAKA', () => {
+				describe('with only escrowed wHAKA', () => {
 					let escrowBalanceBefore;
 					beforeEach(async () => {
 						await setLiquidHAKABalance(alice, 0);
@@ -635,7 +635,7 @@ contract('Liquidator', accounts => {
 						await updateHAKAPrice('1');
 					});
 					it('should revert with cannot self liquidate', async () => {
-						// should have no liquida HAKA balance, only in escrow
+						// should have no liquida wHAKA balance, only in escrow
 						const snxBalance = await tribeone.balanceOf(alice);
 						const collateralBalance = await tribeone.collateral(alice);
 						const escrowBalanceAfter = await rewardEscrowV2.balanceOf(alice);
@@ -672,7 +672,7 @@ contract('Liquidator', accounts => {
 			});
 			describe('when Alice is undercollateralized', () => {
 				beforeEach(async () => {
-					// wen HAKA 6 dolla
+					// wen wHAKA 6 dolla
 					await updateHAKAPrice('6');
 
 					// Alice issues hUSD $600
@@ -683,7 +683,7 @@ contract('Liquidator', accounts => {
 					await tribeone.transfer(bob, toUnit('8000'), { from: owner });
 					await tribeone.issueMaxTribes({ from: bob });
 
-					// Drop HAKA value to $1 (Collateral worth $800 after)
+					// Drop wHAKA value to $1 (Collateral worth $800 after)
 					await updateHAKAPrice('1');
 				});
 				it('and liquidation Collateral Ratio is 150%', async () => {
@@ -708,7 +708,7 @@ contract('Liquidator', accounts => {
 						assert.isFalse(await liquidator.isLiquidationDeadlinePassed(alice));
 					});
 				});
-				it('if not enough HAKA to cover flag reward flagAccountForLiquidation reverts', async () => {
+				it('if not enough wHAKA to cover flag reward flagAccountForLiquidation reverts', async () => {
 					await setLiquidHAKABalance(alice, toUnit(1));
 					await updateHAKAPrice('6');
 					await tribeone.issueMaxTribes({ from: alice });
@@ -716,7 +716,7 @@ contract('Liquidator', accounts => {
 					// cannot flag the account
 					await assert.revert(
 						liquidator.flagAccountForLiquidation(alice, { from: bob }),
-						'not enough HAKA for rewards'
+						'not enough wHAKA for rewards'
 					);
 				});
 				describe('when Bob flags Alice for liquidation', () => {
@@ -741,7 +741,7 @@ contract('Liquidator', accounts => {
 							deadline: liquidationDeadline,
 						});
 					});
-					describe('when deadline has passed and Alice issuance ratio is fixed as HAKA price increases', () => {
+					describe('when deadline has passed and Alice issuance ratio is fixed as wHAKA price increases', () => {
 						beforeEach(async () => {
 							const delay = await liquidator.liquidationDelay();
 
@@ -804,7 +804,7 @@ contract('Liquidator', accounts => {
 							});
 						});
 
-						it('if not enough HAKA to cover flag reward isLiquidationOpen returns false', async () => {
+						it('if not enough wHAKA to cover flag reward isLiquidationOpen returns false', async () => {
 							await setLiquidHAKABalance(alice, toUnit(1));
 							await updateHAKAPrice('6');
 							await tribeone.issueMaxTribes({ from: alice });
@@ -838,7 +838,7 @@ contract('Liquidator', accounts => {
 							// cannot flag the account
 							await assert.revert(
 								liquidator.flagAccountForLiquidation(alice, { from: bob }),
-								'not enough HAKA for rewards'
+								'not enough wHAKA for rewards'
 							);
 						});
 					});
@@ -860,7 +860,7 @@ contract('Liquidator', accounts => {
 							);
 						});
 					});
-					describe('when the price of HAKA increases', () => {
+					describe('when the price of wHAKA increases', () => {
 						let removeFlagTransaction;
 						beforeEach(async () => {
 							await updateHAKAPrice('6');
@@ -913,7 +913,7 @@ contract('Liquidator', accounts => {
 							it('then Alice still has 600 SDS', async () => {
 								assert.bnEqual(await tribeetixDebtShare.balanceOf(alice), toUnit('600'));
 							});
-							it('then Alice still has 800 HAKA', async () => {
+							it('then Alice still has 800 wHAKA', async () => {
 								assert.bnEqual(await tribeone.collateral(alice), toUnit('800'));
 							});
 						});
@@ -1057,7 +1057,7 @@ contract('Liquidator', accounts => {
 									assert.notEqual(caller, ZERO_ADDRESS);
 								});
 							});
-							describe('given Alice has $600 Debt, $800 worth of HAKA Collateral and c-ratio at 133.33%', () => {
+							describe('given Alice has $600 Debt, $800 worth of wHAKA Collateral and c-ratio at 133.33%', () => {
 								describe('when bob calls liquidateDelinquentAccount on Alice', () => {
 									let txn;
 									let ratio;
@@ -1075,7 +1075,7 @@ contract('Liquidator', accounts => {
 										penalty = toUnit('0.3');
 										await systemSettings.setSnxLiquidationPenalty(penalty, { from: owner });
 
-										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on HAKA liquidations.)
+										// And liquidation penalty is 20%. (This is used only for Collateral, included here to demonstrate it has no effect on wHAKA liquidations.)
 										await systemSettings.setLiquidationPenalty(toUnit('0.2'), {
 											from: owner,
 										});
@@ -1154,7 +1154,7 @@ contract('Liquidator', accounts => {
 									});
 								});
 							});
-							describe('with only escrowed HAKA', () => {
+							describe('with only escrowed wHAKA', () => {
 								let escrowBefore;
 								let flagReward;
 								let liquidateReward;
@@ -1172,7 +1172,7 @@ contract('Liquidator', accounts => {
 										toUnit('0.666666666666666666')
 									); // 150% liquidation ratio
 
-									// set up only escrow, no liquid HAKA
+									// set up only escrow, no liquid wHAKA
 									await setLiquidHAKABalance(alice, 0);
 									escrowBefore = await createEscrowEntries(alice, toUnit('1'), 100);
 
@@ -1243,7 +1243,7 @@ contract('Liquidator', accounts => {
 									const dividend = collateralAfter.sub(earnedAfter);
 									const divisor = debtBefore.sub(viewResult.debtToRemove);
 									const res = toBN(dividend)
-										.mul(toUnit('1.4')) // dividend * price of HAKA ($1.40)
+										.mul(toUnit('1.4')) // dividend * price of wHAKA ($1.40)
 										.div(toBN(divisor));
 									assert.bnClose(res, toUnit('8'), 100); // 800% c-ratio
 
@@ -1280,7 +1280,7 @@ contract('Liquidator', accounts => {
 									]);
 								});
 								it('escrow balance is used for liquidation (full)', async () => {
-									// penalty leaves no HAKA
+									// penalty leaves no wHAKA
 									await updateHAKAPrice('0.1');
 									const totalDebt = await tribeone.totalIssuedTribes(hUSD);
 									const viewResult = await liquidator.liquidationAmounts(alice, false);
@@ -1376,7 +1376,7 @@ contract('Liquidator', accounts => {
 									await liquidator.flagAccountForLiquidation(alice, { from: bob });
 									await fastForward((await liquidator.liquidationDelay()) + 100);
 									await updateHAKAPrice('1');
-									// add some escrow (200 HAKA)
+									// add some escrow (200 wHAKA)
 									// this is done now so that debt amount is determined by previous issueMaxTribes
 									escrowBefore = await createEscrowEntries(alice, toUnit('1'), 200);
 								});
@@ -1412,7 +1412,7 @@ contract('Liquidator', accounts => {
 								});
 								it('if liquid is not enough, escrow is used for liquidation (partial)', async () => {
 									await updateHAKAPrice('0.5');
-									// add 90 more HAKA in escrow (collateral value as with HAKA @ 1, but with twice as much HAKA
+									// add 90 more wHAKA in escrow (collateral value as with wHAKA @ 1, but with twice as much wHAKA
 									escrowBefore = escrowBefore.add(
 										await createEscrowEntries(alice, toUnit('1'), 90)
 									);
@@ -1465,7 +1465,7 @@ contract('Liquidator', accounts => {
 									await liquidator.flagAccountForLiquidation(alice, { from: bob });
 									await fastForward((await liquidator.liquidationDelay()) + 100);
 									await updateHAKAPrice('0.5');
-									// add some escrow (200 HAKA) as one entry
+									// add some escrow (200 wHAKA) as one entry
 									// this is done now so that debt amount is determined by previous issueMaxTribes
 									escrowBefore = await createEscrowEntries(alice, toUnit('200'), 1);
 									numEntries = await rewardEscrowV2.numVestingEntries(alice);
@@ -1501,7 +1501,7 @@ contract('Liquidator', accounts => {
 				});
 			});
 		});
-		describe('Given Alice has HAKA and never issued any debt', () => {
+		describe('Given Alice has wHAKA and never issued any debt', () => {
 			beforeEach(async () => {
 				await tribeone.transfer(alice, toUnit('100'), { from: owner });
 			});
@@ -1531,7 +1531,7 @@ contract('Liquidator', accounts => {
 				await tribeone.transfer(david, toUnit('800'), { from: owner });
 				await tribeone.issueMaxTribes({ from: david });
 
-				// Drop HAKA value to $0.1 (Collateral worth $80)
+				// Drop wHAKA value to $0.1 (Collateral worth $80)
 				await updateHAKAPrice('0.1');
 			});
 			it('then his collateral ratio should be greater than 1 (more debt than collateral)', async () => {
@@ -1542,7 +1542,7 @@ contract('Liquidator', accounts => {
 				davidDebtBefore = await tribeetixDebtShare.balanceOf(david);
 				davidCollateralBefore = await tribeone.collateral(david);
 				const collateralInUSD = await exchangeRates.effectiveValue(
-					HAKA,
+					wHAKA,
 					davidCollateralBefore,
 					hUSD
 				);
@@ -1563,7 +1563,7 @@ contract('Liquidator', accounts => {
 					const liquidationDeadline = await liquidator.getLiquidationDeadlineForAccount(david);
 					await fastForwardAndUpdateRates(liquidationDeadline + 1);
 
-					// Drop HAKA value to $0.1 after update rates resets to default
+					// Drop wHAKA value to $0.1 after update rates resets to default
 					await updateHAKAPrice('0.1');
 
 					// ensure Bob has enough hUSD
@@ -1575,14 +1575,14 @@ contract('Liquidator', accounts => {
 				it('then david is openForLiquidation', async () => {
 					assert.isTrue(await liquidator.isLiquidationOpen(david, false));
 				});
-				describe('when the HAKA rate is stale', () => {
+				describe('when the wHAKA rate is stale', () => {
 					beforeEach(async () => {
 						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 					});
 					it('then liquidate reverts', async () => {
 						await assert.revert(
 							tribeone.liquidateDelinquentAccount(david, { from: bob }),
-							'A tribe or HAKA rate is invalid'
+							'A tribe or wHAKA rate is invalid'
 						);
 					});
 				});

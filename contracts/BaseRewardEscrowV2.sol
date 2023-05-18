@@ -257,7 +257,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     /// access controlled to only Tribeone contract
     /// @param account: account
     /// @param recipient: account to transfer the revoked tokens to
-    /// @param targetAmount: amount of HAKA to revoke, when this amount is reached, no more entries are revoked
+    /// @param targetAmount: amount of wHAKA to revoke, when this amount is reached, no more entries are revoked
     /// @param startIndex: index into accountVestingEntryIDs[account] to start iterating from
     function revokeFrom(
         address account,
@@ -308,7 +308,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     }
 
     /**
-     * @notice Create an escrow entry to lock HAKA for a given duration in seconds
+     * @notice Create an escrow entry to lock wHAKA for a given duration in seconds
      * @dev This call expects that the depositor (msg.sender) has already approved the Reward escrow contract
      to spend the the amount being escrowed.
      */
@@ -319,7 +319,7 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
     ) external {
         require(beneficiary != address(0), "Cannot create escrow with address(0)");
 
-        /* Transfer HAKA from msg.sender */
+        /* Transfer wHAKA from msg.sender */
         require(tribeetixERC20().transferFrom(msg.sender, address(this), deposit), "token transfer failed");
 
         /* Append vesting entry for the beneficiary address */
@@ -331,8 +331,8 @@ contract BaseRewardEscrowV2 is Owned, IRewardEscrowV2, LimitedSetup(8 weeks), Mi
      * @dev A call to this should accompany a previous successful call to tribeone.transfer(rewardEscrow, amount),
      * to ensure that when the funds are withdrawn, there is enough balance.
      * @param account The account to append a new vesting entry to.
-     * @param quantity The quantity of HAKA that will be escrowed.
-     * @param duration The duration that HAKA will be emitted.
+     * @param quantity The quantity of wHAKA that will be escrowed.
+     * @param duration The duration that wHAKA will be emitted.
      */
     function appendVestingEntry(
         address account,

@@ -39,7 +39,7 @@ contract RewardEscrowV2Storage is IRewardEscrowV2Storage, State {
     // this as an int in order to be able to store ZERO_PLACEHOLDER to only cache once
     mapping(address => int) internal _fallbackCounts;
 
-    // account's total escrow HAKA balance (still to vest)
+    // account's total escrow wHAKA balance (still to vest)
     // this as an int in order to be able to store ZERO_PLACEHOLDER to prevent reading stale values
     mapping(address => int) internal _totalEscrowedAccountBalance;
 

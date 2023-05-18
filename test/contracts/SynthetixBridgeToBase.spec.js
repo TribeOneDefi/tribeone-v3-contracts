@@ -32,14 +32,14 @@ contract('TribeoneBridgeToBase (spec tests) @ovm-skip', accounts => {
 			it('withdraw() should fail', async () => {
 				await assert.revert(
 					tribeetixBridgeToBase.withdraw('1', { from: user }),
-					'Not enough transferable HAKA'
+					'Not enough transferable wHAKA'
 				);
 			});
 
 			it('withdrawTo() should fail', async () => {
 				await assert.revert(
 					tribeetixBridgeToBase.withdrawTo(randomAddress, '1', { from: user }),
-					'Not enough transferable HAKA'
+					'Not enough transferable wHAKA'
 				);
 			});
 		});

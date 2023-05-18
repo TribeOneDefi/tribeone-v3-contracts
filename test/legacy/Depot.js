@@ -38,7 +38,7 @@ contract('Depot', async accounts => {
 
 	const [, owner, , fundsWallet, address1, address2, address3] = accounts;
 
-	const [HAKA, ETH] = ['HAKA', 'ETH'].map(toBytes32);
+	const [wHAKA, ETH] = ['wHAKA', 'ETH'].map(toBytes32);
 
 	const approveAndDepositTribes = async (tribesToDeposit, depositor) => {
 		// Approve Transaction
@@ -94,7 +94,7 @@ contract('Depot', async accounts => {
 	beforeEach(async () => {
 		snxRate = toUnit('0.1');
 		ethRate = toUnit('172');
-		await updateAggregatorRates(exchangeRates, null, [HAKA, ETH], [snxRate, ethRate]);
+		await updateAggregatorRates(exchangeRates, null, [wHAKA, ETH], [snxRate, ethRate]);
 	});
 
 	it('should set constructor params on deployment', async () => {
@@ -789,7 +789,7 @@ contract('Depot', async accounts => {
 					);
 				});
 				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
-					await updateAggregatorRates(exchangeRates, null, [HAKA, ETH], ['0.1', '134'].map(toUnit));
+					await updateAggregatorRates(exchangeRates, null, [wHAKA, ETH], ['0.1', '134'].map(toUnit));
 					await assert.revert(
 						depot.exchangeEtherForTribesAtRate(ethRate, payload),
 						'Guaranteed rate would not be received'
@@ -807,7 +807,7 @@ contract('Depot', async accounts => {
 			beforeEach(async () => {
 				const purchaseValueDollars = multiplyDecimal(ethToSend, ethRate);
 				snxToPurchase = divideDecimal(purchaseValueDollars, snxRate);
-				// Send some HAKA to the Depot contract
+				// Send some wHAKA to the Depot contract
 				await tribeone.transfer(depot.address, toUnit('1000000'), {
 					from: owner,
 				});
@@ -821,7 +821,7 @@ contract('Depot', async accounts => {
 					assert.eventEqual(exchangeEvent, 'Exchange', {
 						fromCurrency: 'ETH',
 						fromAmount: ethToSend,
-						toCurrency: 'HAKA',
+						toCurrency: 'wHAKA',
 						toAmount: snxToPurchase,
 					});
 				});
@@ -838,7 +838,7 @@ contract('Depot', async accounts => {
 					);
 				});
 				it('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
-					await updateAggregatorRates(exchangeRates, null, [HAKA, ETH], ['0.1', '134'].map(toUnit));
+					await updateAggregatorRates(exchangeRates, null, [wHAKA, ETH], ['0.1', '134'].map(toUnit));
 					await assert.revert(
 						depot.exchangeEtherForHAKAAtRate(ethRate, snxRate, ethToSendFromPurchaser),
 						'Guaranteed ether rate would not be received'
@@ -861,7 +861,7 @@ contract('Depot', async accounts => {
 				await tribe.transfer(purchaser, purchaserTribeAmount, {
 					from: owner,
 				});
-				// Send some HAKA to the Token Depot contract
+				// Send some wHAKA to the Token Depot contract
 				await tribeone.transfer(depot.address, depotHAKAAmount, {
 					from: owner,
 				});
@@ -882,7 +882,7 @@ contract('Depot', async accounts => {
 					assert.eventEqual(exchangeEvent, 'Exchange', {
 						fromCurrency: 'hUSD',
 						fromAmount: tribesToSend,
-						toCurrency: 'HAKA',
+						toCurrency: 'wHAKA',
 						toAmount: snxToPurchase,
 					});
 				});
@@ -901,7 +901,7 @@ contract('Depot', async accounts => {
 
 				// skipped because depot is deactivated on live networks and will be removed from the repo shortly
 				it.skip('when the purchaser supplies a rate and the rate is changed in by the oracle', async () => {
-					await updateAggregatorRates(exchangeRates, null, [HAKA], ['0.05'].map(toUnit));
+					await updateAggregatorRates(exchangeRates, null, [wHAKA], ['0.05'].map(toUnit));
 					await assert.revert(
 						depot.exchangeTribesForHAKAAtRate(tribesToSend, snxRate, fromPurchaser),
 						'Guaranteed rate would not be received'
@@ -1110,11 +1110,11 @@ contract('Depot', async accounts => {
 		});
 	});
 
-	describe('Ensure user can exchange ETH for HAKA', async () => {
+	describe('Ensure user can exchange ETH for wHAKA', async () => {
 		const purchaser = address1;
 
 		beforeEach(async () => {
-			// Send some HAKA to the Depot contract
+			// Send some wHAKA to the Depot contract
 			await tribeone.transfer(depot.address, toUnit('1000000'), {
 				from: owner,
 			});
@@ -1147,11 +1147,11 @@ contract('Depot', async accounts => {
 			});
 		});
 
-		it('ensure user get the correct amount of HAKA after sending ETH', async () => {
+		it('ensure user get the correct amount of wHAKA after sending ETH', async () => {
 			const ethToSend = toUnit('10');
 
 			const purchaserHAKAStartBalance = await tribeone.balanceOf(purchaser);
-			// Purchaser should not have HAKA yet
+			// Purchaser should not have wHAKA yet
 			assert.equal(purchaserHAKAStartBalance, 0);
 
 			// Purchaser sends ETH
@@ -1165,7 +1165,7 @@ contract('Depot', async accounts => {
 
 			const purchaserHAKAEndBalance = await tribeone.balanceOf(purchaser);
 
-			// Purchaser HAKA balance should be equal to the purchase value we calculated above
+			// Purchaser wHAKA balance should be equal to the purchase value we calculated above
 			assert.bnEqual(purchaserHAKAEndBalance, purchaseValueInTribeone);
 		});
 	});
@@ -1181,7 +1181,7 @@ contract('Depot', async accounts => {
 			await tribe.transfer(purchaser, purchaserTribeAmount, {
 				from: owner,
 			});
-			// We need to send some HAKA to the Token Depot contract
+			// We need to send some wHAKA to the Token Depot contract
 			await tribeone.transfer(depot.address, depotHAKAAmount, {
 				from: owner,
 			});
@@ -1219,9 +1219,9 @@ contract('Depot', async accounts => {
 			});
 		});
 
-		it('ensure user gets the correct amount of HAKA after sending 10 hUSD', async () => {
+		it('ensure user gets the correct amount of wHAKA after sending 10 hUSD', async () => {
 			const purchaserHAKAStartBalance = await tribeone.balanceOf(purchaser);
-			// Purchaser should not have HAKA yet
+			// Purchaser should not have wHAKA yet
 			assert.equal(purchaserHAKAStartBalance, 0);
 
 			// Purchaser sends hUSD
@@ -1233,7 +1233,7 @@ contract('Depot', async accounts => {
 
 			const purchaserHAKAEndBalance = await tribeone.balanceOf(purchaser);
 
-			// Purchaser HAKA balance should be equal to the purchase value we calculated above
+			// Purchaser wHAKA balance should be equal to the purchase value we calculated above
 			assert.bnEqual(purchaserHAKAEndBalance, purchaseValueInTribeone);
 
 			// assert the exchange event
@@ -1242,7 +1242,7 @@ contract('Depot', async accounts => {
 			assert.eventEqual(exchangeEvent, 'Exchange', {
 				fromCurrency: 'hUSD',
 				fromAmount: tribesToSend,
-				toCurrency: 'HAKA',
+				toCurrency: 'wHAKA',
 				toAmount: purchaseValueInTribeone,
 			});
 		});
@@ -1252,7 +1252,7 @@ contract('Depot', async accounts => {
 		const snxAmount = toUnit('1000000');
 
 		beforeEach(async () => {
-			// Send some HAKA to the Depot contract
+			// Send some wHAKA to the Depot contract
 			await tribeone.transfer(depot.address, snxAmount, {
 				from: owner,
 			});

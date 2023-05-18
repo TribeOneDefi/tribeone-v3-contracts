@@ -50,8 +50,8 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		owner = ctx.l1.users.owner;
 	});
 
-	before('ensure the user has enough HAKA', async () => {
-		await ensureBalance({ ctx: ctx.l1, symbol: 'HAKA', user, balance: HAKAAmount });
+	before('ensure the user has enough wHAKA', async () => {
+		await ensureBalance({ ctx: ctx.l1, symbol: 'wHAKA', user, balance: HAKAAmount });
 	});
 
 	before('approve reward escrow if needed', async () => {
@@ -74,7 +74,7 @@ describe('migrateDebt() integration tests (L1, L2)', () => {
 		});
 	});
 
-	before('stake some HAKA', async () => {
+	before('stake some wHAKA', async () => {
 		Tribeone = Tribeone.connect(user);
 
 		const tx = await Tribeone.issueTribes(amountToIssue);

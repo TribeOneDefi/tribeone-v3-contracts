@@ -45,7 +45,7 @@ contract('FeePool', async accounts => {
 
 	// Updates rates with defaults so they're not stale.
 	const updateRatesWithDefaults = async () => {
-		await updateAggregatorRates(exchangeRates, null, [sAUD, HAKA], ['0.5', '0.1'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [sAUD, wHAKA], ['0.5', '0.1'].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 	};
 
@@ -67,7 +67,7 @@ contract('FeePool', async accounts => {
 	};
 
 	// CURRENCIES
-	const [hUSD, sAUD, HAKA] = ['hUSD', 'sAUD', 'HAKA'].map(toBytes32);
+	const [hUSD, sAUD, wHAKA] = ['hUSD', 'sAUD', 'wHAKA'].map(toBytes32);
 
 	let feePool,
 		debtCache,
@@ -1050,7 +1050,7 @@ contract('FeePool', async accounts => {
 						});
 					});
 				});
-				describe(`when HAKA is stale`, () => {
+				describe(`when wHAKA is stale`, () => {
 					beforeEach(async () => {
 						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 						await debtCache.takeDebtSnapshot();
@@ -1059,7 +1059,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimFees', async () => {
 						await assert.revert(
 							feePool.claimFees({ from: owner }),
-							'A tribe or HAKA rate is invalid'
+							'A tribe or wHAKA rate is invalid'
 						);
 					});
 				});
@@ -1072,7 +1072,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimFees', async () => {
 						await assert.revert(
 							feePool.claimFees({ from: owner }),
-							'A tribe or HAKA rate is invalid'
+							'A tribe or wHAKA rate is invalid'
 						);
 					});
 				});
@@ -1363,8 +1363,8 @@ contract('FeePool', async accounts => {
 				await tribeone.issueMaxTribes({ from: owner });
 
 				// Increase the price so we start well and truly within our 20% ratio.
-				const newRate = (await exchangeRates.rateForCurrency(HAKA)).add(web3.utils.toBN('1'));
-				await updateAggregatorRates(exchangeRates, null, [HAKA], [newRate]);
+				const newRate = (await exchangeRates.rateForCurrency(wHAKA)).add(web3.utils.toBN('1'));
+				await updateAggregatorRates(exchangeRates, null, [wHAKA], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				assert.equal(await feePool.isFeesClaimable(owner), true);
@@ -1375,10 +1375,10 @@ contract('FeePool', async accounts => {
 				await tribeone.issueMaxTribes({ from: owner });
 
 				// Increase the price so we start well and truly within our 20% ratio.
-				const newRate = (await exchangeRates.rateForCurrency(HAKA)).add(
+				const newRate = (await exchangeRates.rateForCurrency(wHAKA)).add(
 					step.mul(web3.utils.toBN('1'))
 				);
-				await updateAggregatorRates(exchangeRates, null, [HAKA], [newRate]);
+				await updateAggregatorRates(exchangeRates, null, [wHAKA], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				const issuanceRatio = fromUnit(await feePool.issuanceRatio());
@@ -1387,7 +1387,7 @@ contract('FeePool', async accounts => {
 				const threshold = Number(issuanceRatio) * (1 + Number(penaltyThreshold));
 				// Start from the current price of tribeone and slowly decrease the price until
 				// we hit almost zero. Assert the correct penalty at each point.
-				while ((await exchangeRates.rateForCurrency(HAKA)).gt(step.mul(web3.utils.toBN('2')))) {
+				while ((await exchangeRates.rateForCurrency(wHAKA)).gt(step.mul(web3.utils.toBN('2')))) {
 					const ratio = await tribeone.collateralisationRatio(owner);
 
 					if (ratio.lte(toUnit(threshold))) {
@@ -1399,8 +1399,8 @@ contract('FeePool', async accounts => {
 					}
 
 					// Bump the rate down.
-					const newRate = (await exchangeRates.rateForCurrency(HAKA)).sub(step);
-					await updateAggregatorRates(exchangeRates, null, [HAKA], [newRate]);
+					const newRate = (await exchangeRates.rateForCurrency(wHAKA)).sub(step);
+					await updateAggregatorRates(exchangeRates, null, [wHAKA], [newRate]);
 					await debtCache.takeDebtSnapshot();
 				}
 			});
@@ -1428,11 +1428,11 @@ contract('FeePool', async accounts => {
 				await closeFeePeriod();
 				assert.bnClose(await getFeesAvailable(account1), fee.div(web3.utils.toBN('2')));
 
-				// But if the price of HAKA decreases by 15%, we will lose all the fees.
-				const currentRate = await exchangeRates.rateForCurrency(HAKA);
+				// But if the price of wHAKA decreases by 15%, we will lose all the fees.
+				const currentRate = await exchangeRates.rateForCurrency(wHAKA);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
-				await updateAggregatorRates(exchangeRates, null, [HAKA], [newRate]);
+				await updateAggregatorRates(exchangeRates, null, [wHAKA], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
@@ -1468,11 +1468,11 @@ contract('FeePool', async accounts => {
 				await closeFeePeriod();
 				assert.bnClose(await getFeesAvailable(account1), fee.div(web3.utils.toBN('2')));
 
-				// But if the price of HAKA decreases by 15%, we will lose all the fees.
-				const currentRate = await exchangeRates.rateForCurrency(HAKA);
+				// But if the price of wHAKA decreases by 15%, we will lose all the fees.
+				const currentRate = await exchangeRates.rateForCurrency(wHAKA);
 				const newRate = currentRate.sub(multiplyDecimal(currentRate, toUnit('0.15')));
 
-				await updateAggregatorRates(exchangeRates, null, [HAKA], [newRate]);
+				await updateAggregatorRates(exchangeRates, null, [wHAKA], [newRate]);
 				await debtCache.takeDebtSnapshot();
 
 				// fees available is unaffected but not claimable
@@ -1555,7 +1555,7 @@ contract('FeePool', async accounts => {
 						});
 					});
 				});
-				describe(`when HAKA is stale`, () => {
+				describe(`when wHAKA is stale`, () => {
 					beforeEach(async () => {
 						await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 						await debtCache.takeDebtSnapshot();
@@ -1564,7 +1564,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimOnBehalf', async () => {
 						await assert.revert(
 							feePool.claimOnBehalf(authoriser, { from: delegate }),
-							'A tribe or HAKA rate is invalid'
+							'A tribe or wHAKA rate is invalid'
 						);
 					});
 				});
@@ -1577,7 +1577,7 @@ contract('FeePool', async accounts => {
 					it('reverts on claimOnBehalf', async () => {
 						await assert.revert(
 							feePool.claimOnBehalf(authoriser, { from: delegate }),
-							'A tribe or HAKA rate is invalid'
+							'A tribe or wHAKA rate is invalid'
 						);
 					});
 				});

@@ -35,7 +35,7 @@ contract PublicEST is ExternStateToken {
     }
 
     // SIP-252: allow to call revokeFrom on rewardsEscrow
-    // this is needed here because HAKA is both the required caller for this method, and needs to be an actual ERC20,
+    // this is needed here because wHAKA is both the required caller for this method, and needs to be an actual ERC20,
     // so using an EOA instead of it doesn't work
     function revokeFrom(
         address rewardEscrowV2,

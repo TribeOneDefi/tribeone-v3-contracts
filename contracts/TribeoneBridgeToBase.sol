@@ -52,7 +52,7 @@ contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM
     }
 
     function _initiateWithdraw(address to, uint amount) private {
-        require(tribeone().transferableTribeone(msg.sender) >= amount, "Not enough transferable HAKA");
+        require(tribeone().transferableTribeone(msg.sender) >= amount, "Not enough transferable wHAKA");
 
         // instruct L2 Tribeone to burn this supply
         tribeone().burnSecondary(msg.sender, amount);
@@ -79,7 +79,7 @@ contract TribeoneBridgeToBase is BaseTribeoneBridge, ITribeoneBridgeToBase, iOVM
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external onlyCounterpart {
         IRewardEscrowV2 rewardEscrow = rewardEscrowV2();
-        // First, mint the escrowed HAKA that are being migrated
+        // First, mint the escrowed wHAKA that are being migrated
         tribeone().mintSecondary(address(rewardEscrow), escrowedAmount);
         rewardEscrow.importVestingEntries(account, escrowedAmount, vestingEntries);
 

@@ -21,9 +21,9 @@ const { toBytes32 } = require('../..');
 contract('TradingRewards', accounts => {
 	const [, owner, account1] = accounts;
 
-	const tribes = ['hUSD', 'hETH', 'hBTC', 'HAKA'];
+	const tribes = ['hUSD', 'hETH', 'hBTC', 'wHAKA'];
 	const tribeKeys = tribes.map(toBytes32);
-	const [hUSD, hETH, hBTC, HAKA] = tribeKeys;
+	const [hUSD, hETH, hBTC, wHAKA] = tribeKeys;
 
 	let tribeone, exchanger, exchangeRates, rewards, resolver, systemSettings;
 	let hUSDContract, hETHContract, hBTCContract;
@@ -37,7 +37,7 @@ contract('TradingRewards', accounts => {
 	const rates = {
 		[hETH]: toUnit('100'),
 		[hBTC]: toUnit('12000'),
-		[HAKA]: toUnit('0.2'),
+		[wHAKA]: toUnit('0.2'),
 	};
 
 	let feesPaidUSD;
@@ -109,7 +109,7 @@ contract('TradingRewards', accounts => {
 		});
 
 		before('set exchange rates', async () => {
-			await updateAggregatorRates(exchangeRates, null, [hETH, hBTC, HAKA], Object.values(rates));
+			await updateAggregatorRates(exchangeRates, null, [hETH, hBTC, wHAKA], Object.values(rates));
 
 			await setExchangeFeeRateForTribes({
 				owner,

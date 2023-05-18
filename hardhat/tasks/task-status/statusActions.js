@@ -330,7 +330,7 @@ const actions = {
 		} else {
 			currencyKeys = [
 				...(await Issuer.availableCurrencyKeys()),
-				ethers.utils.formatBytes32String('HAKA'),
+				ethers.utils.formatBytes32String('wHAKA'),
 			];
 		}
 

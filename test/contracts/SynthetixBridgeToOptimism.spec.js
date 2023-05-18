@@ -276,7 +276,7 @@ contract('TribeoneBridgeToOptimism (spec tests) @ovm-skip', accounts => {
 		});
 
 		describe('forwardTokensToEscrow', () => {
-			describe('when some HAKA tokens are accidentally transferred to the bridge', () => {
+			describe('when some wHAKA tokens are accidentally transferred to the bridge', () => {
 				const amount = toBN('999');
 				let initialAmount;
 				before(async () => {

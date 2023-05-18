@@ -20,7 +20,7 @@ const { toBytes32 } = require('../..');
 const { toBN } = require('web3-utils');
 
 contract('EtherWrapper', async accounts => {
-	const tribes = ['hUSD', 'hETH', 'ETH', 'HAKA'];
+	const tribes = ['hUSD', 'hETH', 'ETH', 'wHAKA'];
 	const [hETH, ETH] = ['hETH', 'ETH'].map(toBytes32);
 
 	const ONE = toBN('1');

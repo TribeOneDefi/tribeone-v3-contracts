@@ -29,10 +29,10 @@ contract SupplySchedule is Owned, ISupplySchedule {
 
     uint public constant INFLATION_START_DATE = 1551830400; // 2019-03-06T00:00:00+00:00
 
-    // The number of HAKA rewarded to the caller of Tribeone.mint()
+    // The number of wHAKA rewarded to the caller of Tribeone.mint()
     uint public minterReward = 100 * 1e18;
 
-    // The number of HAKA minted per week
+    // The number of wHAKA minted per week
     uint public inflationAmount;
 
     uint public maxInflationAmount = 3e6 * 1e18; // max inflation amount 3,000,000
@@ -40,7 +40,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // Address of the TribeoneProxy for the onlyTribeone modifier
     address payable public tribeetixProxy;
 
-    // Max HAKA rewards for minter
+    // Max wHAKA rewards for minter
     uint public constant MAX_MINTER_REWARD = 200 * 1e18;
 
     // How long each inflation period is before mint can be called
@@ -60,7 +60,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // ========== VIEWS ==========
 
     /**
-     * @return The amount of HAKA mintable for the inflationary supply
+     * @return The amount of wHAKA mintable for the inflationary supply
      */
     function mintableSupply() external view returns (uint) {
         uint totalAmount;
@@ -103,8 +103,8 @@ contract SupplySchedule is Owned, ISupplySchedule {
      * @notice Record the mint event from Tribeone by incrementing the inflation
      * week counter for the number of weeks minted (probabaly always 1)
      * and store the time of the event.
-     * @param supplyMinted the amount of HAKA the total supply was inflated by.
-     * @return minterReward the amount of HAKA reward for caller
+     * @param supplyMinted the amount of wHAKA the total supply was inflated by.
+     * @return minterReward the amount of wHAKA reward for caller
      * */
     function recordMintEvent(uint supplyMinted) external onlyTribeone returns (uint) {
         uint numberOfWeeksIssued = weeksSinceLastIssuance();
@@ -123,11 +123,11 @@ contract SupplySchedule is Owned, ISupplySchedule {
     // ========== SETTERS ========== */
 
     /**
-     * @notice Sets the reward amount of HAKA for the caller of the public
+     * @notice Sets the reward amount of wHAKA for the caller of the public
      * function Tribeone.mint().
      * This incentivises anyone to mint the inflationary supply and the mintr
      * Reward will be deducted from the inflationary supply and sent to the caller.
-     * @param amount the amount of HAKA to reward the minter.
+     * @param amount the amount of wHAKA to reward the minter.
      * */
     function setMinterReward(uint amount) external onlyOwner {
         require(amount <= MAX_MINTER_REWARD, "Reward cannot exceed max minter reward");
@@ -182,7 +182,7 @@ contract SupplySchedule is Owned, ISupplySchedule {
     event SupplyMinted(uint supplyMinted, uint numberOfWeeksIssued, uint lastMintEvent, uint timestamp);
 
     /**
-     * @notice Emitted when the HAKA minter reward amount is updated
+     * @notice Emitted when the wHAKA minter reward amount is updated
      * */
     event MinterRewardUpdated(uint newRewardAmount);
 

@@ -168,7 +168,7 @@ contract('TribeoneBridgeToBase (unit tests)', accounts => {
 				describe('failure modes', () => {
 					it('does not work when the user has less trasferable snx than the withdrawal amount', async () => {
 						mintableTribeone.transferableTribeone.returns(() => '0');
-						await assert.revert(instance.withdraw('1'), 'Not enough transferable HAKA');
+						await assert.revert(instance.withdraw('1'), 'Not enough transferable wHAKA');
 					});
 					it('does not work when initiation has been suspended', async () => {
 						await instance.suspendInitiation({ from: owner });
@@ -185,7 +185,7 @@ contract('TribeoneBridgeToBase (unit tests)', accounts => {
 						withdrawalTx = await instance.withdraw(amount, { from: user1 });
 					});
 
-					it('then HAKA is burned via mintableSyntetix.burnSecondary', async () => {
+					it('then wHAKA is burned via mintableSyntetix.burnSecondary', async () => {
 						expect(mintableTribeone.burnSecondary).to.have.length(0);
 						mintableTribeone.burnSecondary.returnsAtCall(0, user1);
 						mintableTribeone.burnSecondary.returnsAtCall(1, amount);
@@ -219,7 +219,7 @@ contract('TribeoneBridgeToBase (unit tests)', accounts => {
 						mintableTribeone.transferableTribeone.returns(() => '0');
 						await assert.revert(
 							instance.withdrawTo(randomAddress, '1'),
-							'Not enough transferable HAKA'
+							'Not enough transferable wHAKA'
 						);
 					});
 					it('does not work when initiation has been suspended', async () => {
@@ -237,7 +237,7 @@ contract('TribeoneBridgeToBase (unit tests)', accounts => {
 						withdrawalTx = await instance.withdrawTo(randomAddress, amount, { from: user1 });
 					});
 
-					it('then HAKA is burned via mintableSyntetix.burnSecondary to the specified address', async () => {
+					it('then wHAKA is burned via mintableSyntetix.burnSecondary to the specified address', async () => {
 						expect(mintableTribeone.burnSecondary).to.have.length(0);
 						mintableTribeone.burnSecondary.returnsAtCall(0, user1);
 						mintableTribeone.burnSecondary.returnsAtCall(1, amount);
@@ -305,7 +305,7 @@ contract('TribeoneBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('then HAKA is minted via MintableTribeone.mintSecondary', async () => {
+					it('then wHAKA is minted via MintableTribeone.mintSecondary', async () => {
 						expect(mintableTribeone.mintSecondary).to.have.length(0);
 						mintableTribeone.mintSecondary.returnsAtCall(0, user1);
 						mintableTribeone.mintSecondary.returnsAtCall(1, finalizeDepositAmount);
@@ -356,7 +356,7 @@ contract('TribeoneBridgeToBase (unit tests)', accounts => {
 						});
 					});
 
-					it('then HAKA is minted via MintbaleTribeone.mintSecondary', async () => {
+					it('then wHAKA is minted via MintbaleTribeone.mintSecondary', async () => {
 						expect(mintableTribeone.mintSecondaryRewards).to.have.length(0);
 						mintableTribeone.mintSecondaryRewards.returnsAtCall(0, finalizeRewardDepositAmount);
 					});
@@ -399,7 +399,7 @@ contract('TribeoneBridgeToBase (unit tests)', accounts => {
 						assert.eventEqual(finalizeTx, 'FeePeriodCloseFinalized', ['1', '2']);
 					});
 
-					it('then HAKA is minted via MintableTribeone.mintSecondary', async () => {
+					it('then wHAKA is minted via MintableTribeone.mintSecondary', async () => {
 						expect(feePool.closeSecondary).to.have.length(0);
 						feePool.closeSecondary.returnsAtCall(0, '1');
 						feePool.closeSecondary.returnsAtCall(1, '2');

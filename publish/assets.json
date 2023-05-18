@@ -5,8 +5,8 @@
 		"sign": "$",
 		"description": "US Dollars"
 	},
-	"HAKA": {
-		"asset": "HAKA",
+	"wHAKA": {
+		"asset": "wHAKA",
 		"category": "crypto",
 		"sign": "",
 		"description": "Tribeone Network Token"

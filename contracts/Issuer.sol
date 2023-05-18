@@ -68,7 +68,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== ENCODED NAMES ========== */
 
     bytes32 internal constant hUSD = "hUSD";
-    bytes32 internal constant HAKA = "HAKA";
+    bytes32 internal constant wHAKA = "wHAKA";
 
     // Flexible storage names
 
@@ -245,14 +245,14 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         }
 
         if (withHAKA) {
-            currencyKeys[availableTribes.length] = HAKA;
+            currencyKeys[availableTribes.length] = wHAKA;
         }
 
         return currencyKeys;
     }
 
     // Returns the total value of the debt pool in currency specified by `currencyKey`.
-    // To return only the HAKA-backed debt, set `excludeCollateral` to true.
+    // To return only the wHAKA-backed debt, set `excludeCollateral` to true.
     function _totalIssuedTribes(bytes32 currencyKey, bool excludeCollateral)
         internal
         view
@@ -341,8 +341,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     function _maxIssuableTribes(address _issuer) internal view returns (uint, bool) {
-        // What is the value of their HAKA balance in hUSD
-        (uint snxRate, bool isInvalid) = _rateAndInvalid(HAKA);
+        // What is the value of their wHAKA balance in hUSD
+        (uint snxRate, bool isInvalid) = _rateAndInvalid(wHAKA);
         uint destinationValue = _snxToUSD(_collateral(_issuer), snxRate);
 
         // They're allowed to issue up to issuanceRatio of that value
@@ -352,9 +352,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function _collateralisationRatio(address _issuer) internal view returns (uint, bool) {
         uint totalOwnedTribeone = _collateral(_issuer);
 
-        (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(_issuer), HAKA);
+        (uint debtBalance, , bool anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(_issuer), wHAKA);
 
-        // it's more gas intensive to put this check here if they have 0 HAKA, but it complies with the interface
+        // it's more gas intensive to put this check here if they have 0 wHAKA, but it complies with the interface
         if (totalOwnedTribeone == 0) return (0, anyRateIsInvalid);
 
         return (debtBalance.divideDecimalRound(totalOwnedTribeone), anyRateIsInvalid);
@@ -440,19 +440,19 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         view
         returns (uint transferable, bool anyRateIsInvalid)
     {
-        // How many HAKA do they have, excluding escrow?
+        // How many wHAKA do they have, excluding escrow?
         // Note: We're excluding escrow here because we're interested in their transferable amount
-        // and escrowed HAKA are not transferable.
+        // and escrowed wHAKA are not transferable.
 
         // How many of those will be locked by the amount they've issued?
-        // Assuming issuance ratio is 20%, then issuing 20 HAKA of value would require
-        // 100 HAKA to be locked in their wallet to maintain their collateralisation ratio
+        // Assuming issuance ratio is 20%, then issuing 20 wHAKA of value would require
+        // 100 wHAKA to be locked in their wallet to maintain their collateralisation ratio
         // The locked tribeone value can exceed their balance.
         uint debtBalance;
-        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(account), HAKA);
+        (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(account), wHAKA);
         uint lockedTribeoneValue = debtBalance.divideDecimalRound(getIssuanceRatio());
 
-        // If we exceed the balance, no HAKA are transferable, otherwise the difference is.
+        // If we exceed the balance, no wHAKA are transferable, otherwise the difference is.
         if (lockedTribeoneValue >= balance) {
             transferable = 0;
         } else {
@@ -474,9 +474,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /// @notice Provide the results that would be returned by the mutative liquidateAccount() method (that's reserved to Tribeone)
     /// @param account The account to be liquidated
     /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
-    /// @return totalRedeemed the total amount of collateral (HAKA) to redeem (liquid and escrow)
+    /// @return totalRedeemed the total amount of collateral (wHAKA) to redeem (liquid and escrow)
     /// @return debtToRemove the amount of debt (hUSD) to burn in order to fix the account's c-ratio
-    /// @return escrowToLiquidate the amount of escrow HAKA that will be revoked during liquidation
+    /// @return escrowToLiquidate the amount of escrow wHAKA that will be revoked during liquidation
     /// @return initialDebtBalance the amount of initial (hUSD) debt the account has
     function liquidationAmounts(address account, bool isSelfLiquidation)
         external
@@ -635,7 +635,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
 
     /**
      * SIP-237: Debt Migration
-     * Function used for the one-way migration of all debt and liquid + escrowed HAKA from L1 -> L2
+     * Function used for the one-way migration of all debt and liquid + escrowed wHAKA from L1 -> L2
      * @param account The address of the account that is being migrated
      * @param amount The amount of debt shares moving across layers
      */
@@ -723,9 +723,9 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     ///     account wasn't flagged etc)
     /// @param account The account to be liquidated
     /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
-    /// @return totalRedeemed the total amount of collateral (HAKA) to redeem (liquid and escrow)
+    /// @return totalRedeemed the total amount of collateral (wHAKA) to redeem (liquid and escrow)
     /// @return debtRemoved the amount of debt (hUSD) to burn in order to fix the account's c-ratio
-    /// @return escrowToLiquidate the amount of escrow HAKA that will be revoked during liquidation
+    /// @return escrowToLiquidate the amount of escrow wHAKA that will be revoked during liquidation
     function liquidateAccount(address account, bool isSelfLiquidation)
         external
         onlyTribeone
@@ -768,8 +768,8 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         bool anyRateIsInvalid;
         (debtBalance, , anyRateIsInvalid) = _debtBalanceOfAndTotalDebt(_debtShareBalanceOf(account), hUSD);
 
-        // Get the HAKA rate
-        (uint snxRate, bool snxRateInvalid) = _rateAndInvalid(HAKA);
+        // Get the wHAKA rate
+        (uint snxRate, bool snxRateInvalid) = _rateAndInvalid(wHAKA);
         _requireRatesNotInvalid(anyRateIsInvalid || snxRateInvalid);
 
         uint penalty;
@@ -777,7 +777,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             // Get self liquidation penalty
             penalty = getSelfLiquidationPenalty();
 
-            // Calculate the amount of debt to remove and HAKA to redeem for a self liquidation
+            // Calculate the amount of debt to remove and wHAKA to redeem for a self liquidation
             debtToRemove = liquidator().calculateAmountToFixCollateral(
                 debtBalance,
                 _snxToUSD(_collateral(account), snxRate),
@@ -802,10 +802,10 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
             penalty = getSnxLiquidationPenalty();
             uint rewardsSum = getLiquidateReward().add(getFlagReward());
 
-            // Get the total USD value of their HAKA collateral (including escrow and rewards minus the flag and liquidate rewards)
+            // Get the total USD value of their wHAKA collateral (including escrow and rewards minus the flag and liquidate rewards)
             uint collateralForAccountUSD = _snxToUSD(_collateral(account).sub(rewardsSum), snxRate);
 
-            // Calculate the amount of debt to remove and the hUSD value of the HAKA required to liquidate.
+            // Calculate the amount of debt to remove and the hUSD value of the wHAKA required to liquidate.
             debtToRemove = liquidator().calculateAmountToFixCollateral(debtBalance, collateralForAccountUSD, penalty);
             uint redeemTarget = _usdToSnx(debtToRemove, snxRate).multiplyDecimal(SafeDecimalMath.unit().add(penalty));
 
@@ -824,7 +824,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     }
 
     // SIP-252
-    // calculates the amount of HAKA that can be force liquidated (redeemed)
+    // calculates the amount of wHAKA that can be force liquidated (redeemed)
     // for the various cases of transferrable & escrowed collateral
     function _redeemableCollateralForTarget(
         address account,
@@ -832,7 +832,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
         uint rewardsSum
     ) internal view returns (uint totalRedeemed, uint escrowToLiquidate) {
         // The balanceOf here can be considered "transferable" since it's not escrowed,
-        // and it is the only HAKA that can potentially be transfered if unstaked.
+        // and it is the only wHAKA that can potentially be transfered if unstaked.
         uint transferable = _snxBalanceOf(account);
         if (redeemTarget.add(rewardsSum) <= transferable) {
             // transferable is enough
@@ -862,7 +862,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     /* ========== INTERNAL FUNCTIONS ========== */
 
     function _requireRatesNotInvalid(bool anyRateIsInvalid) internal pure {
-        require(!anyRateIsInvalid, "A tribe or HAKA rate is invalid");
+        require(!anyRateIsInvalid, "A tribe or wHAKA rate is invalid");
     }
 
     function _requireCanIssueOnBehalf(address issueForAddress, address from) internal view {
@@ -1019,7 +1019,7 @@ contract Issuer is Owned, MixinSystemSettings, IIssuer {
     function _verifyCircuitBreakers() internal returns (bool) {
         address debtRatioAggregator = requireAndGetAddress(CONTRACT_EXT_AGGREGATOR_DEBT_RATIO);
         (, int256 rawRatio, , , ) = AggregatorV2V3Interface(debtRatioAggregator).latestRoundData();
-        (, bool broken, ) = exchangeRates().rateWithSafetyChecks(HAKA);
+        (, bool broken, ) = exchangeRates().rateWithSafetyChecks(wHAKA);
 
         return circuitBreaker().probeCircuitBreaker(debtRatioAggregator, uint(rawRatio)) || broken;
     }

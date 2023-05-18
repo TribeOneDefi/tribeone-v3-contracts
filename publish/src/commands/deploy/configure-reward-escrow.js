@@ -35,7 +35,7 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 	// });
 
 	// // set frozen address entry for migrating balances
-	// // this breaks creating entries (since HAKA cannot be transferred)
+	// // this breaks creating entries (since wHAKA cannot be transferred)
 	// // note that FeePool will still be able to create entries on the old contract up to the point
 	// // its resolver cache is rebuilt (if this is not done atomcally in a migration contract)
 	// await runStep({
@@ -49,7 +49,7 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 	// 	comment: 'Ensure that RewardEscrowV2Frozen is in the address resolver',
 	// });
 
-	// // move HAKA balances if needed
+	// // move wHAKA balances if needed
 	// // this breaks vesting
 	// const migratableBalance = await Tribeone.balanceOf(frozenOrPreviousEscrow.address);
 	// if (migratableBalance.gt(0)) {
@@ -57,11 +57,11 @@ module.exports = async ({ addressOf, deployer, runStep }) => {
 	// 		contract: 'Tribeone',
 	// 		target: Tribeone,
 	// 		write: 'migrateEscrowContractBalance',
-	// 		comment: 'Ensure that old escrow HAKA balance is migrated to new contract',
+	// 		comment: 'Ensure that old escrow wHAKA balance is migrated to new contract',
 	// 	});
 	// } else {
 	// 	console.log(
-	// 		gray('Skipping Tribeone.migrateEscrowContractBalance as frozen contract has no HAKA balance.')
+	// 		gray('Skipping Tribeone.migrateEscrowContractBalance as frozen contract has no wHAKA balance.')
 	// 	);
 	// }
 

@@ -19,12 +19,12 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     using SafeMath for uint;
     using SafeDecimalMath for uint;
 
-    bytes32 internal constant HAKA = "HAKA";
+    bytes32 internal constant wHAKA = "wHAKA";
     bytes32 internal constant ETH = "ETH";
 
     /* ========== STATE VARIABLES ========== */
 
-    // Address where the ether and Tribes raised for selling HAKA is transfered to
+    // Address where the ether and Tribes raised for selling wHAKA is transfered to
     // Any ether raised for selling Tribes gets sent back to whoever deposited the Tribes,
     // and doesn't have anything to do with this address.
     address payable public fundsWallet;
@@ -272,38 +272,38 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     }
 
     function _exchangeEtherForHAKA() internal returns (uint) {
-        // How many HAKA are they going to be receiving?
+        // How many wHAKA are they going to be receiving?
         uint tribeetixToSend = tribeetixReceivedForEther(msg.value);
 
         // Store the ETH in our funds wallet
         fundsWallet.transfer(msg.value);
 
-        // And send them the HAKA.
+        // And send them the wHAKA.
         tribeone().transfer(msg.sender, tribeetixToSend);
 
-        emit Exchange("ETH", msg.value, "HAKA", tribeetixToSend);
+        emit Exchange("ETH", msg.value, "wHAKA", tribeetixToSend);
 
         return tribeetixToSend;
     }
 
     /**
-     * @notice Exchange ETH to HAKA.
+     * @notice Exchange ETH to wHAKA.
      */
     function exchangeEtherForHAKA()
         external
         payable
-        rateNotInvalid(HAKA)
+        rateNotInvalid(wHAKA)
         rateNotInvalid(ETH)
         notPaused
         returns (
-            uint // Returns the number of HAKA received
+            uint // Returns the number of wHAKA received
         )
     {
         return _exchangeEtherForHAKA();
     }
 
     /**
-     * @notice Exchange ETH to HAKA while insisting on a particular set of rates. This allows a user to
+     * @notice Exchange ETH to wHAKA while insisting on a particular set of rates. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rates.
      * @param guaranteedEtherRate The ether exchange rate which must be honored or the call will revert.
      * @param guaranteedTribeoneRate The tribeone exchange rate which must be honored or the call will revert.
@@ -311,16 +311,16 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     function exchangeEtherForHAKAAtRate(uint guaranteedEtherRate, uint guaranteedTribeoneRate)
         external
         payable
-        rateNotInvalid(HAKA)
+        rateNotInvalid(wHAKA)
         rateNotInvalid(ETH)
         notPaused
         returns (
-            uint // Returns the number of HAKA received
+            uint // Returns the number of wHAKA received
         )
     {
         require(guaranteedEtherRate == exchangeRates().rateForCurrency(ETH), "Guaranteed ether rate would not be received");
         require(
-            guaranteedTribeoneRate == exchangeRates().rateForCurrency(HAKA),
+            guaranteedTribeoneRate == exchangeRates().rateForCurrency(wHAKA),
             "Guaranteed tribeone rate would not be received"
         );
 
@@ -328,7 +328,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     }
 
     function _exchangeTribesForHAKA(uint tribeAmount) internal returns (uint) {
-        // How many HAKA are they going to be receiving?
+        // How many wHAKA are they going to be receiving?
         uint tribeetixToSend = tribeetixReceivedForTribes(tribeAmount);
 
         // Ok, transfer the Tribes to our funds wallet.
@@ -336,51 +336,51 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         // they're sent back in from the funds wallet.
         tribehUSD().transferFrom(msg.sender, fundsWallet, tribeAmount);
 
-        // And send them the HAKA.
+        // And send them the wHAKA.
         tribeone().transfer(msg.sender, tribeetixToSend);
 
-        emit Exchange("hUSD", tribeAmount, "HAKA", tribeetixToSend);
+        emit Exchange("hUSD", tribeAmount, "wHAKA", tribeetixToSend);
 
         return tribeetixToSend;
     }
 
     /**
-     * @notice Exchange hUSD for HAKA
+     * @notice Exchange hUSD for wHAKA
      * @param tribeAmount The amount of tribes the user wishes to exchange.
      */
     function exchangeTribesForHAKA(uint tribeAmount)
         external
-        rateNotInvalid(HAKA)
+        rateNotInvalid(wHAKA)
         notPaused
         returns (
-            uint // Returns the number of HAKA received
+            uint // Returns the number of wHAKA received
         )
     {
         return _exchangeTribesForHAKA(tribeAmount);
     }
 
     /**
-     * @notice Exchange hUSD for HAKA while insisting on a particular rate. This allows a user to
+     * @notice Exchange hUSD for wHAKA while insisting on a particular rate. This allows a user to
      *         exchange while protecting against frontrunning by the contract owner on the exchange rate.
      * @param tribeAmount The amount of tribes the user wishes to exchange.
      * @param guaranteedRate A rate (tribeone price) the caller wishes to insist upon.
      */
     function exchangeTribesForHAKAAtRate(uint tribeAmount, uint guaranteedRate)
         external
-        rateNotInvalid(HAKA)
+        rateNotInvalid(wHAKA)
         notPaused
         returns (
-            uint // Returns the number of HAKA received
+            uint // Returns the number of wHAKA received
         )
     {
-        require(guaranteedRate == exchangeRates().rateForCurrency(HAKA), "Guaranteed rate would not be received");
+        require(guaranteedRate == exchangeRates().rateForCurrency(wHAKA), "Guaranteed rate would not be received");
 
         return _exchangeTribesForHAKA(tribeAmount);
     }
 
     /**
-     * @notice Allows the owner to withdraw HAKA from this contract if needed.
-     * @param amount The amount of HAKA to attempt to withdraw (in 18 decimal places).
+     * @notice Allows the owner to withdraw wHAKA from this contract if needed.
+     * @param amount The amount of wHAKA to attempt to withdraw (in 18 decimal places).
      */
     function withdrawTribeone(uint amount) external onlyOwner {
         tribeone().transfer(owner, amount);
@@ -470,17 +470,17 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
     }
 
     /**
-     * @notice Calculate how many HAKA you will receive if you transfer
+     * @notice Calculate how many wHAKA you will receive if you transfer
      *         an amount of tribes.
      * @param amount The amount of tribes (in 18 decimal places) you want to ask about
      */
     function tribeetixReceivedForTribes(uint amount) public view returns (uint) {
-        // And what would that be worth in HAKA based on the current price?
-        return amount.divideDecimal(exchangeRates().rateForCurrency(HAKA));
+        // And what would that be worth in wHAKA based on the current price?
+        return amount.divideDecimal(exchangeRates().rateForCurrency(wHAKA));
     }
 
     /**
-     * @notice Calculate how many HAKA you will receive if you transfer
+     * @notice Calculate how many wHAKA you will receive if you transfer
      *         an amount of ether.
      * @param amount The amount of ether (in wei) you want to ask about
      */
@@ -488,7 +488,7 @@ contract Depot is Owned, Pausable, ReentrancyGuard, MixinResolver, IDepot {
         // How much is the ETH they sent us worth in hUSD (ignoring the transfer fee)?
         uint valueSentInTribes = amount.multiplyDecimal(exchangeRates().rateForCurrency(ETH));
 
-        // Now, how many HAKA will that USD amount buy?
+        // Now, how many wHAKA will that USD amount buy?
         return tribeetixReceivedForTribes(valueSentInTribes);
     }
 

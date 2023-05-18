@@ -26,7 +26,7 @@ async function _readBalance({ ctx, symbol, user }) {
 }
 
 async function _getAmount({ ctx, symbol, user, amount }) {
-	if (symbol === 'HAKA') {
+	if (symbol === 'wHAKA') {
 		await _getHAKA({ ctx, user, amount });
 	} else if (symbol === 'WETH') {
 		await _getWETH({ ctx, user, amount });
@@ -96,7 +96,7 @@ async function _getHAKA({ ctx, user, amount }) {
 
 async function _getHAKAForOwner({ ctx, amount }) {
 	if (!ctx.useOvm) {
-		throw new Error('There is no more HAKA!');
+		throw new Error('There is no more wHAKA!');
 	} else {
 		await _getHAKAForOwnerOnL2ByHackMinting({ ctx, amount });
 	}
@@ -135,7 +135,7 @@ async function _gethUSD({ ctx, user, amount }) {
 
 	const requiredHAKA = await _getHAKAAmountRequiredForhUSDAmount({ ctx, amount });
 	// TODO: mul(12) is a temp workaround for "Amount too large" error.
-	await ensureBalance({ ctx, symbol: 'HAKA', user: ctx.users.owner, balance: requiredHAKA.mul(12) });
+	await ensureBalance({ ctx, symbol: 'wHAKA', user: ctx.users.owner, balance: requiredHAKA.mul(12) });
 
 	Tribeone = Tribeone.connect(ctx.users.owner);
 	tx = await Tribeone.issueTribes(amount);
@@ -155,14 +155,14 @@ async function _getHAKAAmountRequiredForhUSDAmount({ ctx, amount }) {
 	const [expectedAmount, ,] = await Exchanger.getAmountsForExchange(
 		collateral,
 		toBytes32('hUSD'),
-		toBytes32('HAKA')
+		toBytes32('wHAKA')
 	);
 
 	return expectedAmount;
 }
 
 function _getTokenFromSymbol({ ctx, symbol }) {
-	if (symbol === 'HAKA') {
+	if (symbol === 'wHAKA') {
 		return ctx.contracts.Tribeone;
 	} else if (symbol === 'WETH') {
 		return ctx.contracts.WETH;

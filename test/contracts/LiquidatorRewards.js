@@ -14,7 +14,7 @@ const { artifacts } = require('hardhat');
 const { toUnit, fastForward } = require('../utils')();
 
 contract('LiquidatorRewards', accounts => {
-	const [sAUD, sEUR, HAKA, hETH, ETH] = ['sAUD', 'sEUR', 'HAKA', 'hETH', 'ETH'].map(toBytes32);
+	const [sAUD, sEUR, wHAKA, hETH, ETH] = ['sAUD', 'sEUR', 'wHAKA', 'hETH', 'ETH'].map(toBytes32);
 	const [, owner, , , stakingAccount1, stakingAccount2, mockTribeone] = accounts;
 
 	let addressResolver,
@@ -105,7 +105,7 @@ contract('LiquidatorRewards', accounts => {
 		await updateAggregatorRates(
 			exchangeRates,
 			circuitBreaker,
-			[sAUD, sEUR, HAKA, hETH],
+			[sAUD, sEUR, wHAKA, hETH],
 			['0.5', '1.25', '0.1', '200'].map(toUnit)
 		);
 		await debtCache.takeDebtSnapshot();

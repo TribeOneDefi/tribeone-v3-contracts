@@ -100,7 +100,7 @@ async function _getAvailableCurrencyKeys({ ctx }) {
 
 	return availableCurrencyKeys
 		.filter(key => key !== toBytes32('hUSD'))
-		.concat(['HAKA', 'ETH'].map(toBytes32));
+		.concat(['wHAKA', 'ETH'].map(toBytes32));
 }
 
 async function _setMissingRates({ ctx }) {

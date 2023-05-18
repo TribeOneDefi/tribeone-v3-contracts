@@ -22,7 +22,7 @@ interface IDepot {
 
     function withdrawMyDepositedTribes() external;
 
-    // Note: On mainnet no HAKA has been deposited. The following functions are kept alive for testnet HAKA faucets.
+    // Note: On mainnet no wHAKA has been deposited. The following functions are kept alive for testnet wHAKA faucets.
     function exchangeEtherForHAKA() external payable returns (uint);
 
     function exchangeEtherForHAKAAtRate(uint guaranteedRate, uint guaranteedTribeoneRate) external payable returns (uint);

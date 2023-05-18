@@ -27,7 +27,7 @@ const {
 } = require('../..');
 
 contract('BaseTribeone', async accounts => {
-	const [hUSD, sAUD, sEUR, HAKA, hETH] = ['hUSD', 'sAUD', 'sEUR', 'HAKA', 'hETH'].map(toBytes32);
+	const [hUSD, sAUD, sEUR, wHAKA, hETH] = ['hUSD', 'sAUD', 'sEUR', 'wHAKA', 'hETH'].map(toBytes32);
 
 	const [, owner, account1, account2, account3] = accounts;
 
@@ -452,7 +452,7 @@ contract('BaseTribeone', async accounts => {
 		});
 		describe('when tribe rates set', () => {
 			beforeEach(async () => {
-				// fast forward to get past initial HAKA setting
+				// fast forward to get past initial wHAKA setting
 				await fastForward((await exchangeRates.rateStalePeriod()).add(web3.utils.toBN('300')));
 
 				await updateAggregatorRates(
@@ -466,9 +466,9 @@ contract('BaseTribeone', async accounts => {
 			it('should still have stale rates', async () => {
 				assert.equal(await baseTribeoneImpl.anyTribeOrHAKARateIsInvalid(), true);
 			});
-			describe('when HAKA is also set', () => {
+			describe('when wHAKA is also set', () => {
 				beforeEach(async () => {
-					await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], ['1'].map(toUnit));
+					await updateAggregatorRates(exchangeRates, circuitBreaker, [wHAKA], ['1'].map(toUnit));
 				});
 				it('then no stale rates', async () => {
 					assert.equal(await baseTribeoneImpl.anyTribeOrHAKARateIsInvalid(), false);
@@ -481,7 +481,7 @@ contract('BaseTribeone', async accounts => {
 						await updateAggregatorRates(
 							exchangeRates,
 							circuitBreaker,
-							[HAKA, sAUD],
+							[wHAKA, sAUD],
 							['0.1', '0.78'].map(toUnit)
 						);
 					});
@@ -667,7 +667,7 @@ contract('BaseTribeone', async accounts => {
 			await baseTribeoneProxy.transfer(account2, toUnit('10'), { from: owner });
 			assert.bnEqual(await baseTribeoneImpl.balanceOf(account2), toUnit('10'));
 
-			// transfer HAKA from the legacy market to another account
+			// transfer wHAKA from the legacy market to another account
 			await baseTribeoneProxy.transfer(account1, toUnit('10'), { from: account2 });
 			assert.bnEqual(await baseTribeoneImpl.balanceOf(account1), toUnit('10'));
 			assert.bnEqual(await baseTribeoneImpl.balanceOf(account2), toUnit('0'));
@@ -675,7 +675,7 @@ contract('BaseTribeone', async accounts => {
 
 		it('should transfer using the ERC20 transfer function @gasprofile', async () => {
 			// Ensure our environment is set up correctly for our assumptions
-			// e.g. owner owns all HAKA.
+			// e.g. owner owns all wHAKA.
 
 			assert.bnEqual(
 				await baseTribeoneImpl.totalSupply(),
@@ -697,7 +697,7 @@ contract('BaseTribeone', async accounts => {
 
 		it('should revert when exceeding locked tribeone and calling the ERC20 transfer function', async () => {
 			// Ensure our environment is set up correctly for our assumptions
-			// e.g. owner owns all HAKA.
+			// e.g. owner owns all wHAKA.
 			assert.bnEqual(
 				await baseTribeoneImpl.totalSupply(),
 				await baseTribeoneImpl.balanceOf(owner)
@@ -706,20 +706,20 @@ contract('BaseTribeone', async accounts => {
 			// Issue max tribes.
 			await baseTribeoneImpl.issueMaxTribes({ from: owner });
 
-			// Try to transfer 0.000000000000000001 HAKA
+			// Try to transfer 0.000000000000000001 wHAKA
 			await assert.revert(
 				baseTribeoneProxy.transfer(account1, '1', { from: owner }),
-				'Cannot transfer staked or escrowed HAKA'
+				'Cannot transfer staked or escrowed wHAKA'
 			);
 		});
 
 		it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
 			// Ensure our environment is set up correctly for our assumptions
-			// e.g. owner owns all HAKA.
+			// e.g. owner owns all wHAKA.
 			const previousOwnerBalance = await baseTribeoneImpl.balanceOf(owner);
 			assert.bnEqual(await baseTribeoneImpl.totalSupply(), previousOwnerBalance);
 
-			// Approve account1 to act on our behalf for 10 HAKA.
+			// Approve account1 to act on our behalf for 10 wHAKA.
 			let transaction = await baseTribeoneImpl.approve(account1, toUnit('10'), { from: owner });
 			assert.eventEqual(transaction, 'Approval', {
 				owner: owner,
@@ -738,7 +738,7 @@ contract('BaseTribeone', async accounts => {
 				value: toUnit('10'),
 			});
 
-			// Assert that account2 has 10 HAKA and owner has 10 less HAKA
+			// Assert that account2 has 10 wHAKA and owner has 10 less wHAKA
 			assert.bnEqual(await baseTribeoneImpl.balanceOf(account2), toUnit('10'));
 			assert.bnEqual(
 				await baseTribeoneImpl.balanceOf(owner),
@@ -755,13 +755,13 @@ contract('BaseTribeone', async accounts => {
 
 		it('should revert when exceeding locked tribeone and calling the ERC20 transferFrom function', async () => {
 			// Ensure our environment is set up correctly for our assumptions
-			// e.g. owner owns all HAKA.
+			// e.g. owner owns all wHAKA.
 			assert.bnEqual(
 				await baseTribeoneImpl.totalSupply(),
 				await baseTribeoneImpl.balanceOf(owner)
 			);
 
-			// Approve account1 to act on our behalf for 10 HAKA.
+			// Approve account1 to act on our behalf for 10 wHAKA.
 			const transaction = await baseTribeoneImpl.approve(account1, toUnit('10'), { from: owner });
 			assert.eventEqual(transaction, 'Approval', {
 				owner: owner,
@@ -772,12 +772,12 @@ contract('BaseTribeone', async accounts => {
 			// Issue max tribes
 			await baseTribeoneImpl.issueMaxTribes({ from: owner });
 
-			// Assert that transferFrom fails even for the smallest amount of HAKA.
+			// Assert that transferFrom fails even for the smallest amount of wHAKA.
 			await assert.revert(
 				baseTribeoneProxy.transferFrom(owner, account2, '1', {
 					from: account1,
 				}),
-				'Cannot transfer staked or escrowed HAKA'
+				'Cannot transfer staked or escrowed wHAKA'
 			);
 		});
 
@@ -797,7 +797,7 @@ contract('BaseTribeone', async accounts => {
 			it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
 				const previousOwnerBalance = await baseTribeoneImpl.balanceOf(owner);
 
-				// Approve account1 to act on our behalf for 10 HAKA.
+				// Approve account1 to act on our behalf for 10 wHAKA.
 				await baseTribeoneImpl.approve(account1, toUnit('10'), { from: owner });
 
 				// Assert that transferFrom works.
@@ -805,7 +805,7 @@ contract('BaseTribeone', async accounts => {
 					from: account1,
 				});
 
-				// Assert that account2 has 10 HAKA and owner has 10 less HAKA
+				// Assert that account2 has 10 wHAKA and owner has 10 less wHAKA
 				assert.bnEqual(await baseTribeoneImpl.balanceOf(account2), toUnit('10'));
 				assert.bnEqual(
 					await baseTribeoneImpl.balanceOf(owner),
@@ -826,18 +826,18 @@ contract('BaseTribeone', async accounts => {
 			const ensureTransferReverts = async () => {
 				await assert.revert(
 					baseTribeoneProxy.transfer(account2, value, { from: account1 }),
-					'A tribe or HAKA rate is invalid'
+					'A tribe or wHAKA rate is invalid'
 				);
 				await assert.revert(
 					baseTribeoneProxy.transferFrom(account2, account1, value, {
 						from: account3,
 					}),
-					'A tribe or HAKA rate is invalid'
+					'A tribe or wHAKA rate is invalid'
 				);
 			};
 
 			beforeEach(async () => {
-				// Give some HAKA to account1 & account2
+				// Give some wHAKA to account1 & account2
 				await baseTribeoneProxy.transfer(account1, toUnit('10000'), {
 					from: owner,
 				});
@@ -869,7 +869,7 @@ contract('BaseTribeone', async accounts => {
 					// Now jump forward in time so the rates are stale
 					await fastForward((await exchangeRates.rateStalePeriod()) + 1);
 				});
-				it('should not allow transfer if the exchange rate for HAKA is stale', async () => {
+				it('should not allow transfer if the exchange rate for wHAKA is stale', async () => {
 					await ensureTransferReverts();
 
 					// now give some tribe rates
@@ -891,10 +891,10 @@ contract('BaseTribeone', async accounts => {
 
 					await ensureTransferReverts();
 
-					// now give HAKA rate
-					await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], ['1'].map(toUnit));
+					// now give wHAKA rate
+					await updateAggregatorRates(exchangeRates, circuitBreaker, [wHAKA], ['1'].map(toUnit));
 
-					// now HAKA transfer should work
+					// now wHAKA transfer should work
 					await baseTribeoneProxy.transfer(account2, value, { from: account1 });
 					await baseTribeoneProxy.transferFrom(account2, account1, value, {
 						from: account3,
@@ -904,8 +904,8 @@ contract('BaseTribeone', async accounts => {
 				it('should not allow transfer if debt aggregator is stale', async () => {
 					await ensureTransferReverts();
 
-					// now give HAKA rate
-					await updateAggregatorRates(exchangeRates, circuitBreaker, [HAKA], ['1'].map(toUnit));
+					// now give wHAKA rate
+					await updateAggregatorRates(exchangeRates, circuitBreaker, [wHAKA], ['1'].map(toUnit));
 					await debtCache.takeDebtSnapshot();
 
 					await ensureTransferReverts();
@@ -913,7 +913,7 @@ contract('BaseTribeone', async accounts => {
 					// now give the aggregator debt info rate
 					await aggregatorDebtRatio.setOverrideTimestamp(0);
 
-					// now HAKA transfer should work
+					// now wHAKA transfer should work
 					await baseTribeoneProxy.transfer(account2, value, { from: account1 });
 					await baseTribeoneProxy.transferFrom(account2, account1, value, {
 						from: account3,
@@ -922,8 +922,8 @@ contract('BaseTribeone', async accounts => {
 			});
 
 			describe('when the user has no debt', () => {
-				it('should allow transfer if the exchange rate for HAKA is stale', async () => {
-					// HAKA transfer should work
+				it('should allow transfer if the exchange rate for wHAKA is stale', async () => {
+					// wHAKA transfer should work
 					await baseTribeoneProxy.transfer(account2, value, { from: account1 });
 					await baseTribeoneProxy.transferFrom(account2, account1, value, {
 						from: account3,
@@ -931,7 +931,7 @@ contract('BaseTribeone', async accounts => {
 				});
 
 				it('should allow transfer if the exchange rate for any tribe is stale', async () => {
-					// now HAKA transfer should work
+					// now wHAKA transfer should work
 					await baseTribeoneProxy.transfer(account2, value, { from: account1 });
 					await baseTribeoneProxy.transferFrom(account2, account1, value, {
 						from: account3,
@@ -940,7 +940,7 @@ contract('BaseTribeone', async accounts => {
 			});
 		});
 
-		describe('when the user holds HAKA', () => {
+		describe('when the user holds wHAKA', () => {
 			beforeEach(async () => {
 				await baseTribeoneProxy.transfer(account1, toUnit('1000'), {
 					from: owner,
@@ -969,7 +969,7 @@ contract('BaseTribeone', async accounts => {
 						// Ensure the transfer fails as all the tribeone are in escrow
 						await assert.revert(
 							baseTribeoneProxy.transfer(account2, toUnit('990'), { from: account1 }),
-							'Cannot transfer staked or escrowed HAKA'
+							'Cannot transfer staked or escrowed wHAKA'
 						);
 					});
 				});
@@ -990,7 +990,7 @@ contract('BaseTribeone', async accounts => {
 				baseTribeoneProxy.transfer(account2, toUnit(issuedTribeones), {
 					from: account1,
 				}),
-				'Cannot transfer staked or escrowed HAKA'
+				'Cannot transfer staked or escrowed wHAKA'
 			);
 		});
 
@@ -1095,7 +1095,7 @@ contract('BaseTribeone', async accounts => {
 			it('should transfer using the ERC20 transferFrom function @gasprofile', async () => {
 				const previousOwnerBalance = await baseTribeoneImpl.balanceOf(owner);
 
-				// Approve account1 to act on our behalf for 10 HAKA.
+				// Approve account1 to act on our behalf for 10 wHAKA.
 				await baseTribeoneImpl.approve(account1, toUnit('10'), { from: owner });
 
 				// Assert that transferFrom works.
@@ -1103,7 +1103,7 @@ contract('BaseTribeone', async accounts => {
 					from: account1,
 				});
 
-				// Assert that account2 has 10 HAKA and owner has 10 less HAKA
+				// Assert that account2 has 10 wHAKA and owner has 10 less wHAKA
 				assert.bnEqual(await baseTribeoneImpl.balanceOf(account2), toUnit('10'));
 				assert.bnEqual(
 					await baseTribeoneImpl.balanceOf(owner),

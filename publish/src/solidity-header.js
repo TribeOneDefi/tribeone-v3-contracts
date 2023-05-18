@@ -31,9 +31,8 @@ module.exports = {
 			)
 		);
 
-		return `/
-* Tribeone: ${contract}
-*
+		return `
+/* Tribeone: ${contract}
 * Latest source (may be newer): https://github.com/TribeOneDefi/tribeone-v3-contracts/blob/master/contracts/${contract}
 * Docs: https://docs.tribeone.io/contracts/${contract.split(/\./)[0]}
 *

@@ -16,7 +16,7 @@ library SystemSettingsLib {
 
     bytes32 public constant SETTINGS_CONTRACT_NAME = "SystemSettings";
 
-    // No more tribes may be issued than the value of HAKA backing them.
+    // No more tribes may be issued than the value of wHAKA backing them.
     uint public constant MAX_ISSUANCE_RATIO = 1e18;
 
     // The fee period must be between 1 day and 60 days.
@@ -174,7 +174,7 @@ library SystemSettingsLib {
         bytes32 settingName,
         uint penalty
     ) external {
-        // MAX_LIQUIDATION_PENALTY is enforced on both Collateral and HAKA liquidations
+        // MAX_LIQUIDATION_PENALTY is enforced on both Collateral and wHAKA liquidations
         require(penalty <= MAX_LIQUIDATION_PENALTY, "penalty > MAX_LIQUIDATION_PENALTY");
 
         flexibleStorage.setUIntValue(SETTINGS_CONTRACT_NAME, settingName, penalty);

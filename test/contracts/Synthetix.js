@@ -262,7 +262,7 @@ contract('Tribeone', async accounts => {
 	describe('migration - transfer escrow balances to reward escrow v2', () => {
 		let rewardEscrowBalanceBefore;
 		beforeEach(async () => {
-			// transfer HAKA to rewardEscrow
+			// transfer wHAKA to rewardEscrow
 			await tribeetixProxy.transfer(rewardEscrow.address, toUnit('100'), { from: owner });
 
 			rewardEscrowBalanceBefore = await tribeone.balanceOf(rewardEscrow.address);

@@ -714,7 +714,7 @@ describe('publish scripts', () => {
 				});
 			});
 
-			describe('when ExchangeRates has prices HAKA $0.30 and all tribes $1', () => {
+			describe('when ExchangeRates has prices wHAKA $0.30 and all tribes $1', () => {
 				beforeEach(async () => {
 					// set default issuance of 0.2
 					const tx = await SystemSettings.setIssuanceRatio(
@@ -725,7 +725,7 @@ describe('publish scripts', () => {
 
 					// make sure exchange rates has prices for specific assets
 
-					const answersToSet = [{ asset: 'HAKA', rate: 0.3 }].concat(
+					const answersToSet = [{ asset: 'wHAKA', rate: 0.3 }].concat(
 						tribes.map(({ asset }) => {
 							// as the same assets are used for long and shorts, search by asset rather than
 							// name (currencyKey) here so that we don't accidentially override an inverse with
@@ -769,9 +769,9 @@ describe('publish scripts', () => {
 					}
 				});
 
-				describe('when transferring 100k HAKA to user1', () => {
+				describe('when transferring 100k wHAKA to user1', () => {
 					beforeEach(async () => {
-						// transfer HAKA to first account
+						// transfer wHAKA to first account
 						const tx = await Tribeone.transfer(
 							accounts.first.address,
 							ethers.utils.parseEther('100000'),
@@ -1017,7 +1017,7 @@ describe('publish scripts', () => {
 								// update rates
 								const tribesToUpdate = tribes
 									.filter(({ name }) => name !== 'hBTC')
-									.concat({ asset: 'HAKA', rate: 1 });
+									.concat({ asset: 'wHAKA', rate: 1 });
 
 								for (const { asset } of tribesToUpdate) {
 									await setAggregatorAnswer({ asset, rate: 1 });

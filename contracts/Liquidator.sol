@@ -125,7 +125,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     /// @notice Determines if an account is eligible for forced or self liquidation
     /// @dev An account is eligible to self liquidate if its c-ratio is below the target c-ratio
-    /// @dev An account with no HAKA collateral will not be open for liquidation since the ratio is 0
+    /// @dev An account with no wHAKA collateral will not be open for liquidation since the ratio is 0
     function isLiquidationOpen(address account, bool isSelfLiquidation) external view returns (bool) {
         uint accountCollateralisationRatio = tribeone().collateralisationRatio(account);
 
@@ -137,7 +137,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         if (!isSelfLiquidation) {
             LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);
 
-            // Open for liquidation if the deadline has passed and the user has enough HAKA collateral.
+            // Open for liquidation if the deadline has passed and the user has enough wHAKA collateral.
             if (_deadlinePassed(liquidation.deadline) && _hasEnoughHAKAForRewards(account)) {
                 return true;
             }
@@ -156,9 +156,9 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     /// be removed.
     /// @param account The account to be liquidated
     /// @param isSelfLiquidation boolean to determine if this is a forced or self-invoked liquidation
-    /// @return totalRedeemed the total amount of collateral (HAKA) to redeem (liquid and escrow)
+    /// @return totalRedeemed the total amount of collateral (wHAKA) to redeem (liquid and escrow)
     /// @return debtToRemove the amount of debt (hUSD) to burn in order to fix the account's c-ratio
-    /// @return escrowToLiquidate the amount of escrow HAKA that will be revoked during liquidation
+    /// @return escrowToLiquidate the amount of escrow wHAKA that will be revoked during liquidation
     /// @return initialDebtBalance the amount of initial (hUSD) debt the account has
     function liquidationAmounts(address account, bool isSelfLiquidation)
         external
@@ -189,7 +189,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
         return deadline > 0 && now > deadline;
     }
 
-    /// @notice Checks if an account has enough HAKA balance to be considered open for forced liquidation.
+    /// @notice Checks if an account has enough wHAKA balance to be considered open for forced liquidation.
     function _hasEnoughHAKAForRewards(address account) internal view returns (bool) {
         uint balance = issuer().collateral(account);
         return balance >= (getLiquidateReward().add(getFlagReward()));
@@ -242,7 +242,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
     // totalIssuedTribes checks tribes for staleness
     // check snx rate is not stale
-    function flagAccountForLiquidation(address account) external rateNotInvalid("HAKA") {
+    function flagAccountForLiquidation(address account) external rateNotInvalid("wHAKA") {
         systemStatus().requireSystemActive();
 
         require(resolver.getAddress(CONTRACT_V3_LEGACYMARKET) == address(0), "Must liquidate using V3");
@@ -263,7 +263,7 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
 
         // if account doesn't have enough liquidatable collateral for rewards the liquidation transaction
         // is not possible
-        require(_hasEnoughHAKAForRewards(account), "not enough HAKA for rewards");
+        require(_hasEnoughHAKAForRewards(account), "not enough wHAKA for rewards");
 
         uint deadline = now.add(getLiquidationDelay());
 
@@ -282,8 +282,8 @@ contract Liquidator is Owned, MixinSystemSettings, ILiquidator {
     }
 
     /// @notice External function to allow anyone to remove an account's liquidation entry
-    /// @dev This function checks if the account's c-ratio is OK and that the rate of HAKA is not stale
-    function checkAndRemoveAccountInLiquidation(address account) external rateNotInvalid("HAKA") {
+    /// @dev This function checks if the account's c-ratio is OK and that the rate of wHAKA is not stale
+    function checkAndRemoveAccountInLiquidation(address account) external rateNotInvalid("wHAKA") {
         systemStatus().requireSystemActive();
 
         LiquidationEntry memory liquidation = _getLiquidationEntryForAccount(account);

@@ -16,7 +16,7 @@ contract('TribeUtil', accounts => {
 	const [, ownerAccount, , account2] = accounts;
 	let tribeUtil, hUSDContract, tribeone, exchangeRates, systemSettings, debtCache, circuitBreaker;
 
-	const [hUSD, hBTC, iBTC, HAKA] = ['hUSD', 'hBTC', 'iBTC', 'HAKA'].map(toBytes32);
+	const [hUSD, hBTC, iBTC, wHAKA] = ['hUSD', 'hBTC', 'iBTC', 'wHAKA'].map(toBytes32);
 	const tribeKeys = [hUSD, hBTC, iBTC];
 	const tribePrices = [toUnit('1'), toUnit('5000'), toUnit('5000')];
 
@@ -58,7 +58,7 @@ contract('TribeUtil', accounts => {
 		await updateAggregatorRates(
 			exchangeRates,
 			circuitBreaker,
-			[hBTC, iBTC, HAKA],
+			[hBTC, iBTC, wHAKA],
 			['5000', '5000', '0.2'].map(toUnit)
 		);
 		await debtCache.takeDebtSnapshot();

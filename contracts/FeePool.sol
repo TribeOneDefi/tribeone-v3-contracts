@@ -241,11 +241,11 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * @notice The RewardsDistribution contract informs us how many HAKA rewards are sent to RewardEscrow to be claimed.
+     * @notice The RewardsDistribution contract informs us how many wHAKA rewards are sent to RewardEscrow to be claimed.
      */
     function setRewardsToDistribute(uint amount) external optionalProxy {
         require(messageSender == address(rewardsDistribution()), "RewardsDistribution only");
-        // Add the amount of HAKA rewards to distribute on top of any rolling unclaimed amount
+        // Add the amount of wHAKA rewards to distribute on top of any rolling unclaimed amount
         _recentFeePeriodsStorage(0).rewardsToDistribute = _recentFeePeriodsStorage(0).rewardsToDistribute.add(amount);
     }
 
@@ -368,7 +368,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
         require(feesClaimable, "C-Ratio below penalty threshold");
 
-        require(!anyRateIsInvalid, "A tribe or HAKA rate is invalid");
+        require(!anyRateIsInvalid, "A tribe or wHAKA rate is invalid");
 
         // Get the claimingAddress available fees and rewards
         (availableFees, availableRewards) = feesAvailable(claimingAddress);
@@ -430,7 +430,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     /**
      * @notice Record the reward payment in our recentFeePeriods.
-     * @param snxAmount The amount of HAKA tokens.
+     * @param snxAmount The amount of wHAKA tokens.
      */
     function _recordRewardPayment(uint snxAmount) internal returns (uint) {
         // Don't assign to the parameter
@@ -463,14 +463,14 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     /**
      * @notice Send the rewards to claiming address - will be locked in rewardEscrow.
      * @param account The address to send the fees to.
-     * @param snxAmount The amount of HAKA.
+     * @param snxAmount The amount of wHAKA.
      */
     function _payRewards(address account, uint snxAmount) internal notFeeAddress(account) {
         /* Escrow the tokens for 1 year. */
         uint escrowDuration = 52 weeks;
 
         // Record vesting entry for claiming address and amount
-        // HAKA already minted to rewardEscrow balance
+        // wHAKA already minted to rewardEscrow balance
         rewardEscrowV2().appendVestingEntry(account, snxAmount, escrowDuration);
     }
 
@@ -497,7 +497,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
     }
 
     /**
-     * @notice The total HAKA rewards available in the system to be withdrawn
+     * @notice The total wHAKA rewards available in the system to be withdrawn
      */
     function totalRewardsAvailable() external view returns (uint) {
         uint totalRewards = 0;
@@ -513,7 +513,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
 
     /**
      * @notice The fees available to be withdrawn by a specific account, priced in hUSD
-     * @dev Returns two amounts, one for fees and one for HAKA rewards
+     * @dev Returns two amounts, one for fees and one for wHAKA rewards
      */
     function feesAvailable(address account) public view returns (uint, uint) {
         // Add up the fees
@@ -529,7 +529,7 @@ contract FeePool is Owned, Proxyable, LimitedSetup, MixinSystemSettings, IFeePoo
         }
 
         // And convert totalFees to hUSD
-        // Return totalRewards as is in HAKA amount
+        // Return totalRewards as is in wHAKA amount
         return (totalFees, totalRewards);
     }
 

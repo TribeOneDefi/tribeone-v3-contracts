@@ -128,7 +128,7 @@ contract('DebtMigratorOnOptimism', accounts => {
 		const debtShareAmount = toUnit('100');
 		const escrowAmount = toUnit('66.123456789012345678');
 		before(async () => {
-			// Make sure the migrator has enough HAKA
+			// Make sure the migrator has enough wHAKA
 			await resolver.importAddresses(['Depot'].map(toBytes32), [owner], {
 				from: owner,
 			});

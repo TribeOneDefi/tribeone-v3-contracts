@@ -96,7 +96,7 @@ contract TribeoneBridgeToOptimism is BaseTribeoneBridge, ITribeoneBridgeToOptimi
 
     // invoked by a generous user on L1
     function depositReward(uint amount) external requireInitiationActive {
-        // move the HAKA into the deposit escrow
+        // move the wHAKA into the deposit escrow
         tribeetixERC20().transferFrom(msg.sender, tribeetixBridgeEscrow(), amount);
 
         _depositReward(msg.sender, amount);
@@ -136,14 +136,14 @@ contract TribeoneBridgeToOptimism is BaseTribeoneBridge, ITribeoneBridgeToOptimi
         emit iOVM_L1TokenGateway.WithdrawalFinalized(to, amount);
     }
 
-    // invoked by RewardsDistribution on L1 (takes HAKA)
+    // invoked by RewardsDistribution on L1 (takes wHAKA)
     function notifyRewardAmount(uint256 amount) external {
         require(msg.sender == address(rewardsDistribution()), "Caller is not RewardsDistribution contract");
 
-        // NOTE: transfer HAKA to tribeetixBridgeEscrow because RewardsDistribution transfers them initially to this contract.
+        // NOTE: transfer wHAKA to tribeetixBridgeEscrow because RewardsDistribution transfers them initially to this contract.
         tribeetixERC20().transfer(tribeetixBridgeEscrow(), amount);
 
-        // to be here means I've been given an amount of HAKA to distribute onto L2
+        // to be here means I've been given an amount of wHAKA to distribute onto L2
         _depositReward(msg.sender, amount);
     }
 
@@ -179,8 +179,8 @@ contract TribeoneBridgeToOptimism is BaseTribeoneBridge, ITribeoneBridgeToOptimi
     }
 
     function _initiateDeposit(address _to, uint256 _depositAmount) private {
-        // Transfer HAKA to L2
-        // First, move the HAKA into the deposit escrow
+        // Transfer wHAKA to L2
+        // First, move the wHAKA into the deposit escrow
         tribeetixERC20().transferFrom(msg.sender, tribeetixBridgeEscrow(), _depositAmount);
         // create message payload for L2
         iOVM_L2DepositedToken bridgeToBase;
@@ -209,7 +209,7 @@ contract TribeoneBridgeToOptimism is BaseTribeoneBridge, ITribeoneBridgeToOptimi
 
             // if there is an escrow amount to be migrated
             if (escrowedAccountBalance > 0) {
-                // NOTE: transfer HAKA to tribeetixBridgeEscrow because burnForMigration() transfers them to this contract.
+                // NOTE: transfer wHAKA to tribeetixBridgeEscrow because burnForMigration() transfers them to this contract.
                 tribeetixERC20().transfer(tribeetixBridgeEscrow(), escrowedAccountBalance);
                 // create message payload for L2
                 ITribeoneBridgeToBase bridgeToBase;

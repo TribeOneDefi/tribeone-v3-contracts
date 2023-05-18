@@ -117,7 +117,7 @@ interface IRewardEscrowV2 {
         VestingEntries.VestingEntry[] calldata vestingEntries
     ) external;
 
-    // Return amount of HAKA transfered to TribeoneBridgeToOptimism deposit contract
+    // Return amount of wHAKA transfered to TribeoneBridgeToOptimism deposit contract
     function burnForMigration(address account, uint256[] calldata entryIDs)
         external
         returns (uint256 escrowedAccountBalance, VestingEntries.VestingEntry[] memory vestingEntries);

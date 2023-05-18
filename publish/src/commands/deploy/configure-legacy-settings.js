@@ -99,7 +99,7 @@ module.exports = async ({
 			expected: input => input === addressOf(Tribeone),
 			write: 'setTarget',
 			writeArg: addressOf(Tribeone),
-			comment: 'Ensure the HAKA proxy has the correct Tribeone target set',
+			comment: 'Ensure the wHAKA proxy has the correct Tribeone target set',
 		});
 		await runStep({
 			contract: 'Tribeone',
@@ -213,7 +213,7 @@ module.exports = async ({
 			expected: input => input === addressOf(ProxyTribeone),
 			write: 'setTribeoneProxy',
 			writeArg: addressOf(ProxyTribeone),
-			comment: 'Ensure the SupplySchedule is connected to the HAKA proxy for reading',
+			comment: 'Ensure the SupplySchedule is connected to the wHAKA proxy for reading',
 		});
 	}
 

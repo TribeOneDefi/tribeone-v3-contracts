@@ -35,8 +35,8 @@ const MockAggregator = artifacts.require('MockAggregatorV2V3');
 
 contract('Exchange Rates', async accounts => {
 	const [deployerAccount, owner, oracle, dexPriceAggregator, accountOne, accountTwo] = accounts;
-	const [HAKA, sJPY, hETH, sXTZ, sBNB, hUSD, sEUR, sAUD, GOLD, fastGasPrice, debtRatio] = [
-		'HAKA',
+	const [wHAKA, sJPY, hETH, sXTZ, sBNB, hUSD, sEUR, sAUD, GOLD, fastGasPrice, debtRatio] = [
+		'wHAKA',
 		'sJPY',
 		'hETH',
 		'sXTZ',
@@ -127,17 +127,17 @@ contract('Exchange Rates', async accounts => {
 		describe('anyRateIsInvalid()', () => {
 			describe('stale scenarios', () => {
 				it('anyRateIsInvalid conforms to rateStalePeriod', async () => {
-					await setupAggregators([HAKA, GOLD]);
+					await setupAggregators([wHAKA, GOLD]);
 
-					await updateRates([HAKA, GOLD], [toUnit(0.1), toUnit(0.2)]);
+					await updateRates([wHAKA, GOLD], [toUnit(0.1), toUnit(0.2)]);
 
-					assert.equal(await instance.anyRateIsInvalid([HAKA, GOLD]), false);
+					assert.equal(await instance.anyRateIsInvalid([wHAKA, GOLD]), false);
 
 					await fastForward(await instance.rateStalePeriod());
-					assert.equal(await instance.anyRateIsInvalid([HAKA, GOLD]), true);
+					assert.equal(await instance.anyRateIsInvalid([wHAKA, GOLD]), true);
 
-					await updateRates([HAKA, GOLD], [toUnit(0.1), toUnit(0.2)]);
-					assert.equal(await instance.anyRateIsInvalid([HAKA, GOLD]), false);
+					await updateRates([wHAKA, GOLD], [toUnit(0.1), toUnit(0.2)]);
+					assert.equal(await instance.anyRateIsInvalid([wHAKA, GOLD]), false);
 				});
 
 				it('should be able to confirm no rates are stale from a subset', async () => {
@@ -387,7 +387,7 @@ contract('Exchange Rates', async accounts => {
 			describe('when a price is sent to the oracle', () => {
 				beforeEach(async () => {
 					// Send a price update to guarantee we're not depending on values from outside this test.
-					const keys = [sAUD, sEUR, HAKA];
+					const keys = [sAUD, sEUR, wHAKA];
 					await setupAggregators(keys);
 					await updateRates(keys, ['0.5', '1.25', '0.1'].map(toUnit));
 				});
@@ -396,8 +396,8 @@ contract('Exchange Rates', async accounts => {
 					// 1 hUSD should be worth 2 sAUD.
 					assert.bnEqual(await instance.effectiveValue(hUSD, toUnit('1'), sAUD), toUnit('2'));
 
-					// 10 HAKA should be worth 1 hUSD.
-					assert.bnEqual(await instance.effectiveValue(HAKA, toUnit('10'), hUSD), toUnit('1'));
+					// 10 wHAKA should be worth 1 hUSD.
+					assert.bnEqual(await instance.effectiveValue(wHAKA, toUnit('10'), hUSD), toUnit('1'));
 
 					// 2 sEUR should be worth 2.50 hUSD
 					assert.bnEqual(await instance.effectiveValue(sEUR, toUnit('2'), hUSD), toUnit('2.5'));
@@ -408,21 +408,21 @@ contract('Exchange Rates', async accounts => {
 					await fastForward((await instance.rateStalePeriod()) + 1);
 
 					// Update all rates except hUSD.
-					await updateRates([sEUR, HAKA], ['1.25', '0.1'].map(toUnit));
+					await updateRates([sEUR, wHAKA], ['1.25', '0.1'].map(toUnit));
 
 					const amountOfTribeones = toUnit('10');
 					const amountOfEur = toUnit('0.8');
 
-					// Should now be able to convert from HAKA to sEUR since they are both not stale.
-					assert.bnEqual(await instance.effectiveValue(HAKA, amountOfTribeones, sEUR), amountOfEur);
+					// Should now be able to convert from wHAKA to sEUR since they are both not stale.
+					assert.bnEqual(await instance.effectiveValue(wHAKA, amountOfTribeones, sEUR), amountOfEur);
 				});
 
 				it('should return 0 when relying on a non-existant dest exchange rate in effectiveValue()', async () => {
-					assert.equal(await instance.effectiveValue(HAKA, toUnit('10'), toBytes32('XYZ')), 0);
+					assert.equal(await instance.effectiveValue(wHAKA, toUnit('10'), toBytes32('XYZ')), 0);
 				});
 
 				it('should revert when relying on a non-existing src rate in effectiveValue', async () => {
-					assert.equal(await instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), HAKA), 0);
+					assert.equal(await instance.effectiveValue(toBytes32('XYZ'), toUnit('10'), wHAKA), 0);
 				});
 
 				it('effectiveValueAndRates() should return rates as well with hUSD on one side', async () => {
@@ -1932,7 +1932,7 @@ contract('Exchange Rates', async accounts => {
 			}));
 
 			// remove the pre-configured aggregator
-			await instance.removeAggregator(toBytes32('HAKA'), { from: owner });
+			await instance.removeAggregator(toBytes32('wHAKA'), { from: owner });
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });
 			aggregatorXTZ = await MockAggregator.new({ from: owner });
@@ -1982,7 +1982,7 @@ contract('Exchange Rates', async accounts => {
 			systemSettings = contracts.SystemSettings;
 
 			// remove the pre-configured aggregator
-			await instance.removeAggregator(toBytes32('HAKA'), { from: owner });
+			await instance.removeAggregator(toBytes32('wHAKA'), { from: owner });
 
 			aggregatorJPY = await MockAggregator.new({ from: owner });
 			aggregatorXTZ = await MockAggregator.new({ from: owner });

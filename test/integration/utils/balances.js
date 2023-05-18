@@ -23,7 +23,7 @@ async function _readBalance({ ctx, symbol, user }) {
 }
 
 async function _getAmount({ ctx, symbol, user, amount }) {
-	if (symbol === 'HAKA') {
+	if (symbol === 'wHAKA') {
 		await _getHAKA({ ctx, user, amount });
 	} else if (symbol === 'WETH') {
 		await _getWETH({ ctx, user, amount });
@@ -107,7 +107,7 @@ async function _getHAKA({ ctx, user, amount }) {
 
 async function _getHAKAForOwner({ ctx, amount }) {
 	if (!ctx.useOvm) {
-		throw new Error('There is no more HAKA!');
+		throw new Error('There is no more wHAKA!');
 	} else {
 		if (ctx.l1) {
 			await _getHAKAForOwnerOnL2ByDepositing({ ctx: ctx.l1, amount });
@@ -158,7 +158,7 @@ async function _gethUSD({ ctx, user, amount }) {
 	let tx;
 
 	const requiredHAKA = await _getHAKAAmountRequiredForhUSDAmount({ ctx, amount });
-	await ensureBalance({ ctx, symbol: 'HAKA', user, balance: requiredHAKA });
+	await ensureBalance({ ctx, symbol: 'wHAKA', user, balance: requiredHAKA });
 
 	Tribeone = Tribeone.connect(ctx.users.owner);
 
@@ -229,14 +229,14 @@ async function _getHAKAAmountRequiredForhUSDAmount({ ctx, amount }) {
 	const [expectedAmount, ,] = await Exchanger.getAmountsForExchange(
 		collateral,
 		toBytes32('hUSD'),
-		toBytes32('HAKA')
+		toBytes32('wHAKA')
 	);
 
 	return expectedAmount;
 }
 
 function _getTokenFromSymbol({ ctx, symbol }) {
-	if (symbol === 'HAKA') {
+	if (symbol === 'wHAKA') {
 		const { ProxyTribeone } = ctx.contracts;
 		let { Tribeone } = ctx.contracts;
 

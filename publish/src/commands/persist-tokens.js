@@ -51,7 +51,7 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 
 	const output = {
 		name: 'Tribeone',
-		logoURI: `${baseURI}/snx/HAKA.svg`,
+		logoURI: `${baseURI}/snx/wHAKA.svg`,
 		keywords: ['tribeone', 'defi', 'derivatives', 'tribes', 'tribeetics'],
 		timestamp: new Date().toISOString(),
 		tags: {
@@ -78,10 +78,10 @@ const persistTokens = async ({ network, yes, privateKey, assetsVersion }) => {
 			chainId,
 			address,
 			symbol,
-			name: symbol === 'HAKA' ? 'Tribeone Network Token' : `Tribe ${name}`,
+			name: symbol === 'wHAKA' ? 'Tribeone Network Token' : `Tribe ${name}`,
 			decimals,
-			logoURI: baseURI + (symbol === 'HAKA' ? '/snx/HAKA.svg' : `/tribes/${symbol}.svg`),
-			tags: [].concat(index ? 'index' : []).concat(symbol !== 'HAKA' ? 'tribe' : []),
+			logoURI: baseURI + (symbol === 'wHAKA' ? '/snx/wHAKA.svg' : `/tribes/${symbol}.svg`),
+			tags: [].concat(index ? 'index' : []).concat(symbol !== 'wHAKA' ? 'tribe' : []),
 		})),
 	};
 

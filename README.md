@@ -8,7 +8,7 @@
 
 Tribeone is a crypto-backed tribeetic asset platform.
 
-It is a multi-token system, powered by HAKA, the Tribeone Network Token. HAKA holders can stake HAKA to issue Tribes, on-chain tribeetic assets via the [Staking dApp](https://staking.tribeone.io) The network currently supports an ever-growing [list of tribeetic assets](https://www.tribeone.io/tribes/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://docs.tribeone.io/addresses/)
+It is a multi-token system, powered by wHAKA, the Tribeone Network Token. wHAKA holders can stake wHAKA to issue Tribes, on-chain tribeetic assets via the [Staking dApp](https://staking.tribeone.io) The network currently supports an ever-growing [list of tribeetic assets](https://www.tribeone.io/tribes/). Please see the [list of the deployed contracts on MAIN and TESTNETS](https://docs.tribeone.io/addresses/)
 Tribes can be traded using [Kwenta](https://kwenta.io)
 
 Tribeone uses a proxy system so that upgrades will not be disruptive to the functionality of the contract. This smooths user interaction, since new functionality will become available without any interruption in their experience. It is also transparent to the community at large, since each upgrade is accompanied by events announcing those upgrades. New releases are managed via the [Tribeone Improvement Proposal (SIP)](https://sips.tribeone.io/all-sip) system similar to the [EIPs](https://eips.ethereum.org/all)
@@ -116,7 +116,7 @@ contract MyContract {
 - `getStakingRewards({ network })` Return the list of staking reward contracts available.
 - `getTribes({ network })` Return the list of tribes for a network
 - `getTarget({ network })` Return the information about a contract's `address` and `source` file. The contract names are those specified in [docs.tribeone.io/addresses](https://docs.tribeone.io/addresses)
-- `getTokens({ network })` Return the list of tokens (tribes and `HAKA`) used in the system, along with their addresses.
+- `getTokens({ network })` Return the list of tokens (tribes and `wHAKA`) used in the system, along with their addresses.
 - `getUsers({ network })` Return the list of user accounts within the Tribeone protocol (e.g. `owner`, `fee`, etc)
 - `getVersions({ network, byContract = false })` Return the list of deployed versions to the network keyed by tagged version. If `byContract` is `true`, it keys by `contract` name.
 - `networks` Return the list of supported networks

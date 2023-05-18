@@ -23,8 +23,8 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
     // ========== STATE VARIABLES ==========
 
     // Available Tribes which can be used with the system
-    string public constant TOKEN_NAME = "Tribeone Network Token";
-    string public constant TOKEN_SYMBOL = "HAKA";
+    string public constant TOKEN_NAME = "Tribeone Network Wrap Token";
+    string public constant TOKEN_SYMBOL = "wHAKA";
     uint8 public constant DECIMALS = 18;
     bytes32 public constant hUSD = "hUSD";
 
@@ -191,8 +191,8 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         if (issuer().debtBalanceOf(account, hUSD) > 0) {
             (uint transferable, bool anyRateIsInvalid) =
                 issuer().transferableTribeoneAndAnyRateIsInvalid(account, tokenState.balanceOf(account));
-            require(value <= transferable, "Cannot transfer staked or escrowed HAKA");
-            require(!anyRateIsInvalid, "A tribe or HAKA rate is invalid");
+            require(value <= transferable, "Cannot transfer staked or escrowed wHAKA");
+            require(!anyRateIsInvalid, "A tribe or wHAKA rate is invalid");
         }
 
         return true;
@@ -313,7 +313,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         return _transferFromByProxy(messageSender, from, to, value);
     }
 
-    // SIP-252: migration of HAKA token balance from old to new escrow rewards contract
+    // SIP-252: migration of wHAKA token balance from old to new escrow rewards contract
     function migrateEscrowContractBalance() external onlyOwner {
         address from = resolver.requireAndGetAddress("RewardEscrowV2Frozen", "Old escrow address unset");
         // technically the below could use `rewardEscrowV2()`, but in the case of a migration it's better to avoid
@@ -360,8 +360,8 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         return issuer().burnTribesToTargetOnBehalf(burnForAddress, messageSender);
     }
 
-    /// @notice Force liquidate a delinquent account and distribute the redeemed HAKA rewards amongst the appropriate recipients.
-    /// @dev The HAKA transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
+    /// @notice Force liquidate a delinquent account and distribute the redeemed wHAKA rewards amongst the appropriate recipients.
+    /// @dev The wHAKA transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function liquidateDelinquentAccount(address account) external systemActive optionalProxy returns (bool) {
         return _liquidateDelinquentAccount(account, 0, messageSender);
     }
@@ -377,8 +377,8 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         return _liquidateDelinquentAccount(account, escrowStartIndex, messageSender);
     }
 
-    /// @notice Force liquidate a delinquent account and distribute the redeemed HAKA rewards amongst the appropriate recipients.
-    /// @dev The HAKA transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
+    /// @notice Force liquidate a delinquent account and distribute the redeemed wHAKA rewards amongst the appropriate recipients.
+    /// @dev The wHAKA transfers will revert if the amount to send is more than balanceOf account (i.e. due to escrowed balance).
     function _liquidateDelinquentAccount(
         address account,
         uint escrowStartIndex,
@@ -389,7 +389,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
 
         (uint totalRedeemed, uint debtToRemove, uint escrowToLiquidate) = issuer().liquidateAccount(account, false);
 
-        // This transfers the to-be-liquidated part of escrow to the account (!) as liquid HAKA.
+        // This transfers the to-be-liquidated part of escrow to the account (!) as liquid wHAKA.
         // It is transferred to the account instead of to the rewards because of the liquidator / flagger
         // rewards that may need to be paid (so need to be transferrable, to avoid edge cases)
         if (escrowToLiquidate > 0) {
@@ -412,11 +412,11 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         require(liquidateRewardTransferSucceeded, "Liquidate reward transfer did not succeed");
 
         if (totalRedeemed > 0) {
-            // Send the remaining HAKA to the LiquidatorRewards contract.
+            // Send the remaining wHAKA to the LiquidatorRewards contract.
             bool liquidatorRewardTransferSucceeded = _transferByProxy(account, address(liquidatorRewards()), totalRedeemed);
             require(liquidatorRewardTransferSucceeded, "Transfer to LiquidatorRewards failed");
 
-            // Inform the LiquidatorRewards contract about the incoming HAKA rewards.
+            // Inform the LiquidatorRewards contract about the incoming wHAKA rewards.
             liquidatorRewards().notifyRewardAmount(totalRedeemed);
         }
 
@@ -425,7 +425,7 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
 
     /// @notice Allows an account to self-liquidate anytime its c-ratio is below the target issuance ratio.
     function liquidateSelf() external systemActive optionalProxy returns (bool) {
-        // must store liquidated account address because below functions may attempt to transfer HAKA which changes messageSender
+        // must store liquidated account address because below functions may attempt to transfer wHAKA which changes messageSender
         address liquidatedAccount = messageSender;
 
         // ensure the user has no liquidation rewards (also counted towards collateral) outstanding
@@ -438,12 +438,12 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
 
         emitAccountLiquidated(liquidatedAccount, totalRedeemed, debtRemoved, liquidatedAccount);
 
-        // Transfer the redeemed HAKA to the LiquidatorRewards contract.
+        // Transfer the redeemed wHAKA to the LiquidatorRewards contract.
         // Reverts if amount to redeem is more than balanceOf account (i.e. due to escrowed balance).
         bool success = _transferByProxy(liquidatedAccount, address(liquidatorRewards()), totalRedeemed);
         require(success, "Transfer to LiquidatorRewards failed");
 
-        // Inform the LiquidatorRewards contract about the incoming HAKA rewards.
+        // Inform the LiquidatorRewards contract about the incoming wHAKA rewards.
         liquidatorRewards().notifyRewardAmount(totalRedeemed);
 
         return success;
@@ -466,14 +466,14 @@ contract BaseTribeone is IERC20, ExternStateToken, MixinResolver, ITribeone {
         address debtMigratorOnEthereum = resolver.getAddress(CONTRACT_DEBT_MIGRATOR_ON_ETHEREUM);
         require(msg.sender == debtMigratorOnEthereum, "Only L1 DebtMigrator");
 
-        // get their liquid HAKA balance and transfer it to the migrator contract
+        // get their liquid wHAKA balance and transfer it to the migrator contract
         totalLiquidBalance = tokenState.balanceOf(account);
         if (totalLiquidBalance > 0) {
             bool succeeded = _transferByProxy(account, debtMigratorOnEthereum, totalLiquidBalance);
             require(succeeded, "snx transfer failed");
         }
 
-        // get their escrowed HAKA balance and revoke it all
+        // get their escrowed wHAKA balance and revoke it all
         totalEscrowRevoked = rewardEscrowV2().totalEscrowedAccountBalance(account);
         if (totalEscrowRevoked > 0) {
             rewardEscrowV2().revokeFrom(account, debtMigratorOnEthereum, totalEscrowRevoked, 0);

@@ -237,7 +237,7 @@ contract BaseRewardEscrowV2Frozen is Owned, IRewardEscrowV2Frozen, LimitedSetup(
     }
 
     /**
-     * @notice Create an escrow entry to lock HAKA for a given duration in seconds
+     * @notice Create an escrow entry to lock wHAKA for a given duration in seconds
      * @dev This call expects that the depositor (msg.sender) has already approved the Reward escrow contract
      to spend the the amount being escrowed.
      */
@@ -248,7 +248,7 @@ contract BaseRewardEscrowV2Frozen is Owned, IRewardEscrowV2Frozen, LimitedSetup(
     ) external {
         require(beneficiary != address(0), "Cannot create escrow with address(0)");
 
-        /* Transfer HAKA from msg.sender */
+        /* Transfer wHAKA from msg.sender */
         require(IERC20(address(tribeone())).transferFrom(msg.sender, address(this), deposit), "token transfer failed");
 
         /* Append vesting entry for the beneficiary address */
@@ -260,8 +260,8 @@ contract BaseRewardEscrowV2Frozen is Owned, IRewardEscrowV2Frozen, LimitedSetup(
      * @dev A call to this should accompany a previous successful call to tribeone.transfer(rewardEscrow, amount),
      * to ensure that when the funds are withdrawn, there is enough balance.
      * @param account The account to append a new vesting entry to.
-     * @param quantity The quantity of HAKA that will be escrowed.
-     * @param duration The duration that HAKA will be emitted.
+     * @param quantity The quantity of wHAKA that will be escrowed.
+     * @param duration The duration that wHAKA will be emitted.
      */
     function appendVestingEntry(
         address account,

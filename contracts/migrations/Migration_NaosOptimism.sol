@@ -66,7 +66,7 @@ contract Migration_NaosOptimism is BaseMigration {
         addressresolver_importAddresses_0();
         // Rebuild the resolver caches in all MixinResolver contracts - batch 1;
         addressresolver_rebuildCaches_1();
-        // Ensure the HAKA proxy has the correct Tribeone target set;
+        // Ensure the wHAKA proxy has the correct Tribeone target set;
         proxytribeetix_i.setTarget(Proxyable(new_Tribeone_contract));
         // Ensure Issuer contract can suspend issuance - see SIP-165;
         systemstatus_i.updateAccessControl("Issuance", new_Issuer_contract, true, false);

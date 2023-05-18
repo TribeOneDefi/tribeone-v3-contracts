@@ -21,7 +21,7 @@ describe('depositReward() integration tests (L1, L2)', () => {
 	let depositReceipt, escrowBalance;
 	let currentFeePeriodRewards, rewardEscrowBalanceL2;
 
-	describe('when the owner deposits HAKA for rewards', () => {
+	describe('when the owner deposits wHAKA for rewards', () => {
 		before('target contracts and users', () => {
 			({ Tribeone, TribeoneBridgeEscrow, TribeoneBridgeToOptimism } = ctx.l1.contracts);
 			({

@@ -16,6 +16,7 @@ contract Tribeone is BaseTribeone {
     // ========== ADDRESS RESOLVER CONFIGURATION ==========
     bytes32 private constant CONTRACT_REWARD_ESCROW = "RewardEscrow";
     bytes32 private constant CONTRACT_SUPPLYSCHEDULE = "SupplySchedule";
+    address private hakaToken;
 
     // ========== CONSTRUCTOR ==========
 
@@ -25,7 +26,8 @@ contract Tribeone is BaseTribeone {
         address _owner,
         uint _totalSupply,
         address _resolver
-    ) public BaseTribeone(_proxy, _tokenState, _owner, _totalSupply, _resolver) {}
+    ) public BaseTribeone(_proxy, _tokenState, _owner, _totalSupply, _resolver) {
+    }
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
         bytes32[] memory existingAddresses = BaseTribeone.resolverAddressesRequired();
@@ -128,44 +130,44 @@ contract Tribeone is BaseTribeone {
     }
 
     function mint() external issuanceActive returns (bool) {
-        require(address(rewardsDistribution()) != address(0), "RewardsDistribution not set");
+        // require(address(rewardsDistribution()) != address(0), "RewardsDistribution not set");
 
-        ISupplySchedule _supplySchedule = supplySchedule();
-        IRewardsDistribution _rewardsDistribution = rewardsDistribution();
+        // ISupplySchedule _supplySchedule = supplySchedule();
+        // IRewardsDistribution _rewardsDistribution = rewardsDistribution();
 
-        uint supplyToMint = _supplySchedule.mintableSupply();
-        require(supplyToMint > 0, "No supply is mintable");
+        // uint supplyToMint = _supplySchedule.mintableSupply();
+        // require(supplyToMint > 0, "No supply is mintable");
 
-        emitTransfer(address(0), address(this), supplyToMint);
+        // emitTransfer(address(0), address(this), supplyToMint);
 
-        // record minting event before mutation to token supply
-        uint minterReward = _supplySchedule.recordMintEvent(supplyToMint);
+        // // record minting event before mutation to token supply
+        // uint minterReward = _supplySchedule.recordMintEvent(supplyToMint);
 
-        // Set minted HAKA balance to RewardEscrow's balance
-        // Minus the minterReward and set balance of minter to add reward
-        uint amountToDistribute = supplyToMint.sub(minterReward);
+        // // Set minted wHAKA balance to RewardEscrow's balance
+        // // Minus the minterReward and set balance of minter to add reward
+        // uint amountToDistribute = supplyToMint.sub(minterReward);
 
-        // Set the token balance to the RewardsDistribution contract
-        tokenState.setBalanceOf(
-            address(_rewardsDistribution),
-            tokenState.balanceOf(address(_rewardsDistribution)).add(amountToDistribute)
-        );
-        emitTransfer(address(this), address(_rewardsDistribution), amountToDistribute);
+        // // Set the token balance to the RewardsDistribution contract
+        // tokenState.setBalanceOf(
+        //     address(_rewardsDistribution),
+        //     tokenState.balanceOf(address(_rewardsDistribution)).add(amountToDistribute)
+        // );
+        // emitTransfer(address(this), address(_rewardsDistribution), amountToDistribute);
 
-        // Kick off the distribution of rewards
-        _rewardsDistribution.distributeRewards(amountToDistribute);
+        // // Kick off the distribution of rewards
+        // _rewardsDistribution.distributeRewards(amountToDistribute);
 
-        // Assign the minters reward.
-        tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
-        emitTransfer(address(this), msg.sender, minterReward);
+        // // Assign the minters reward.
+        // tokenState.setBalanceOf(msg.sender, tokenState.balanceOf(msg.sender).add(minterReward));
+        // emitTransfer(address(this), msg.sender, minterReward);
 
-        // Increase total supply by minted amount
-        totalSupply = totalSupply.add(supplyToMint);
+        // // Increase total supply by minted amount
+        // totalSupply = totalSupply.add(supplyToMint);
 
         return true;
     }
 
-    /* Once off function for SIP-60 to migrate HAKA balances in the RewardEscrow contract
+    /* Once off function for SIP-60 to migrate wHAKA balances in the RewardEscrow contract
      * To the new RewardEscrowV2 contract
      */
     function migrateEscrowBalanceToRewardEscrowV2() external onlyOwner {
@@ -206,5 +208,39 @@ contract Tribeone is BaseTribeone {
             0,
             0
         );
+    }
+
+    function setHakaAddress(address _hakaToken) public onlyOwner() {
+        hakaToken = _hakaToken;
+    }
+
+    function wrap(uint256 amount) public {
+        require(amount > 0, "Amount must be greater than 0");
+        require(IERC20(hakaToken).transferFrom(msg.sender, address(this), amount), "Transfer failed");
+        _mint(msg.sender, amount);
+    }
+
+    function unwrap(uint256 amount) public {
+        require(amount > 0, "Amount must be greater than 0");
+        _burn(msg.sender, amount);
+        require(IERC20(hakaToken).transfer(msg.sender, amount), "Transfer failed");
+    }
+
+    function _mint(address to, uint256 amount) private {
+        // This line of code calls the `setBalanceOf` function on the `tokenState` object to update the balance of
+        // the specified address (`to`) with the added `amount` of tokens
+        tokenState.setBalanceOf(to, tokenState.balanceOf(to).add(amount));
+        emitTransfer(address(0), to, amount);
+
+        // Increase total supply by minted amount
+        totalSupply = totalSupply.add(amount);
+    }
+
+    function _burn(address from, uint256 amount) private {
+        tokenState.setBalanceOf(from, tokenState.balanceOf(from).sub(amount));
+        emitTransfer(from, address(0), amount);
+
+        // Increase total supply by minted amount
+        totalSupply = totalSupply.sub(amount);
     }
 }

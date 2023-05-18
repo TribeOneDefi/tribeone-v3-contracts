@@ -25,8 +25,8 @@ function itCanStake({ ctx }) {
 			owner = ctx.users.owner;
 		});
 
-		before('ensure the user has enough HAKA', async () => {
-			await ensureBalance({ ctx, symbol: 'HAKA', user, balance: HAKAAmount });
+		before('ensure the user has enough wHAKA', async () => {
+			await ensureBalance({ ctx, symbol: 'wHAKA', user, balance: HAKAAmount });
 		});
 
 		before('setup mock debt ratio aggregator', async () => {

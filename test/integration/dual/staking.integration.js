@@ -27,8 +27,8 @@ describe('staking & claiming integration tests (L1, L2)', () => {
 			user = ctx.l1.users.someUser;
 		});
 
-		before('ensure the user has enough HAKA', async () => {
-			await ensureBalance({ ctx: ctx.l1, symbol: 'HAKA', user, balance: HAKAAmount });
+		before('ensure the user has enough wHAKA', async () => {
+			await ensureBalance({ ctx: ctx.l1, symbol: 'wHAKA', user, balance: HAKAAmount });
 		});
 
 		describe('when the user issues hUSD', () => {

@@ -17,11 +17,11 @@ const {
 const { toBytes32 } = require('../..');
 
 contract('ExchangeCircuitBreaker tests', async accounts => {
-	const [hUSD, sAUD, sEUR, HAKA, hBTC, iBTC, hETH, iETH] = [
+	const [hUSD, sAUD, sEUR, wHAKA, hBTC, iBTC, hETH, iETH] = [
 		'hUSD',
 		'sAUD',
 		'sEUR',
-		'HAKA',
+		'wHAKA',
 		'hBTC',
 		'iBTC',
 		'hETH',
@@ -165,9 +165,9 @@ contract('ExchangeCircuitBreaker tests', async accounts => {
 		addSnapshotBeforeRestoreAfterEach();
 
 		beforeEach(async () => {
-			await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, HAKA, hETH, hBTC, iBTC]);
+			await setupPriceAggregators(exchangeRates, owner, [sAUD, sEUR, wHAKA, hETH, hBTC, iBTC]);
 			await updateRates(
-				[sAUD, sEUR, HAKA, hETH, hBTC, iBTC],
+				[sAUD, sEUR, wHAKA, hETH, hBTC, iBTC],
 				['0.5', '2', '1', '100', '5000', '5000'].map(toUnit)
 			);
 

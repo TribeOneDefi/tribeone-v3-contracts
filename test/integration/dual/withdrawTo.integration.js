@@ -18,7 +18,7 @@ describe('withdrawTo() integration tests (L1, L2)', () => {
 
 	let withdrawalReceipt;
 
-	describe('when the owner withdraws HAKA for a user', () => {
+	describe('when the owner withdraws wHAKA for a user', () => {
 		before('target contracts and users', () => {
 			({ Tribeone, TribeoneBridgeToBase } = ctx.l2.contracts);
 			({ Tribeone: TribeoneL1 } = ctx.l1.contracts);

@@ -25,7 +25,7 @@ const {
 } = require('../..');
 
 contract('Tribe', async accounts => {
-	const [hUSD, HAKA, sEUR] = ['hUSD', 'HAKA', 'sEUR'].map(toBytes32);
+	const [hUSD, wHAKA, sEUR] = ['hUSD', 'wHAKA', 'sEUR'].map(toBytes32);
 
 	const [deployerAccount, owner, , , account1, account2] = accounts;
 
@@ -88,7 +88,7 @@ contract('Tribe', async accounts => {
 
 	beforeEach(async () => {
 		// Send a price update to guarantee we're not stale.
-		await updateAggregatorRates(exchangeRates, null, [HAKA], ['0.1'].map(toUnit));
+		await updateAggregatorRates(exchangeRates, null, [wHAKA], ['0.1'].map(toUnit));
 		await debtCache.takeDebtSnapshot();
 
 		// set default issuanceRatio to 0.2

@@ -127,7 +127,7 @@ const connectBridge = async ({
 		dryRun,
 	});
 
-	// check approval (bridge needs ERC20 approval to spend bridge escrow's HAKA for withdrawals)
+	// check approval (bridge needs ERC20 approval to spend bridge escrow's wHAKA for withdrawals)
 	const currentAllowance = await Tribeone.allowance(
 		TribeoneBridgeEscrow.address,
 		TribeoneBridgeToOptimism.address
@@ -135,7 +135,7 @@ const connectBridge = async ({
 
 	console.log(
 		gray(
-			'Current allowance for bridge to spend bridge escrow HAKA is',
+			'Current allowance for bridge to spend bridge escrow wHAKA is',
 			ethers.utils.formatEther(currentAllowance)
 		)
 	);
@@ -148,7 +148,7 @@ const connectBridge = async ({
 		if (!dryRun) {
 			console.log(
 				yellow.inverse(
-					`  * CALLING TribeoneBridgeEscrow.approveBridge(HAKA, 'TribeoneBridgeToOptimism', UInt256.MAX))`
+					`  * CALLING TribeoneBridgeEscrow.approveBridge(wHAKA, 'TribeoneBridgeToOptimism', UInt256.MAX))`
 				)
 			);
 			const owner = await TribeoneBridgeEscrow.owner();

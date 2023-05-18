@@ -58,7 +58,7 @@ contract RewardEscrowV2 is BaseRewardEscrowV2 {
 
         /**
          *  update account total escrow balances for migration
-         *  transfer the escrowed HAKA being migrated to the L2 deposit contract
+         *  transfer the escrowed wHAKA being migrated to the L2 deposit contract
          */
         if (escrowedAccountBalance > 0) {
             state().updateEscrowAccountBalance(account, -SafeCast.toInt256(escrowedAccountBalance));

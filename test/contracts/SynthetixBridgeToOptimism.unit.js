@@ -321,7 +321,7 @@ contract('TribeoneBridgeToOptimism (unit tests)', accounts => {
 							messenger.sendMessage.returnsAtCall(2, (3e6).toString());
 						});
 
-						it('HAKA is transferred from the user to the deposit contract', async () => {
+						it('wHAKA is transferred from the user to the deposit contract', async () => {
 							tribeone.transferFrom.returnsAtCall(0, user1);
 							tribeone.transferFrom.returnsAtCall(1, TribeoneBridgeEscrow);
 							tribeone.transferFrom.returnsAtCall(2, amount);
@@ -433,7 +433,7 @@ contract('TribeoneBridgeToOptimism (unit tests)', accounts => {
 						txn = await instance.depositReward(amount, { from: user1 });
 					});
 
-					it('then HAKA is transferred from the account to the bridge escrow', async () => {
+					it('then wHAKA is transferred from the account to the bridge escrow', async () => {
 						tribeone.transferFrom.returnsAtCall(0, user1);
 						tribeone.transferFrom.returnsAtCall(1, TribeoneBridgeEscrow);
 						tribeone.transferFrom.returnsAtCall(2, amount);
@@ -534,7 +534,7 @@ contract('TribeoneBridgeToOptimism (unit tests)', accounts => {
 						messenger.sendMessage.returnsAtCall(2, (3e6).toString());
 					});
 
-					it('HAKA is transferred from the bridge to the bridge escrow', async () => {
+					it('wHAKA is transferred from the bridge to the bridge escrow', async () => {
 						tribeone.transfer.returnsAtCall(0, TribeoneBridgeEscrow);
 						tribeone.transfer.returnsAtCall(1, amount);
 					});
@@ -589,7 +589,7 @@ contract('TribeoneBridgeToOptimism (unit tests)', accounts => {
 						});
 					});
 
-					it('then HAKA is minted via MintableTribeone.finalizeWithdrawal', async () => {
+					it('then wHAKA is minted via MintableTribeone.finalizeWithdrawal', async () => {
 						expect(messenger.sendMessage).to.have.length(0);
 						tribeone.transferFrom.returnsAtCall(0, TribeoneBridgeEscrow);
 						tribeone.transferFrom.returnsAtCall(1, user1);
