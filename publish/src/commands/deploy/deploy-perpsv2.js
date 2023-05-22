@@ -71,9 +71,9 @@ const deployPerpsV2Generics = async ({
 		target: futuresMarketManager,
 	});
 
-	if (!useOvm) {
-		return { futuresMarketManager };
-	}
+	// if (!useOvm) {
+	// 	return { futuresMarketManager };
+	// }
 
 	if (
 		prevFuturesMarketManager &&
@@ -170,9 +170,9 @@ const deployPerpsV2Markets = async ({
 
 	const updatedContracts = [];
 
-	if (!useOvm) {
-		return;
-	}
+	// if (!useOvm) {
+	// 	return;
+	// }
 
 	const { perpsv2Markets } = loadAndCheckRequiredSources({
 		deploymentPath,
@@ -393,9 +393,9 @@ const cleanupPerpsV2 = async ({
 }) => {
 	console.log(gray(`\n------ CLEANUP PERPS V2 CONFIGURATION ------\n`));
 
-	if (!useOvm) {
-		return;
-	}
+	// if (!useOvm) {
+	// 	return;
+	// }
 
 	const { PerpsV2ExchangeRate: perpsV2ExchangeRate } = deployer.deployedContracts;
 

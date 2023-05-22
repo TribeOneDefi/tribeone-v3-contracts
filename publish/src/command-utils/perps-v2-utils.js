@@ -463,8 +463,8 @@ const rebuildCaches = async ({ deployer, runStep, implementations }) => {
 
 	const requireCache = [];
 	for (const implementation of implementations) {
-		const isCached = await implementation.target.isResolverCached();
-		if (!isCached) {
+		// const isCached = await implementation.target.isResolverCached();
+		if (/* !isCached */ false) {
 			requireCache.push(implementation.target.address);
 		}
 	}

@@ -709,8 +709,9 @@
 			},
 			"RewardEscrowV2Storage": {
 				"address": "0x5a9eDbB8e67DD751CD5726081AbDA3bF2A757f22",
-				"status": "current",
-				"keccak256": "0x3bbfa5ccacb984f8b3a706f9cb146e4edf034f3900833ec93f23aea0e918135f"
+				"status": "replaced",
+				"keccak256": "0x3bbfa5ccacb984f8b3a706f9cb146e4edf034f3900833ec93f23aea0e918135f",
+				"replaced_in": "v1.0.3-alpha"
 			},
 			"ExchangeSettlementLib": {
 				"address": "0x54FFC1432607685b543f4313f7F863846313175F",
@@ -791,6 +792,36 @@
 				"address": "0xCa68F345942F98FaA99614F3C7ee377F18F23D95",
 				"status": "current",
 				"keccak256": "0xd9035b7a5b931227e82ed71085003180aef86b5b10b508fb439ede51ff1d0ed5"
+			}
+		}
+	},
+	"v1.0.2-alpha": {
+		"tag": "v1.0.2-alpha",
+		"fulltag": "v1.0.2-alpha",
+		"release": "Jin",
+		"network": "goerli-arbitrum",
+		"date": "2023-05-19T01:12:19+07:00",
+		"commit": "b0af60e778d45006c6198639acb18f4cb25bd749",
+		"contracts": {
+			"RewardEscrowV2Frozen": {
+				"address": "0xbd40E56C1C26b6E8b3024B9AC12f67C95AB1f5df",
+				"status": "current",
+				"keccak256": "0x6c780a4885149f938ec8907f38889d708135cf2b6d1d54d54e868d55daa9f0fa"
+			}
+		}
+	},
+	"v1.0.3-alpha": {
+		"tag": "v1.0.3-alpha",
+		"fulltag": "v1.0.3-alpha",
+		"release": "Jin",
+		"network": "goerli-arbitrum",
+		"date": "2023-05-19T01:12:19+07:00",
+		"commit": "b0af60e778d45006c6198639acb18f4cb25bd749",
+		"contracts": {
+			"RewardEscrowV2Storage": {
+				"address": "0x4369a2EFb5F5292213769388334F4AE2B0a6120C",
+				"status": "current",
+				"keccak256": "0x3bbfa5ccacb984f8b3a706f9cb146e4edf034f3900833ec93f23aea0e918135f"
 			}
 		}
 	}
