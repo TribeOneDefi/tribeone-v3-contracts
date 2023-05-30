@@ -100,6 +100,7 @@ const performTransactionalStep = async ({
 
 	// otherwise check the owner
 	const owner = await target.owner();
+
 	if (signer && (owner === (await signer.getAddress()) || publiclyCallable)) {
 		// perform action
 		let hash;
