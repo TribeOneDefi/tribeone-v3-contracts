@@ -101,7 +101,8 @@ module.exports = {
 			url: 'http://localhost:8545/',
 		},
 		'local-ovm': {
-			url: 'http://localhost:9545/',
+			chainId: 31337,
+			url: 'http://localhost:8545/',
 		},
 	},
 	gasReporter: {

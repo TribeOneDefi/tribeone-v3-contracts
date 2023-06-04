@@ -4,8 +4,8 @@
 		"fulltag": "v1.0.0-alpha",
 		"release": "Jin",
 		"network": "goerli",
-		"date": "2023-05-15T10:03:03+07:00",
-		"commit": "edd7ff81d8eca073359cbd35ab158677580e5262",
+		"date": "2023-05-17T14:00:31+07:00",
+		"commit": "0f067b75c16b3fe7e41408056d82dc725286cb14",
 		"contracts": {
 			"SafeDecimalMath": {
 				"address": "0xb6a200136891Be1C881431320E4092953788C7e0",

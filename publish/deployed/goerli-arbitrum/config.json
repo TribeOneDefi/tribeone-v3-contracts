@@ -245,9 +245,6 @@
 	"PerpsV2MarketBTCPERP": {
 		"deploy": false
 	},
-	"PerpsV2ProxyBNBPERP": {
-		"deploy": false
-	},
 	"PerpsV2MarketLiquidateETHPERP": {
 		"deploy": false
 	},
