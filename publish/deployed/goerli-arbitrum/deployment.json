@@ -648,11 +648,11 @@
 		},
 		"FuturesMarketManager": {
 			"name": "FuturesMarketManager",
-			"address": "0x5f049aAc4Ff1287A7b6ED9Af9B29991eCDfEF116",
+			"address": "0x7856648f0909BeE4199fD12064678dec85594aE8",
 			"source": "FuturesMarketManager",
-			"link": "https://goerli.arbiscan.io/address/0x5f049aAc4Ff1287A7b6ED9Af9B29991eCDfEF116",
-			"timestamp": "2023-06-04T08:42:12.000Z",
-			"txn": "https://goerli.arbiscan.io/tx/0xff7fed371d450c45f669ac8d574332ce5e6409766df7a2cc49605ad488a986c7",
+			"link": "https://goerli.arbiscan.io/address/0x7856648f0909BeE4199fD12064678dec85594aE8",
+			"timestamp": "2023-06-04T15:53:39.034Z",
+			"txn": "",
 			"network": "goerli-arbitrum",
 			"constructorArgs": [
 				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
