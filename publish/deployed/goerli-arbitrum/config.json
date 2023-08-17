@@ -268,5 +268,14 @@
 	},
 	"PerpsV2MarketViewsBTCPERP": {
 		"deploy": false
+	},
+	"TokenStatehBAYC": {
+		"deploy": false
+	},
+	"ProxyhBAYC": {
+		"deploy": false
+	},
+	"TribehBAYC": {
+		"deploy": false
 	}
 }

@@ -1,4 +1,10 @@
 {
+	"BAYC": {
+		"asset": "BAYC",
+		"category": "crypto",
+		"sign": "",
+		"description": "Bayc Coin"
+	},
 	"USD": {
 		"asset": "USD",
 		"category": "forex",

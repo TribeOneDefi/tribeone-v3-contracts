@@ -137,11 +137,11 @@
 		},
 		"ExchangeRates": {
 			"name": "ExchangeRates",
-			"address": "0x13020456b542692e8462EDd9a5267ED96a8D892C",
+			"address": "0xCBfa8EC96f9011FAC88dDF26b49923df4b712225",
 			"source": "ExchangeRatesWithDexPricing",
-			"link": "https://goerli.arbiscan.io/address/0x13020456b542692e8462EDd9a5267ED96a8D892C",
-			"timestamp": "2023-06-09T04:57:52.000Z",
-			"txn": "https://goerli.arbiscan.io/tx/0x74c96e39b4d1d42009eb35c329ca6bd0e9c09ef36f8bd35196281d3b959d19bf",
+			"link": "https://goerli.arbiscan.io/address/0xCBfa8EC96f9011FAC88dDF26b49923df4b712225",
+			"timestamp": "2023-08-14T04:42:06.741Z",
+			"txn": "",
 			"network": "goerli-arbitrum",
 			"constructorArgs": [
 				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
@@ -185,7 +185,7 @@
 				"0xF2fe0DCB911079637239bcf0e79856C64062231b",
 				"0x3025b6BF216Cb1014d455Bd7ad6fd87AF077AC0D",
 				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
-				"1219433954000000000000000000",
+				"101000000000000000000000000",
 				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
 			]
 		},
@@ -360,11 +360,11 @@
 		},
 		"FeePool": {
 			"name": "FeePool",
-			"address": "0xE8eD9c7345d40eF406cF32516d2968dAE1061795",
+			"address": "0x053036A3d4fCf88460F9706b23D9c06b142BA8Ed",
 			"source": "FeePool",
-			"link": "https://goerli.arbiscan.io/address/0xE8eD9c7345d40eF406cF32516d2968dAE1061795",
-			"timestamp": "2023-06-09T04:59:29.000Z",
-			"txn": "https://goerli.arbiscan.io/tx/0x6422695b383cd5456c8b5eb7a6b5509f661ce4ed51944dd0c7507a4a81cc072d",
+			"link": "https://goerli.arbiscan.io/address/0x053036A3d4fCf88460F9706b23D9c06b142BA8Ed",
+			"timestamp": "2023-08-14T04:42:11.769Z",
+			"txn": "",
 			"network": "goerli-arbitrum",
 			"constructorArgs": [
 				"0x723d357B84e61ca2cFA895Ef7c7caf14E2F624d2",
@@ -382,7 +382,7 @@
 			"network": "goerli-arbitrum",
 			"constructorArgs": [
 				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
-				"0xE8eD9c7345d40eF406cF32516d2968dAE1061795"
+				"0x053036A3d4fCf88460F9706b23D9c06b142BA8Ed"
 			]
 		},
 		"RewardsDistribution": {
@@ -513,8 +513,8 @@
 			"network": "goerli-arbitrum",
 			"constructorArgs": [
 				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
-				"1684368000",
-				"219"
+				"0",
+				"0"
 			]
 		},
 		"EscrowChecker": {
@@ -1207,6 +1207,50 @@
 			"network": "goerli-arbitrum",
 			"constructorArgs": [
 				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B"
+			]
+		},
+		"TokenStatehBAYC": {
+			"name": "TokenStatehBAYC",
+			"address": "0x26AAC40b1b15228Ea30Da35F93EE1bdaC2b7380C",
+			"source": "TokenState",
+			"link": "https://goerli.arbiscan.io/address/0x26AAC40b1b15228Ea30Da35F93EE1bdaC2b7380C",
+			"timestamp": "2023-08-14T05:29:48.802Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				"0x0000000000000000000000000000000000000000"
+			]
+		},
+		"ProxyhBAYC": {
+			"name": "ProxyhBAYC",
+			"address": "0x849594CBc2Cd4bF2774323aC8286047fbB4186Dd",
+			"source": "ProxyERC20",
+			"link": "https://goerli.arbiscan.io/address/0x849594CBc2Cd4bF2774323aC8286047fbB4186Dd",
+			"timestamp": "2023-08-14T05:29:53.987Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B"
+			]
+		},
+		"TribehBAYC": {
+			"name": "TribehBAYC",
+			"address": "0x7b1Af3D39e13B80110a0d561118eAc129A958a23",
+			"source": "MultiCollateralTribe",
+			"link": "https://goerli.arbiscan.io/address/0x7b1Af3D39e13B80110a0d561118eAc129A958a23",
+			"timestamp": "2023-08-14T05:29:58.401Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0x849594CBc2Cd4bF2774323aC8286047fbB4186Dd",
+				"0x26AAC40b1b15228Ea30Da35F93EE1bdaC2b7380C",
+				"Tribe hBAYC",
+				"hBAYC",
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				"0x6842415943000000000000000000000000000000000000000000000000000000",
+				0,
+				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
 			]
 		}
 	},

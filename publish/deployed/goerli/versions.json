@@ -1,7 +1,7 @@
 {
-	"v1.0.0-alpha": {
-		"tag": "v1.0.0-alpha",
-		"fulltag": "v1.0.0-alpha",
+	"v1.0.7-alpha": {
+		"tag": "v1.0.7-alpha",
+		"fulltag": "v1.0.7-alpha",
 		"release": "Jin",
 		"network": "goerli",
 		"date": "2023-05-17T14:00:31+07:00",

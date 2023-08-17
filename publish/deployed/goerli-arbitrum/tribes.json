@@ -13,5 +13,10 @@
 		"name": "hBTC",
 		"asset": "BTC",
 		"subclass": "MultiCollateralTribe"
+	},
+	{
+		"name": "hBAYC",
+		"asset": "BAYC",
+		"subclass": "MultiCollateralTribe"
 	}
 ]
