@@ -277,5 +277,26 @@
 	},
 	"TribehBAYC": {
 		"deploy": false
+	},
+	"PerpsV2ProxyBAYCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateBAYCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketBAYCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBAYCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentBAYCPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionBAYCPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsBAYCPERP": {
+		"deploy": false
 	}
 }

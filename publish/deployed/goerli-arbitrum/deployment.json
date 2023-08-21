@@ -1252,6 +1252,110 @@
 				0,
 				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
 			]
+		},
+		"PerpsV2ProxyBAYCPERP": {
+			"name": "PerpsV2ProxyBAYCPERP",
+			"address": "0xE8623BE49838866F82D16f02137b67291678B485",
+			"source": "ProxyPerpsV2",
+			"link": "https://goerli.arbiscan.io/address/0xE8623BE49838866F82D16f02137b67291678B485",
+			"timestamp": "2023-08-21T09:48:11.603Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B"
+			]
+		},
+		"PerpsV2MarketStateBAYCPERP": {
+			"name": "PerpsV2MarketStateBAYCPERP",
+			"address": "0xE47253e28feAD3391f650CD6B91FAE36dD1Be537",
+			"source": "PerpsV2MarketState",
+			"link": "https://goerli.arbiscan.io/address/0xE47253e28feAD3391f650CD6B91FAE36dD1Be537",
+			"timestamp": "2023-08-21T09:48:17.033Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				[
+					"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B"
+				],
+				"0x6842415943000000000000000000000000000000000000000000000000000000",
+				"0x6842415943504552500000000000000000000000000000000000000000000000",
+				"0x0000000000000000000000000000000000000000"
+			]
+		},
+		"PerpsV2MarketBAYCPERP": {
+			"name": "PerpsV2MarketBAYCPERP",
+			"address": "0xEB6796e5AB07635b306150ef7Bd7468C71Bf77F1",
+			"source": "PerpsV2Market",
+			"link": "https://goerli.arbiscan.io/address/0xEB6796e5AB07635b306150ef7Bd7468C71Bf77F1",
+			"timestamp": "2023-08-21T09:48:23.061Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xE8623BE49838866F82D16f02137b67291678B485",
+				"0xE47253e28feAD3391f650CD6B91FAE36dD1Be537",
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
+			]
+		},
+		"PerpsV2MarketLiquidateBAYCPERP": {
+			"name": "PerpsV2MarketLiquidateBAYCPERP",
+			"address": "0x827A35447Bf70Fd49239c9074D59c5dC42051e38",
+			"source": "PerpsV2MarketLiquidate",
+			"link": "https://goerli.arbiscan.io/address/0x827A35447Bf70Fd49239c9074D59c5dC42051e38",
+			"timestamp": "2023-08-21T09:48:32.961Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xE8623BE49838866F82D16f02137b67291678B485",
+				"0xE47253e28feAD3391f650CD6B91FAE36dD1Be537",
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
+			]
+		},
+		"PerpsV2DelayedIntentBAYCPERP": {
+			"name": "PerpsV2DelayedIntentBAYCPERP",
+			"address": "0x6Dc0A0F0D41143f4d15E5C34cA8A804DfBF2c9a3",
+			"source": "PerpsV2MarketDelayedIntent",
+			"link": "https://goerli.arbiscan.io/address/0x6Dc0A0F0D41143f4d15E5C34cA8A804DfBF2c9a3",
+			"timestamp": "2023-08-21T09:48:38.991Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xE8623BE49838866F82D16f02137b67291678B485",
+				"0xE47253e28feAD3391f650CD6B91FAE36dD1Be537",
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
+			]
+		},
+		"PerpsV2DelayedExecutionBAYCPERP": {
+			"name": "PerpsV2DelayedExecutionBAYCPERP",
+			"address": "0x9F36C08240958752784FC715342294eDD83F9E18",
+			"source": "PerpsV2MarketDelayedExecution",
+			"link": "https://goerli.arbiscan.io/address/0x9F36C08240958752784FC715342294eDD83F9E18",
+			"timestamp": "2023-08-21T09:48:43.761Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xE8623BE49838866F82D16f02137b67291678B485",
+				"0xE47253e28feAD3391f650CD6B91FAE36dD1Be537",
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
+			]
+		},
+		"PerpsV2MarketViewsBAYCPERP": {
+			"name": "PerpsV2MarketViewsBAYCPERP",
+			"address": "0x9358527729c3dE273048c3a6A2F72c53bB82bDb6",
+			"source": "PerpsV2MarketViews",
+			"link": "https://goerli.arbiscan.io/address/0x9358527729c3dE273048c3a6A2F72c53bB82bDb6",
+			"timestamp": "2023-08-21T09:48:49.585Z",
+			"txn": "",
+			"network": "goerli-arbitrum",
+			"constructorArgs": [
+				"0xE47253e28feAD3391f650CD6B91FAE36dD1Be537",
+				"0xdb14D46eB14f596c608B595cbEFD210bD7A6c31B",
+				"0x622F038ECC43E1609C3574AD332773bE0C604bed"
+			]
 		}
 	},
 	"sources": {
