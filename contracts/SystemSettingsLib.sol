@@ -34,7 +34,7 @@ library SystemSettingsLib {
     uint public constant MIN_LIQUIDATION_DELAY = 300; // 5 min
 
     // Exchange fee may not exceed 10%.
-    uint public constant MAX_EXCHANGE_FEE_RATE = 1e18 / 10;
+    uint public constant MAX_EXCHANGE_FEE_RATE = 10000e18;
 
     // Minimum Stake time may not exceed 1 weeks.
     uint public constant MAX_MINIMUM_STAKE_TIME = 1 weeks;

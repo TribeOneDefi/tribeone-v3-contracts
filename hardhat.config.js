@@ -84,7 +84,7 @@ module.exports = {
 		'goerli-arbitrum': {
 			url: process.env.PROVIDER_URL || 'https://goerli-rollup.arbitrum.io/rpc',
 			chainId: 421613,
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [0x28a116de3cb17d7a10a1026409d884c9aaec6bbca665af1b38949b2ef9d4b227],
 		},
 		'goerli-ovm': {
 			url: process.env.OVM_GOERLI_PROVIDER_URL || 'https://goerli.optimism.io/',
@@ -101,7 +101,8 @@ module.exports = {
 			url: 'http://localhost:8545/',
 		},
 		'local-ovm': {
-			url: 'http://localhost:9545/',
+			chainId: 31337,
+			url: 'http://localhost:8545/',
 		},
 	},
 	gasReporter: {

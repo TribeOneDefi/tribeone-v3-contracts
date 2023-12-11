@@ -416,6 +416,7 @@ const linkToMarketManager = async ({
 	const managerKnownMarkets = Array.from(
 		await futuresMarketManager['allMarkets(bool)'](true)
 	).sort();
+	
 	const { toKeep, toAdd, toRemove } = filteredLists(managerKnownMarkets, proxies);
 
 	if (!onlyRemoveUnusedProxies) {

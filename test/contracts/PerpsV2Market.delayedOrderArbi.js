@@ -27,7 +27,9 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 	const trader = accounts[2];
 	const trader2 = accounts[3];
 	const trader3 = accounts[4];
-	
+
+	console.log(accounts);
+		
 	const traderInitialBalance = toUnit(1000000);
 
 	const marketKeySuffix = '-perp';
@@ -39,6 +41,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 	const initialPrice = toUnit('100');
 	const priceImpactDelta = toUnit('0.5'); // 500bps (high bps to avoid affecting unrelated tests)
 	const orderType = 1; // 0-Atomic, 1-Delayed, 2-Offchain
+	console.log("===========================")
 
 	async function setPrice(asset, price, resetCircuitBreaker = true) {
 		await updateAggregatorRates(
@@ -94,6 +97,7 @@ contract('PerpsV2Market PerpsV2MarketDelayedOrders', accounts => {
 				'DebtCache',
 			],
 		}));
+		console.log("------------------------------")		
 
 		// use implementation ABI on the proxy address to simplify calling
 		perpsV2Market = await PerpsV2Market.at(perpsV2Market.address);

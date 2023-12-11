@@ -14,5 +14,9 @@
 	"LINK": {
 		"asset": "LINK",
 		"feed": "0xd28Ba6CA3bB72bF371b80a2a0a33cBcf9073C954"
+	},
+	"BAYC": {
+		"asset": "BAYC",
+		"feed": "0x1b6e47D58f8Ec41a49743975046de488fF18E225"
 	}
 }

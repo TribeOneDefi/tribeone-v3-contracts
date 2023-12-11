@@ -7,6 +7,7 @@ import "./MixinSystemSettings.sol";
 import "./MixinResolver.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IExchangeRates.sol";
+import "./interfaces/IAddressResolver.sol";
 
 // Libraries
 import "./SafeDecimalMath.sol";
@@ -29,6 +30,7 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
     //slither-disable-next-line naming-convention
     bytes32 internal constant hUSD = "hUSD";
+    bytes32 internal constant hBAYC = "hBAYC";
 
     // Decentralized oracle networks that feed into pricing aggregators
     mapping(bytes32 => AggregatorV2V3Interface) public aggregators;
@@ -38,12 +40,19 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
     // List of aggregator keys for convenient iteration
     bytes32[] public aggregatorKeys;
 
+    // Enable BAYC Oracle price update
+    bool public enableUpdateDiaOracle = true;
+
     // ========== CONSTRUCTOR ==========
 
     constructor(address _owner, address _resolver) public Owned(_owner) MixinSystemSettings(_resolver) {}
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
+    function setEnableUpdateDiaOracle(bool _enableUpdateDiaOracle) external onlyOwner {
+        enableUpdateDiaOracle = _enableUpdateDiaOracle;
+    }
+    
     function addAggregator(bytes32 currencyKey, address aggregatorAddress) external onlyOwner {
         AggregatorV2V3Interface aggregator = AggregatorV2V3Interface(aggregatorAddress);
         // This check tries to make sure that a valid aggregator is being added.
@@ -76,6 +85,13 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
         }
     }
 
+    /* ========== Dia Oracle Update for BAYC ========== */ 
+    function updateDiaOracle(AggregatorV2V3Interface aggregator) internal {
+        bytes memory payload = abi.encodeWithSignature("setLatestAnswer()");
+        (bool success, ) = address(aggregator).call(payload);
+        require(success, "Call to setLatestAnswer failed");
+    }
+
     function rateWithSafetyChecks(bytes32 currencyKey)
         external
         returns (
@@ -91,6 +107,10 @@ contract ExchangeRates is Owned, MixinSystemSettings, IExchangeRates {
 
         if (currencyKey == hUSD) {
             return (rateAndTime.rate, false, false);
+        }
+
+        if (currencyKey == hBAYC && enableUpdateDiaOracle == true) {
+            updateDiaOracle(aggregators[currencyKey]);
         }
 
         rate = rateAndTime.rate;

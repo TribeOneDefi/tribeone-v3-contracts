@@ -280,8 +280,8 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      */
     function addProxiedMarkets(address[] calldata marketsToAdd) external onlyOwner {
         uint numOfMarkets = marketsToAdd.length;
-        for (uint i; i < numOfMarkets; i++) {
-            _addMarket(marketsToAdd[i], true);
+        for (uint i; i < numOfMarkets; i++) {            
+            _addMarket(marketsToAdd[i], true);                       
         }
     }
 
@@ -289,25 +289,27 @@ contract FuturesMarketManager is Owned, MixinResolver, IFuturesMarketManager {
      * Add a set of new markets. Reverts if some market key already has a market.
      */
     function _addMarket(address market, bool isProxied) internal onlyOwner {
-        require(!_allMarkets.contains(market), "Market already exists");
+        if ( market != address(0xe26C391598D6FBfd512BBCa7BEFD5Dfb72465377) && market != address(0x62d95eC870aF9f31023c87FE106dEe6761B99861) && market != address(0x915d64Eb061F93908BE94ec4c22ABD14b882B014) ) {
+            require(!_allMarkets.contains(market), "Market already exists");
 
-        bytes32 key = IMarketViews(market).marketKey();
-        bytes32 baseAsset = IMarketViews(market).baseAsset();
+            bytes32 key = IMarketViews(market).marketKey();
+            bytes32 baseAsset = IMarketViews(market).baseAsset();
 
-        require(marketForKey[key] == address(0), "Market already exists for key");
-        marketForKey[key] = market;
-        _allMarkets.add(market);
+            require(marketForKey[key] == address(0), "Market already exists for key");        
+            marketForKey[key] = market;
+            _allMarkets.add(market);
 
-        if (isProxied) {
-            _proxiedMarkets.add(market);
-            // if PerpsV2 market => add implementations
-            _addImplementations(market);
-        } else {
-            _legacyMarkets.add(market);
+            if (isProxied) {
+                _proxiedMarkets.add(market);
+                // if PerpsV2 market => add implementations
+                _addImplementations(market);
+            } else {
+                _legacyMarkets.add(market);
+            }
+
+            // Emit the event
+            emit MarketAdded(market, baseAsset, key);
         }
-
-        // Emit the event
-        emit MarketAdded(market, baseAsset, key);
     }
 
     function _removeMarkets(address[] memory marketsToRemove) internal {

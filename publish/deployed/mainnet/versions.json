@@ -4,8 +4,8 @@
 		"fulltag": "v1.0.0-alpha",
 		"release": "Jin",
 		"network": "mainnet",
-		"date": "2023-05-12T23:17:49+07:00",
-		"commit": "e3c1a81ae66e62e8fb7e9d45e58b4975a0a05586",
+		"date": "2023-05-17T14:00:31+07:00",
+		"commit": "0f067b75c16b3fe7e41408056d82dc725286cb14",
 		"contracts": {
 			"Depot": {
 				"address": "0xE1f64079aDa6Ef07b03982Ca34f1dD7152AA3b86",
