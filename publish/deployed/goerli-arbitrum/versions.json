@@ -74,7 +74,7 @@
 				"status": "replaced",
 				"keccak256": "0xbdf7750de8cc2dac9a4c26e7a4107158cf6cdd37e05099e9e5df69531275deda",
 				"replaced_in": "v1.0.8-alpha"
-			},
+			},			
 			"TokenStateTribeone": {
 				"address": "0x3025b6BF216Cb1014d455Bd7ad6fd87AF077AC0D",
 				"status": "current",
