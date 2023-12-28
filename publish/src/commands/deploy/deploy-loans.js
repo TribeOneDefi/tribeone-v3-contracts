@@ -94,7 +94,7 @@ module.exports = async ({ account, addressOf, deployer, getDeployParameter, netw
 
 	let RENBTC_ADDRESS = (await getDeployParameter('RENBTC_ERC20_ADDRESSES'))[network];
 	if (!RENBTC_ADDRESS) {
-		if (network !== 'local' && network !== 'goerli-arbitrum') {
+		if (network !== 'local' && network !== 'sepolia-arbitrum') {
 			throw new Error('renBTC address is not known');
 		}
 

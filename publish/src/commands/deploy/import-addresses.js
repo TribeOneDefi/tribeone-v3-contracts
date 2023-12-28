@@ -43,6 +43,7 @@ module.exports = async ({
 		const addressArgs = [[], []];
 
 		const allContracts = Object.entries(deployer.deployedContracts);
+		
 		await Promise.all(
 			allContracts
 				// ignore adding contracts with the skipResolver and library options

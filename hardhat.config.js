@@ -84,7 +84,12 @@ module.exports = {
 		'goerli-arbitrum': {
 			url: process.env.PROVIDER_URL || 'https://goerli-rollup.arbitrum.io/rpc',
 			chainId: 421613,
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [0x28a116de3cb17d7a10a1026409d884c9aaec6bbca665af1b38949b2ef9d4b227],
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [0x37c0cea00615e1468609c2625092851ec6e27ebafad31eeab93115b7ee8d9196],
+		},
+		'sepolia-arbitrum': {
+			url: process.env.PROVIDER_URL || 'https://sepolia-rollup.arbitrum.io/rpc',
+			chainId: 421614,
+			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [0x37c0cea00615e1468609c2625092851ec6e27ebafad31eeab93115b7ee8d9196],
 		},
 		'goerli-ovm': {
 			url: process.env.OVM_GOERLI_PROVIDER_URL || 'https://goerli.optimism.io/',

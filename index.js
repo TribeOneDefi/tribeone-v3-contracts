@@ -7,7 +7,8 @@ const abiDecoder = require('abi-decoder');
 const data = {
 	mainnet: require('./publish/deployed/mainnet'),
 	goerli: require('./publish/deployed/goerli'),
-	'goerli-arbitrum': require('./publish/deployed/goerli-arbitrum'),
+	// 'goerli-arbitrum': require('./publish/deployed/goerli-arbitrum'),
+	'sepolia-arbitrum': require('./publish/deployed/sepolia-arbitrum'),
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
@@ -17,7 +18,7 @@ const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'mainnet', 'goerli', 'goerli-arbitrum'];
+const networks = ['local', 'mainnet', 'goerli', 'sepolia-arbitrum'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -28,6 +29,9 @@ const chainIdMapping = Object.entries({
 	},
 	421613: {
 		network: 'goerli-arbitrum',
+	},
+	421614: {
+		network: 'sepolia-arbitrum',
 	},
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
@@ -165,6 +169,7 @@ const defaults = {
 		mainnet: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
 		goerli: '0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6',
 		'goerli-arbitrum': '0xee01c0cd76354c383b8c7b4e65ea88d00b06f36f',
+		'sepolia-arbitrum': '0xd0df82de051244f04bff3a8bb1f62e1cd39eed92',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'goerli-ovm': '0x4200000000000000000000000000000000000006',
 		// TODO: get actual goerli-ovm address

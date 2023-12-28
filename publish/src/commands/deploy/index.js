@@ -55,7 +55,7 @@ const systemAndParameterCheck = require('./system-and-parameter-check');
 const DEFAULTS = {
 	priorityGasPrice: '1',
 	debtSnapshotMaxDeviation: 0.01, // a 1 percent deviation will trigger a snapshot
-	network: 'goerli',
+	network: 'sepolia-arbitrum',
 	buildPath: path.join(__dirname, '..', '..', '..', '..', BUILD_FOLDER),
 };
 
@@ -150,6 +150,7 @@ const deploy = async ({
 	console.log(
 		gray('Checking all contracts not flagged for deployment have addresses in this network...')
 	);
+
 	const missingDeployments = Object.keys(config).filter(name => {
 		return !config[name].deploy && (!deployment.targets[name] || !deployment.targets[name].address);
 	});
@@ -157,9 +158,9 @@ const deploy = async ({
 	if (missingDeployments.length) {
 		throw Error(
 			`Cannot use existing contracts for deployment as addresses not found for the following contracts on ${network}:\n` +
-				missingDeployments.join('\n') +
-				'\n' +
-				gray(`Used: ${deploymentFile} as source`)
+			missingDeployments.join('\n') +
+			'\n' +
+			gray(`Used: ${deploymentFile} as source`)
 		);
 	}
 
