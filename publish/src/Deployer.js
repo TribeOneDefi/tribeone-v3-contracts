@@ -48,7 +48,7 @@ class Deployer {
 		this.useOvm = useOvm;
 
 		this.provider =
-			provider || new ethers.providers.JsonRpcProvider(providerUrl || 'http://127.0.0.1:8545');
+			provider || new ethers.providers.JsonRpcProvider(providerUrl || 'https://sepolia.blast.io');
 
 		if (signer) {
 			this.signer = signer;

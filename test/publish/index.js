@@ -130,7 +130,7 @@ describe('publish scripts', () => {
 		console.log = (...input) => fs.appendFileSync(logfilePath, input.join(' ') + '\n');
 
 		provider = new ethers.providers.JsonRpcProvider({
-			url: 'http://127.0.0.1:8545',
+			url: 'https://sepolia.blast.io',
 		});
 
 		const { isCompileRequired, createMockAggregatorFactory } = testUtils();

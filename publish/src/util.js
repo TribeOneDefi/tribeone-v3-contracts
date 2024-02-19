@@ -162,7 +162,7 @@ const loadAndCheckRequiredSources = ({ deploymentPath, network, freshDeploy }) =
 };
 
 const getExplorerLinkPrefix = ({ network, useOvm }) => {
-	return network == 'sepolia-arbitrum' ? 'https://sepolia.arbiscan.io' : `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
+	return network == 'blast' ? 'https://sepolia.blast.io' : `https://${network !== 'mainnet' ? network + (useOvm ? '-' : '.') : ''}${
 		useOvm ? 'explorer.optimism' : 'etherscan'
 	}.io`;
 };
@@ -183,7 +183,7 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 		} else {
 			if (network === 'mainnet' && process.env.PROVIDER_URL_MAINNET) {
 				providerUrl = process.env.PROVIDER_URL_MAINNET;
-			} else if (network === 'sepolia-arbitrum') {
+			} else if (network === 'blast') {
 				providerUrl = process.env.PROVIDER_URL;
 			} else {
 				providerUrl = process.env.PROVIDER_URL.replace('network', network);
@@ -194,7 +194,7 @@ const loadConnections = ({ network, useFork, useOvm }) => {
 	const privateKey =
 		network === 'mainnet' ? process.env.DEPLOY_PRIVATE_KEY : process.env.TESTNET_DEPLOY_PRIVATE_KEY;
 
-	const etherscanUrl = network == 'sepolia-arbitrum' ? 'https://api-sepolia.arbiscan.io/api' : `https://api${network !== 'mainnet' ? `-${network}` : ''}${
+	const etherscanUrl = network == 'blast' ? 'https://testnet.blastscan.io' : `https://api${network !== 'mainnet' ? `-${network}` : ''}${
 		useOvm ? '-optimistic' : ''
 	}.etherscan.io/api`;
 
