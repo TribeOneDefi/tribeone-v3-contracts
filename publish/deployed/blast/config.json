@@ -1,0 +1,302 @@
+{
+	"AddressResolver": {
+		"deploy": false
+	},
+	"ReadProxyAddressResolver": {
+		"deploy": false
+	},
+	"DebtCache": {
+		"deploy": false
+	},
+	"DelegateApprovals": {
+		"deploy": false
+	},
+	"DelegateApprovalsEternalStorage": {
+		"deploy": false
+	},
+	"Depot": {
+		"deploy": false
+	},
+	"EscrowChecker": {
+		"deploy": false
+	},
+	"ExchangeRates": {
+		"deploy": false
+	},
+	"Exchanger": {
+		"deploy": false
+	},
+	"ExchangeState": {
+		"deploy": false
+	},
+	"FeePool": {
+		"deploy": false
+	},
+	"FeePoolState": {
+		"deploy": false
+	},
+	"FeePoolEternalStorage": {
+		"deploy": false
+	},
+	"Issuer": {
+		"deploy": false
+	},
+	"RewardEscrow": {
+		"deploy": false
+	},
+	"RewardsDistribution": {
+		"deploy": false
+	},
+	"SupplySchedule": {
+		"deploy": false
+	},
+	"Tribeone": {
+		"deploy": false
+	},
+	"TribeoneEscrow": {
+		"deploy": false
+	},
+	"TribeoneState": {
+		"deploy": false
+	},
+	"SystemStatus": {
+		"deploy": false
+	},
+	"TribeUtil": {
+		"deploy": true
+	},
+	"DappMaintenance": {
+		"deploy": true
+	},
+	"ProxyFeePool": {
+		"deploy": false
+	},
+	"ProxyTribeone": {
+		"deploy": false
+	},
+	"SafeDecimalMath": {
+		"deploy": false
+	},
+	"Math": {
+		"deploy": false
+	},
+	"TokenStateTribeone": {
+		"deploy": false
+	},
+	"FlexibleStorage": {
+		"deploy": false
+	},
+	"SystemSettings": {
+		"deploy": false
+	},
+	"TradingRewards": {
+		"deploy": false
+	},
+	"CollateralErc20": {
+		"deploy": false
+	},
+	"CollateralEth": {
+		"deploy": false
+	},
+	"CollateralManager": {
+		"deploy": false
+	},
+	"CollateralManagerState": {
+		"deploy": false
+	},
+	"CollateralShort": {
+		"deploy": false
+	},
+	"CollateralUtil": {
+		"deploy": false
+	},
+	"RewardEscrowV2": {
+		"deploy": false
+	},
+	"RewardEscrowV2Frozen": {
+		"deploy": false
+	},
+	"TribeoneBridgeToOptimism": {
+		"deploy": false
+	},
+	"VirtualTribeMastercopy": {
+		"deploy": false
+	},
+	"TribeoneBridgeEscrow": {
+		"deploy": false
+	},
+	"tToken": {
+		"deploy": true
+	},
+	"EtherWrapper": {
+		"deploy": false
+	},
+	"NativeEtherWrapper": {
+		"deploy": false
+	},
+	"WrapperFactory": {
+		"deploy": false
+	},
+	"OwnerRelayOnEthereum": {
+		"deploy": false
+	},
+	"TribeRedeemer": {
+		"deploy": false
+	},
+	"SystemSettingsLib": {
+		"deploy": false
+	},
+	"TribeoneDebtShare": {
+		"deploy": false
+	},
+	"ExchangeCircuitBreaker": {
+		"deploy": false
+	},
+	"SignedSafeDecimalMath": {
+		"deploy": false
+	},
+	"FuturesMarketManager": {
+		"deploy": false
+	},
+	"FuturesMarketData": {
+		"deploy": false
+	},
+	"FuturesMarketSettings": {
+		"deploy": false
+	},
+	"OneNetAggregatorIssuedTribes": {
+		"deploy": false
+	},
+	"OneNetAggregatorDebtRatio": {
+		"deploy": false
+	},
+	"Liquidator": {
+		"deploy": false
+	},
+	"LiquidatorRewards": {
+		"deploy": false
+	},
+	"CircuitBreaker": {
+		"deploy": false
+	},
+	"RewardEscrowV2Storage": {
+		"deploy": false
+	},
+	"DirectIntegrationManager": {
+		"deploy": false
+	},
+	"ExchangeSettlementLib": {
+		"deploy": false
+	},
+	"DebtMigratorOnEthereum": {
+		"deploy": false
+	},
+	"TokenStatehUSD": {
+		"deploy": false
+	},
+	"ProxyhUSD": {
+		"deploy": false
+	},
+	"TribehUSD": {
+		"deploy": false
+	},
+	"TokenStatehETH": {
+		"deploy": false
+	},
+	"ProxyhETH": {
+		"deploy": false
+	},
+	"TribehETH": {
+		"deploy": false
+	},
+	"TokenStatehBTC": {
+		"deploy": false
+	},
+	"ProxyhBTC": {
+		"deploy": false
+	},
+	"TribehBTC": {
+		"deploy": false
+	},
+	"PerpsV2MarketSettings": {
+		"deploy": false
+	},
+	"PerpsV2MarketData": {
+		"deploy": false
+	},
+	"PerpsV2ExchangeRate": {
+		"deploy": false
+	},
+	"PerpsV2ProxyETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketStateETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2ProxyBTCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketStateBTCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketBTCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketLiquidateETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedIntentETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2DelayedExecutionETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketLiquidateBTCPERP": {
+		"deploy": true
+	},
+	"PerpsV2DelayedIntentBTCPERP": {
+		"deploy": true
+	},
+	"PerpsV2DelayedExecutionBTCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketViewsETHPERP": {
+		"deploy": false
+	},
+	"PerpsV2MarketViewsBTCPERP": {
+		"deploy": true
+	},
+	"TokenStatehBAYC": {
+		"deploy": false
+	},
+	"ProxyhBAYC": {
+		"deploy": false
+	},
+	"TribehBAYC": {
+		"deploy": false
+	},
+	"PerpsV2ProxyBAYCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketStateBAYCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketBAYCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketLiquidateBAYCPERP": {
+		"deploy": true
+	},
+	"PerpsV2DelayedIntentBAYCPERP": {
+		"deploy": true
+	},
+	"PerpsV2DelayedExecutionBAYCPERP": {
+		"deploy": true
+	},
+	"PerpsV2MarketViewsBAYCPERP": {
+		"deploy": true
+	}
+}
