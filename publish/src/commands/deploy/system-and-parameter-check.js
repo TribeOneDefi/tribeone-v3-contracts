@@ -72,7 +72,7 @@ module.exports = async ({
 					'Cannot connect to existing Tribeone contract. Please double check the deploymentPath is correct for the network allocated'
 				)
 			);
-			throw err;
+			//throw err;
 		}
 	}
 

@@ -1,0 +1,22 @@
+{
+	"wHAKA": {
+		"asset": "wHAKA",
+		"feed": "0x38B17bd4E7f32693D1F93E2590E483C90E45bcd3"
+	},
+	"ETH": {
+		"asset": "ETH",
+		"feed": "0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165"
+	},
+	"BTC": {
+		"asset": "BTC",
+		"feed": "0x56a43EB56Da12C0dc1D972ACb089c06a5dEF8e69"
+	},
+	"LINK": {
+		"asset": "LINK",
+		"feed": "0x0FB99723Aee6f420beAD13e6bBB79b7E6F034298"
+	},
+	"BAYC": {
+		"asset": "BAYC",
+		"feed": "0x13aae33b4a655bE6587b06a057fdB9481a4fA084"
+	}
+}

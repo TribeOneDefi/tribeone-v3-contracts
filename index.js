@@ -12,13 +12,14 @@ const data = {
 	'goerli-ovm': require('./publish/deployed/goerli-ovm'),
 	'local-ovm': require('./publish/deployed/local-ovm'),
 	'mainnet-ovm': require('./publish/deployed/mainnet-ovm'),
+	'blast': require('./publish/deployed/blast')
 };
 
 const assets = require('./publish/assets.json');
 const nonUpgradeable = require('./publish/non-upgradeable.json');
 const releases = require('./publish/releases.json');
 
-const networks = ['local', 'mainnet', 'goerli', 'sepolia-arbitrum'];
+const networks = ['local', 'mainnet', 'goerli', 'sepolia-arbitrum', 'blast'];
 
 const chainIdMapping = Object.entries({
 	1: {
@@ -32,6 +33,9 @@ const chainIdMapping = Object.entries({
 	},
 	421614: {
 		network: 'sepolia-arbitrum',
+	},
+	168587773: {
+		network: 'blast'
 	},
 	// Hardhat fork of mainnet: https://hardhat.org/config/#hardhat-network
 	31337: {
@@ -163,6 +167,8 @@ const defaults = {
 	RENBTC_ERC20_ADDRESSES: {
 		mainnet: '0xEB4C2781e4ebA804CE9a9803C67d0893436bB27D',
 		goerli: '0x9B2fE385cEDea62D839E4dE89B0A23EF4eacC717',
+		'sepolia-arbitrum': '0xd0df82de051244f04bff3a8bb1f62e1cd39eed92',
+		"blast": "0x28210E2591D67B5da5Ec7009F5B812Afaa2B983f"
 		// TODO: get actual goerli address
 	},
 	WETH_ERC20_ADDRESSES: {
@@ -172,6 +178,7 @@ const defaults = {
 		'sepolia-arbitrum': '0xd0df82de051244f04bff3a8bb1f62e1cd39eed92',
 		'mainnet-ovm': '0x4200000000000000000000000000000000000006',
 		'goerli-ovm': '0x4200000000000000000000000000000000000006',
+		'blast': "0xc6f06Ac1260df16942BADc83182aC65c8D603Eed"
 		// TODO: get actual goerli-ovm address
 	},
 	INITIAL_ISSUANCE: w3utils.toWei(`${100e6}`),
@@ -236,7 +243,7 @@ const getFolderNameForNetwork = ({ network, useOvm = false }) => {
 	if (network.includes('ovm')) {
 		return network;
 	}
-
+	console.log(useOvm ? `${network}-ovm` : network);
 	return useOvm ? `${network}-ovm` : network;
 };
 
@@ -350,11 +357,11 @@ const getFeeds = ({ network, path, fs, deploymentPath, useOvm = false } = {}) =>
 		const pathToFeeds = deploymentPath
 			? path.join(deploymentPath, constants.FEEDS_FILENAME)
 			: getPathToNetwork({
-					network,
-					path,
-					useOvm,
-					file: constants.FEEDS_FILENAME,
-			  });
+				network,
+				path,
+				useOvm,
+				file: constants.FEEDS_FILENAME,
+			});
 		if (!fs.existsSync(pathToFeeds)) {
 			throw Error(`Cannot find feeds file.`);
 		}
@@ -375,11 +382,11 @@ const getOffchainFeeds = ({ network, path, fs, deploymentPath, useOvm = false } 
 		const pathToFeeds = deploymentPath
 			? path.join(deploymentPath, constants.OFFCHAIN_FEEDS_FILENAME)
 			: getPathToNetwork({
-					network,
-					path,
-					useOvm,
-					file: constants.OFFCHAIN_FEEDS_FILENAME,
-			  });
+				network,
+				path,
+				useOvm,
+				file: constants.OFFCHAIN_FEEDS_FILENAME,
+			});
 		if (!fs.existsSync(pathToFeeds)) {
 			throw Error(`Cannot find off-chain feeds file.`);
 		}
@@ -392,7 +399,7 @@ const getOffchainFeeds = ({ network, path, fs, deploymentPath, useOvm = false } 
  * optional index and inverse properties
  */
 const getTribes = ({
-	network = 'mainnet',
+	network = 'sepolia-arbitrum',
 	path,
 	fs,
 	deploymentPath,
@@ -465,11 +472,11 @@ const getFuturesMarkets = ({
 		const pathToFuturesMarketsList = deploymentPath
 			? path.join(deploymentPath, constants.FUTURES_MARKETS_FILENAME)
 			: getPathToNetwork({
-					network,
-					path,
-					useOvm,
-					file: constants.FUTURES_MARKETS_FILENAME,
-			  });
+				network,
+				path,
+				useOvm,
+				file: constants.FUTURES_MARKETS_FILENAME,
+			});
 		if (!fs.existsSync(pathToFuturesMarketsList)) {
 			futuresMarkets = [];
 		} else {
@@ -506,11 +513,11 @@ const getPerpsMarkets = ({
 		const pathToPerpsMarketsList = deploymentPath
 			? path.join(deploymentPath, constants.PERPS_V2_MARKETS_FILENAME)
 			: getPathToNetwork({
-					network,
-					path,
-					useOvm,
-					file: constants.PERPS_V2_MARKETS_FILENAME,
-			  });
+				network,
+				path,
+				useOvm,
+				file: constants.PERPS_V2_MARKETS_FILENAME,
+			});
 
 		if (!fs.existsSync(pathToPerpsMarketsList)) {
 			perpsMarkets = [];
@@ -666,11 +673,11 @@ const getStakingRewards = ({
 	const pathToStakingRewardsList = deploymentPath
 		? path.join(deploymentPath, constants.STAKING_REWARDS_FILENAME)
 		: getPathToNetwork({
-				network,
-				path,
-				useOvm,
-				file: constants.STAKING_REWARDS_FILENAME,
-		  });
+			network,
+			path,
+			useOvm,
+			file: constants.STAKING_REWARDS_FILENAME,
+		});
 	if (!fs.existsSync(pathToStakingRewardsList)) {
 		return [];
 	}
@@ -694,11 +701,11 @@ const getShortingRewards = ({
 	const pathToShortingRewardsList = deploymentPath
 		? path.join(deploymentPath, constants.SHORTING_REWARDS_FILENAME)
 		: getPathToNetwork({
-				network,
-				path,
-				useOvm,
-				file: constants.SHORTING_REWARDS_FILENAME,
-		  });
+			network,
+			path,
+			useOvm,
+			file: constants.SHORTING_REWARDS_FILENAME,
+		});
 	if (!fs.existsSync(pathToShortingRewardsList)) {
 		return [];
 	}
